@@ -7,36 +7,37 @@
     <groupId>com.griddynamics.qa</groupId>
     <artifactId>sprimber-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <name>Sprimber</name>
     <description>Spring BDD engine for popular frameworks</description>
     <url>https://github.com/griddynamics/GridBDD</url>
 
     <organization>
-      <name>GridDynamics, LLC</name>
-      <url>https://www.griddynamics.com/</url>
+        <name>GridDynamics, Inc</name>
+        <url>https://www.griddynamics.com/</url>
     </organization>
 
     <licenses>
-      <license>
-        <name>GNU Lesser General Public License v2.1</name>
-        <url>https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html</url>
-      </license>
+        <license>
+            <name>GNU Lesser General Public License v2.1</name>
+            <url>https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html</url>
+            <distribution>repo</distribution>
+        </license>
     </licenses>
 
     <scm>
-      <url>https://github.com/griddynamics/GridBDD</url>
-      <connection>scm:git@github.com:griddynamics/GridBDD.git</connection>
-      <developerConnection>scm:git@github.com:griddynamics/GridBDD.git</developerConnection>
+        <url>https://github.com/griddynamics/GridBDD</url>
+        <connection>scm:git@github.com:griddynamics/GridBDD.git</connection>
+        <developerConnection>scm:git@github.com:griddynamics/GridBDD.git</developerConnection>
     </scm>
 
     <developers>
-      <developer>
-        <id>vvolverine</id>
-        <name>Pheodor Paramonov</name>
-        <email>fparamonov@griddynamics.com</email>
-      </developer>
+        <developer>
+            <id>vvolverine</id>
+            <name>Pheodor Paramonov</name>
+            <email>fparamonov@griddynamics.com</email>
+        </developer>
     </developers>
 
     <modules>
@@ -50,40 +51,91 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
-    
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>sonatype-nexus-snapshots</id>
+            <url>http://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>sonatype-nexus-staging</id>
+            <url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+        </repository>
+    </distributionManagement>
+
     <build>
-      <pluginManagement>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>1.6</version>
+                    <executions>
+                        <execution>
+                            <id>sign-artifacts</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>sign</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.0.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.0.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.1</version>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
                 <executions>
                     <execution>
-                        <id>attach-sources</id>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
                         <goals>
-                            <goal>jar</goal>
+                            <goal>sign</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <additionalparam>-Xdoclint:none</additionalparam>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+            <!--<plugin>-->
+                <!--<groupId>org.sonatype.plugins</groupId>-->
+                <!--<artifactId>nexus-staging-maven-plugin</artifactId>-->
+                <!--<version>1.6.8</version>-->
+                <!--<extensions>true</extensions>-->
+                <!--<configuration>-->
+                    <!--<serverId>ossrh</serverId>-->
+                    <!--<nexusUrl>https://oss.sonatype.org/</nexusUrl>-->
+                    <!--<autoReleaseAfterClose>true</autoReleaseAfterClose>-->
+                <!--</configuration>-->
+            <!--</plugin>-->
         </plugins>
-      </pluginManagement>
     </build>
 </project>
