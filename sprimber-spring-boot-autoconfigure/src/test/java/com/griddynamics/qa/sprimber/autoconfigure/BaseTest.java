@@ -24,20 +24,24 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.griddynamics.qa.sprimber.autoconfigure.annotation.EnableSprimber;
 import com.griddynamics.qa.sprimber.engine.executor.CliRunner;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
 import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
+import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
 import gherkin.Parser;
 import gherkin.TokenMatcher;
 import gherkin.pickles.Compiler;
 import io.cucumber.stepexpression.StepExpressionFactory;
+import io.cucumber.stepexpression.TypeRegistry;
 import io.qameta.allure.AllureLifecycle;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.Clock;
@@ -68,6 +72,8 @@ public class BaseTest {
                     assertThat(context).hasSingleBean(AllureLifecycle.class);
                     assertThat(context).hasSingleBean(Clock.class);
                     assertThat(context).hasSingleBean(StepExpressionFactory.class);
+                    assertThat(context).hasSingleBean(TypeRegistry.class);
+                    assertThat(context).hasSingleBean(JacksonDataTableTransformer.class);
                     assertThat(context).hasBean(SPRIMBER_EXECUTOR_NAME);
                     assertThat(context).hasBean(ATTRIBUTES_BEAN_NAME);
                 }
@@ -78,5 +84,9 @@ public class BaseTest {
     @EnableSprimber
     static class SomeTestConfiguration {
 
+        @Bean
+        public ObjectMapper objectMapper() {
+            return new ObjectMapper();
+        }
     }
 }

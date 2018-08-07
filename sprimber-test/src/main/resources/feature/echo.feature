@@ -24,13 +24,23 @@
 
 Feature: This is a test feature for echo application
 
-@echo
-Scenario: Simple scenario to check just steps
+  @echo
+  Scenario: Simple scenario to check just steps
     Given test given action
     When test when action
     Then test then action
 
-@echo
-Scenario: Scenario to check failed steps
+  @echo
+  Scenario: Simple scenario to check steps with DataTable arguments
+    Given the next author exist:
+      | name     | surname     | book     |
+      | testName | testSurname | testBook |
+
+  @echo
+  Scenario: Simple scenario to check steps arguments
+    Given the next author long consumed '123'
+
+  @echo
+  Scenario: Scenario to check failed steps
     When some when action with param 'hi'
     Then every time failed action

@@ -20,31 +20,39 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 $Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
- */
+*/
 
-package com.griddynamics.qa.sprimber.test;
+package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.griddynamics.qa.sprimber.autoconfigure.annotation.EnableSprimber;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableAsync;
+import io.cucumber.datatable.TableCellByTypeTransformer;
+import io.cucumber.datatable.TableEntryByTypeTransformer;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
+ * This is a default implementation for any case data table transformer that currently missed in official Cucumber release
+ *
  * @author fparamonov
  */
-@SpringBootApplication
-@EnableSprimber
-@EnableAsync
-public class EchoTestBackend {
 
-    public static void main(String[] args) throws Exception {
-        SpringApplication.exit(SpringApplication.run(EchoTestBackend.class));
+@Component
+public class JacksonDataTableTransformer implements TableEntryByTypeTransformer, TableCellByTypeTransformer {
+
+    private final ObjectMapper objectMapper;
+
+    public JacksonDataTableTransformer(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
-    @Bean
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper();
+    @Override
+    public <T> T transform(String value, Class<T> cellType) throws Throwable {
+        return objectMapper.convertValue(value, cellType);
+    }
+
+    @Override
+    public <T> T transform(Map<String, String> entry, Class<T> type, TableCellByTypeTransformer cellTransformer) throws Throwable {
+        return objectMapper.convertValue(entry, type);
     }
 }

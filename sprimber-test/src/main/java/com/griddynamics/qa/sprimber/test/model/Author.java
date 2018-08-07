@@ -22,29 +22,47 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
  */
 
-package com.griddynamics.qa.sprimber.test;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.griddynamics.qa.sprimber.autoconfigure.annotation.EnableSprimber;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableAsync;
+package com.griddynamics.qa.sprimber.test.model;
 
 /**
  * @author fparamonov
  */
-@SpringBootApplication
-@EnableSprimber
-@EnableAsync
-public class EchoTestBackend {
+public class Author {
 
-    public static void main(String[] args) throws Exception {
-        SpringApplication.exit(SpringApplication.run(EchoTestBackend.class));
+    private String name;
+    private String surname;
+    private String book;
+
+    public String getName() {
+        return name;
     }
 
-    @Bean
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper();
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getSurname() {
+        return surname;
+    }
+
+    public void setSurname(String surname) {
+        this.surname = surname;
+    }
+
+    public String getBook() {
+        return book;
+    }
+
+    public void setBook(String book) {
+        this.book = book;
+    }
+
+    @Override
+    public String toString() {
+        return "Author{" +
+                "name='" + name + '\'' +
+                ", surname='" + surname + '\'' +
+                ", book='" + book + '\'' +
+                '}';
     }
 }
