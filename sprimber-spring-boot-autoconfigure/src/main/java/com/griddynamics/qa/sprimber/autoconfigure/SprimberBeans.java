@@ -24,6 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
+import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
 import cucumber.api.Pending;
 import gherkin.AstBuilder;
 import gherkin.Parser;
@@ -31,7 +32,9 @@ import gherkin.TokenMatcher;
 import gherkin.ast.GherkinDocument;
 import gherkin.pickles.Compiler;
 import io.cucumber.stepexpression.StepExpressionFactory;
+import io.cucumber.stepexpression.TypeRegistry;
 import io.qameta.allure.AllureLifecycle;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -63,18 +66,30 @@ public class SprimberBeans {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     public AllureLifecycle allureLifecycle() {
         return new AllureLifecycle();
     }
 
     @Bean
-    public Clock clock() {
-        return Clock.systemDefaultZone();
+    @ConditionalOnMissingBean
+    public StepExpressionFactory stepExpressionFactory(TypeRegistry typeRegistry) {
+        return new StepExpressionFactory(typeRegistry);
     }
 
     @Bean
-    public StepExpressionFactory stepExpressionFactory() {
-        return new StepExpressionFactory(new io.cucumber.stepexpression.TypeRegistry(Locale.ENGLISH));
+    @ConditionalOnMissingBean
+    public TypeRegistry typeRegistry(JacksonDataTableTransformer jacksonDataTableTransformer) {
+        TypeRegistry typeRegistry = new TypeRegistry(Locale.ENGLISH);
+        typeRegistry.dataTableTypeRegistry().setDefaultDataTableEntryTransformer(jacksonDataTableTransformer);
+        typeRegistry.dataTableTypeRegistry().setDefaultDataTableCellTransformer(jacksonDataTableTransformer);
+        return typeRegistry;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public Clock clock() {
+        return Clock.systemDefaultZone();
     }
 
     @Bean

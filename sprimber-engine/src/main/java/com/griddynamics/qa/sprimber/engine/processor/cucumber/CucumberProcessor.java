@@ -39,6 +39,7 @@ import gherkin.pickles.Compiler;
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleStep;
 import gherkin.pickles.PickleTag;
+import io.cucumber.datatable.DataTable;
 import io.cucumber.stepexpression.Argument;
 import io.cucumber.stepexpression.ExpressionArgumentMatcher;
 import io.cucumber.stepexpression.StepExpression;
@@ -49,12 +50,14 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -134,10 +137,24 @@ public class CucumberProcessor implements ResourceProcessor {
 
         ActionDefinitionAndArguments pair = findDefinitionAndArgumentsByActualStep(pickleStep);
         testStep.setStepAction(pair.getDefinition());
-        testStep.setStepArguments(pair.getArguments().stream().map(Argument::getValue).toArray());
-
+        testStep.setStepArguments(processArguments(pair));
         testStep.getAfterStepActions().addAll(findDefinitionsByType(ActionType.AfterStep));
         return testStep;
+    }
+
+    private Object[] processArguments(ActionDefinitionAndArguments pair) {
+        List<Argument> arguments = pair.getArguments();
+        List<Type> parameters = Arrays.asList(pair.getDefinition().getMethod().getGenericParameterTypes());
+        return IntStream.range(0, parameters.size())
+                .mapToObj(counter -> processArgument(arguments.get(counter), parameters.get(counter))).toArray();
+    }
+
+    private Object processArgument(Argument argument, Type type) {
+        Object value = argument.getValue();
+        if (value instanceof DataTable) {
+            value = ((DataTable) value).convert(type, false);
+        }
+        return value;
     }
 
     private GherkinDocument buildGherkinDocument(Resource resource) {

@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.test.steps;
 
 import com.griddynamics.qa.sprimber.engine.model.action.Actions;
+import com.griddynamics.qa.sprimber.test.model.Author;
 import cucumber.api.java.After;
 import cucumber.api.java.AfterStep;
 import cucumber.api.java.Before;
@@ -35,6 +36,8 @@ import cucumber.api.java.en.When;
 import org.assertj.core.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * @author fparamonov
@@ -60,6 +63,19 @@ public class BaseEchoSteps {
     @Given("^test given action$")
     public void given() {
         LOGGER.info("Hey, I'm given action");
+    }
+
+    @Given("the next author exist:")
+    public void givenDataTable(List<Author> authors) {
+        LOGGER.info("Hey, I'm given action for author {}", authors.get(0));
+        Assertions.assertThat(authors).hasSize(1);
+        Assertions.assertThat(authors).extracting("name").contains("testName");
+    }
+
+    @Given("the next author long consumed '{long}'")
+    public void givenLong(Long dummyNumber) {
+        LOGGER.info("Hey, I'm given action with long param {}", dummyNumber);
+        Assertions.assertThat(dummyNumber).isEqualTo(123L);
     }
 
     @When("^test when action$")
