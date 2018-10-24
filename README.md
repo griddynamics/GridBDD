@@ -10,3 +10,5 @@ This is modern BDD framework that combine bridge functions between popular BDD l
 * Support Spring bean scopes to handle different state between steps in scope of one test case
 * Can understand steps and step definitions from popular BDD frameworks like JBehave and Cucumber(Gherkin)
 * Default reporting in allure format
+
+Follow guides at [wiki page](https://github.com/griddynamics/GridBDD/wiki/Building-a-Test-Automation-with-Spring-Boot-BDD)
