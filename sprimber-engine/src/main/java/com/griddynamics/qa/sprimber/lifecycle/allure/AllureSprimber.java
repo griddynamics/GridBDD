@@ -49,7 +49,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -73,7 +72,7 @@ public class AllureSprimber {
     private final Clock clock;
     private final AllureLifecycle lifecycle;
     private ThreadPoolTaskExecutor taskExecutor;
-    private ThreadLocal<String> testCaseRuntimeUuid = new ThreadLocal<>();
+    private ThreadLocal<String> testCaseRuntimeId = new ThreadLocal<>();
 
     public AllureSprimber(Clock clock,
                           AllureLifecycle lifecycle) {
@@ -94,22 +93,22 @@ public class AllureSprimber {
     @EventListener
     public void testCaseStarted(TestCaseStartedEvent startedEvent) {
         HelperInfoBuilder helperInfoBuilder = new HelperInfoBuilder(startedEvent.getTestCase());
-        String historyUUid = getTestCaseHistoryUuid(startedEvent.getTestCase());
-        testCaseRuntimeUuid.set(UUID.randomUUID().toString());
+        String historyId = getTestCaseHistoryId(startedEvent.getTestCase());
+        testCaseRuntimeId.set(startedEvent.getTestCase().getRuntimeId());
         TestResult testResult = new TestResult()
-                .withUuid(testCaseRuntimeUuid.get())
-                .withHistoryId(historyUUid)
+                .withUuid(testCaseRuntimeId.get())
+                .withHistoryId(historyId)
                 .withName(startedEvent.getTestCase().getName())
                 .withLinks(helperInfoBuilder.getLinks())
                 .withLabels(helperInfoBuilder.getLabels())
                 .withDescription(startedEvent.getTestCase().getDescription());
         lifecycle.scheduleTestCase(testResult);
-        lifecycle.startTestCase(testCaseRuntimeUuid.get());
+        lifecycle.startTestCase(testCaseRuntimeId.get());
     }
 
     @EventListener
     public void testCaseFinished(TestCaseFinishedEvent finishedEvent) throws ExecutionException, InterruptedException, TimeoutException {
-        String runtimeUuid = testCaseRuntimeUuid.get();
+        String runtimeUuid = testCaseRuntimeId.get();
         lifecycle.updateTestCase(runtimeUuid, scenarioResult ->
                 scenarioResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult())));
         lifecycle.stopTestCase(runtimeUuid);
@@ -121,14 +120,14 @@ public class AllureSprimber {
         StepResult stepResult = new StepResult()
                 .withName(String.valueOf(startedEvent.getHookDefinition().getActionType()))
                 .withStart(clock.millis());
-        lifecycle.startStep(testCaseRuntimeUuid.get(), getHookUuid(startedEvent.getHookDefinition()), stepResult);
+        lifecycle.startStep(testCaseRuntimeId.get(), getHookId(startedEvent.getHookDefinition()), stepResult);
     }
 
     @EventListener
     public void testHookFinished(TestHookFinishedEvent finishedEvent) {
-        lifecycle.updateStep(getHookUuid(finishedEvent.getHookDefinition()),
+        lifecycle.updateStep(getHookId(finishedEvent.getHookDefinition()),
                 stepResult -> stepResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult())));
-        lifecycle.stopStep(getHookUuid(finishedEvent.getHookDefinition()));
+        lifecycle.stopStep(getHookId(finishedEvent.getHookDefinition()));
     }
 
     @EventListener
@@ -136,25 +135,25 @@ public class AllureSprimber {
         StepResult stepResult = new StepResult()
                 .withName(String.format("%s %s", startedEvent.getTestStep().getStepAction().getActionType(), startedEvent.getTestStep().getActualText()))
                 .withStart(clock.millis());
-        lifecycle.startStep(testCaseRuntimeUuid.get(), getStepUuid(startedEvent.getTestStep()), stepResult);
+        lifecycle.startStep(testCaseRuntimeId.get(), getStepId(startedEvent.getTestStep()), stepResult);
     }
 
     @EventListener
     public void testStepFinished(TestStepFinishedEvent finishedEvent) {
-        lifecycle.updateStep(getStepUuid(finishedEvent.getTestStep()),
+        lifecycle.updateStep(getStepId(finishedEvent.getTestStep()),
                 stepResult -> stepResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult())));
-        lifecycle.stopStep(getStepUuid(finishedEvent.getTestStep()));
+        lifecycle.stopStep(getStepId(finishedEvent.getTestStep()));
     }
 
-    private String getStepUuid(TestStep testStep) {
-        return testCaseRuntimeUuid.get() + testStep.getStepAction().getActionType() + testStep.getActualText();
+    private String getStepId(TestStep testStep) {
+        return testCaseRuntimeId.get() + testStep.getStepAction().getActionType() + testStep.getActualText();
     }
 
-    private String getHookUuid(ActionDefinition hookDefinition) {
-        return testCaseRuntimeUuid.get() + hookDefinition.getActionType();
+    private String getHookId(ActionDefinition hookDefinition) {
+        return testCaseRuntimeId.get() + hookDefinition.getActionType();
     }
 
-    private String getTestCaseHistoryUuid(TestCase testCase) {
+    private String getTestCaseHistoryId(TestCase testCase) {
         try {
             byte[] bytes = MessageDigest.getInstance("md5").digest(testCase.getName().getBytes(UTF_8));
             return new BigInteger(1, bytes).toString(16);
