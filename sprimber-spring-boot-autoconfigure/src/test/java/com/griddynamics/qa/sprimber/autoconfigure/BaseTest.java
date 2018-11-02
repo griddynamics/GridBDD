@@ -31,6 +31,7 @@ import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
 import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
 import com.griddynamics.qa.sprimber.engine.scope.FlowOrchestrator;
+import com.griddynamics.qa.sprimber.lifecycle.TestCaseSummaryPrinter;
 import gherkin.Parser;
 import gherkin.TokenMatcher;
 import gherkin.pickles.Compiler;
@@ -62,24 +63,27 @@ public class BaseTest {
 
     @Test
     public void testMainBeans() {
-        contextRunner.withUserConfiguration(SomeTestConfiguration.class).run(
-                context -> {
-                    assertThat(context).hasSingleBean(CliRunner.class);
-                    assertThat(context).hasSingleBean(Parser.class);
-                    assertThat(context).hasSingleBean(TokenMatcher.class);
-                    assertThat(context).hasSingleBean(Compiler.class);
-                    assertThat(context).hasSingleBean(SprimberProperties.class);
-                    assertThat(context).hasSingleBean(ActionsContainer.class);
-                    assertThat(context).hasSingleBean(AllureLifecycle.class);
-                    assertThat(context).hasSingleBean(Clock.class);
-                    assertThat(context).hasSingleBean(StepExpressionFactory.class);
-                    assertThat(context).hasSingleBean(TypeRegistry.class);
-                    assertThat(context).hasSingleBean(JacksonDataTableTransformer.class);
-                    assertThat(context).hasSingleBean(FlowOrchestrator.class);
-                    assertThat(context).hasBean(SPRIMBER_EXECUTOR_NAME);
-                    assertThat(context).hasBean(ATTRIBUTES_BEAN_NAME);
-                }
-        );
+        contextRunner.withUserConfiguration(SomeTestConfiguration.class)
+                .withPropertyValues("sprimber.configuration.summary.printer.enable=true")
+                .run(
+                        context -> {
+                            assertThat(context).hasSingleBean(CliRunner.class);
+                            assertThat(context).hasSingleBean(Parser.class);
+                            assertThat(context).hasSingleBean(TokenMatcher.class);
+                            assertThat(context).hasSingleBean(Compiler.class);
+                            assertThat(context).hasSingleBean(SprimberProperties.class);
+                            assertThat(context).hasSingleBean(ActionsContainer.class);
+                            assertThat(context).hasSingleBean(AllureLifecycle.class);
+                            assertThat(context).hasSingleBean(Clock.class);
+                            assertThat(context).hasSingleBean(StepExpressionFactory.class);
+                            assertThat(context).hasSingleBean(TypeRegistry.class);
+                            assertThat(context).hasSingleBean(JacksonDataTableTransformer.class);
+                            assertThat(context).hasSingleBean(FlowOrchestrator.class);
+                            assertThat(context).hasSingleBean(TestCaseSummaryPrinter.class);
+                            assertThat(context).hasBean(SPRIMBER_EXECUTOR_NAME);
+                            assertThat(context).hasBean(ATTRIBUTES_BEAN_NAME);
+                        }
+                );
     }
 
     @SpringBootApplication
