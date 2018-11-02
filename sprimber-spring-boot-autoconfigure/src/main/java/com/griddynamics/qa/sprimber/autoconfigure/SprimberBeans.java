@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.autoconfigure;
 
 import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
+import com.griddynamics.qa.sprimber.lifecycle.TestCaseSummaryPrinter;
 import cucumber.api.Pending;
 import gherkin.AstBuilder;
 import gherkin.Parser;
@@ -35,6 +36,7 @@ import io.cucumber.stepexpression.StepExpressionFactory;
 import io.cucumber.stepexpression.TypeRegistry;
 import io.qameta.allure.AllureLifecycle;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -84,6 +86,12 @@ public class SprimberBeans {
         typeRegistry.dataTableTypeRegistry().setDefaultDataTableEntryTransformer(jacksonDataTableTransformer);
         typeRegistry.dataTableTypeRegistry().setDefaultDataTableCellTransformer(jacksonDataTableTransformer);
         return typeRegistry;
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "sprimber.configuration.summary.printer.enable")
+    public TestCaseSummaryPrinter summaryPrinter() {
+        return new TestCaseSummaryPrinter();
     }
 
     @Bean
