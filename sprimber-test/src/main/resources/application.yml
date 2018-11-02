@@ -5,5 +5,8 @@ logging:
 sprimber:
   configuration:
     featurePath: feature/**/*.feature
+    summary:
+      printer:
+        enable: true
     tagFilters:
-      - "@scope"
+      - "@echo"
