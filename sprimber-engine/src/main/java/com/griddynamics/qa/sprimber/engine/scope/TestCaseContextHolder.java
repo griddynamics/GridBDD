@@ -24,6 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.scope;
 
+import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import org.springframework.core.NamedThreadLocal;
 
 /**
@@ -41,12 +42,13 @@ public abstract class TestCaseContextHolder {
     private TestCaseContextHolder() {
     }
 
-    public static void resetContext() {
+    public static void cleanContext() {
         TEST_CASE_OBJECTS_HOLDER.remove();
     }
 
-    public static void setupNewContext() {
+    public static void setupNewContext(TestCase testCase) {
         TestCaseContext testCaseContext = new TestCaseContext();
+        testCaseContext.saveConversationId(testCase.getRuntimeId());
         setContext(testCaseContext);
     }
 

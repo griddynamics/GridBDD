@@ -24,8 +24,9 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.scope;
 
+import org.springframework.beans.factory.ObjectFactory;
+
 import java.util.HashMap;
-import java.util.Optional;
 
 /**
  * This class represent the place where test case related objects can be stored.
@@ -36,37 +37,36 @@ import java.util.Optional;
 
 public class TestCaseContext extends HashMap<String, Object> {
 
+    private static final String CONVERSATION_ID_KEY = "conversationId";
+
     /**
-     * Return the value for the scoped object of the given name, if any.
+     * Method to return object by bean name for current thread.
+     * If object already initialised then the value for actual key will be returned
+     * Otherwise Spring Object factory {@code getObject()} will be invoked and object initialisation happens
      *
-     * @param name the name of the object
-     * @return the current object value, or {@code Optional.empty} if not found
+     * @param name - target object name
+     * @param objectFactory - Spring Object factory
+     * @return - new or already exist object for current thread
      */
-    public Optional<Object> getOptionalObject(String name) {
-        return Optional.ofNullable(get(name));
+    public Object getCurrentObjectByName(String name, ObjectFactory objectFactory) {
+        return computeIfAbsent(name, (key) -> objectFactory.getObject());
     }
 
     /**
-     * Set the value for the scoped object of the given name,
-     * replacing an existing value (if any).
+     * Method to check if object with target name already exist or not. If exist, then mapping will be removed.
      *
-     * @param name  the name of the object
-     * @param value the value for the object
+     * @param name - target object name
+     * @return - null
      */
-    public void putObject(String name, Object value) {
-        put(name, value);
+    public Object removeCurrentObjectByName(String name) {
+        return computeIfPresent(name, (k, v) -> null);
     }
 
-    /**
-     * Remove the scoped object of the given name, if it exists.
-     * <p>Note that an implementation should also remove a registered destruction
-     * callback for the specified object, if any. It does, however, <i>not</i>
-     * need to <i>execute</i> a registered destruction callback in this case,
-     * since the object will be destroyed by the caller (if appropriate).
-     *
-     * @param name the name of the object
-     */
-    public void removeObject(String name) {
-        remove(name);
+    public void saveConversationId(String conversationId) {
+        put(CONVERSATION_ID_KEY, conversationId);
+    }
+
+    public String getConversationId() {
+        return String.valueOf(get(CONVERSATION_ID_KEY));
     }
 }

@@ -41,11 +41,11 @@ public class FlowOrchestrator {
 
     @EventListener
     public void setupTestCaseContext(TestCaseStartedEvent startEvent) {
-        TestCaseContextHolder.setupNewContext();
+        TestCaseContextHolder.setupNewContext(startEvent.getTestCase());
     }
 
     @EventListener
     public void resetTestCaseContext(TestCaseFinishedEvent finishEvent) {
-        TestCaseContextHolder.resetContext();
+        TestCaseContextHolder.cleanContext();
     }
 }

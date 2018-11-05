@@ -53,17 +53,13 @@ public class TestCaseScope implements Scope {
     @Override
     public Object get(String name, ObjectFactory<?> objectFactory) {
         TestCaseContext testCaseContext = TestCaseContextHolder.getCurrentContext();
-        Object scopedObject = testCaseContext.getOptionalObject(name).orElseGet(objectFactory::getObject);
-        testCaseContext.putObject(name, scopedObject);
-        return scopedObject;
+        return testCaseContext.getCurrentObjectByName(name, objectFactory);
     }
 
     @Override
     public Object remove(String name) {
         TestCaseContext testCaseContext = TestCaseContextHolder.getCurrentContext();
-        testCaseContext.getOptionalObject(name)
-                .ifPresent((object) -> testCaseContext.removeObject(name));
-        return testCaseContext.getOptionalObject(name).orElse(null);
+        return testCaseContext.removeCurrentObjectByName(name);
     }
 
     @Override
@@ -79,6 +75,7 @@ public class TestCaseScope implements Scope {
 
     @Override
     public String getConversationId() {
-        return null;
+        TestCaseContext testCaseContext = TestCaseContextHolder.getCurrentContext();
+        return testCaseContext.getConversationId();
     }
 }
