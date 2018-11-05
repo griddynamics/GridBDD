@@ -6,4 +6,4 @@ sprimber:
   configuration:
     featurePath: feature/**/*.feature
     tagFilters:
-      - "@echo"
+      - "@scope"

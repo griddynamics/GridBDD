@@ -51,10 +51,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -126,6 +123,7 @@ public class CucumberProcessor implements ResourceProcessor {
         testCase.setName(pickle.getName());
         testCase.setParentName(testCaseMetaInfo.getFeature().getName());
         testCase.setDescription(testCaseMetaInfo.getFeature().getDescription());
+        testCase.setRuntimeId(UUID.randomUUID().toString());
         testCase.getTags().addAll(pickle.getTags().stream().map(PickleTag::getName).collect(Collectors.toList()));
         return testCase;
     }

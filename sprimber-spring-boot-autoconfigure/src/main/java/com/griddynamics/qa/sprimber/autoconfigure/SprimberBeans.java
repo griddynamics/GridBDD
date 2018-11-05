@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.autoconfigure;
 
 import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
+import com.griddynamics.qa.sprimber.engine.scope.TestCaseScope;
 import cucumber.api.Pending;
 import gherkin.AstBuilder;
 import gherkin.Parser;
@@ -34,7 +35,9 @@ import gherkin.pickles.Compiler;
 import io.cucumber.stepexpression.StepExpressionFactory;
 import io.cucumber.stepexpression.TypeRegistry;
 import io.qameta.allure.AllureLifecycle;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -43,6 +46,8 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import static com.griddynamics.qa.sprimber.engine.scope.TestCaseScope.TEST_CASE_SCOPE_NAME;
 
 /**
  * @author fparamonov
@@ -84,6 +89,15 @@ public class SprimberBeans {
         typeRegistry.dataTableTypeRegistry().setDefaultDataTableEntryTransformer(jacksonDataTableTransformer);
         typeRegistry.dataTableTypeRegistry().setDefaultDataTableCellTransformer(jacksonDataTableTransformer);
         return typeRegistry;
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "sprimber.configuration.custom.scopes.enable", matchIfMissing = true)
+    public static BeanFactoryPostProcessor beanFactoryPostProcessor() {
+        return beanFactory -> {
+            TestCaseScope testCaseScope = new TestCaseScope();
+            beanFactory.registerScope(TEST_CASE_SCOPE_NAME, testCaseScope);
+        };
     }
 
     @Bean

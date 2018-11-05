@@ -58,6 +58,13 @@ public class TestCase {
      */
     private String description;
 
+    /**
+     * Each scenario tagged with unique id for current execution
+     * The value can be tracked by core of Sprimber but initialization must happen
+     * at the bridge implementation side.
+     */
+    private String runtimeId;
+
 
     public List<ActionDefinition> getBeforeActions() {
         return beforeActions;
@@ -97,5 +104,13 @@ public class TestCase {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getRuntimeId() {
+        return runtimeId;
+    }
+
+    public void setRuntimeId(String runtimeId) {
+        this.runtimeId = runtimeId;
     }
 }
