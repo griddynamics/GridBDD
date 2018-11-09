@@ -33,6 +33,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
+import java.util.Arrays;
+
 /**
  * This class is actual executor for each action inside of test case such as hooks, steps etc.
  *
@@ -65,6 +67,7 @@ public class TestCaseActionsExecutor {
             ReflectionUtils.invokeMethod(testStep.getStepAction().getMethod(), targetObject, testStep.getStepArguments());
             stepResult = ExecutionResult.PASSED;
         } catch (Throwable throwable) {
+            LOGGER.trace(Arrays.toString(throwable.getStackTrace()));
             LOGGER.error(throwable.getLocalizedMessage());
             stepResult = errorMapper.parseThrowable(throwable);
         }
