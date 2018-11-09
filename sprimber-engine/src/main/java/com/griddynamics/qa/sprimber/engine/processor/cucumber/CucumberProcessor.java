@@ -178,7 +178,7 @@ public class CucumberProcessor implements ResourceProcessor {
                 .filter(definition -> Objects.nonNull(definition.getActionText()))
                 .map(definition -> buildPairFromDefinitionAndStep(definition, pickleStep))
                 .filter(pair -> Objects.nonNull(pair.getArguments()))
-                .findFirst().orElseThrow(() -> new RuntimeException("Step not found!"));
+                .findFirst().orElseThrow(() -> new StepNotFoundException(pickleStep));
         // TODO: 09/06/2018 Need to handle case when step not found and handle case when more then one steps found
     }
 
