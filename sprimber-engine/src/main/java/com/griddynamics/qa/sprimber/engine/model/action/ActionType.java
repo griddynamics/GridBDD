@@ -28,5 +28,5 @@ package com.griddynamics.qa.sprimber.engine.model.action;
  * @author fparamonov
  */
 public enum ActionType {
-    Before, BeforeFeature, BeforeScenario, BeforeStep, Given, When, Then, AfterStep, AfterScenario, AfterFeature, After
+    Before, Given, When, Then, After
 }

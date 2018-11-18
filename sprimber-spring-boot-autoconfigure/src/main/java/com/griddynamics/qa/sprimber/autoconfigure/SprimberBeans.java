@@ -24,6 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
+import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
 import com.griddynamics.qa.sprimber.engine.scope.TestCaseScope;
 import com.griddynamics.qa.sprimber.lifecycle.TestCaseSummaryPrinter;
@@ -36,6 +37,7 @@ import gherkin.pickles.Compiler;
 import io.cucumber.stepexpression.StepExpressionFactory;
 import io.cucumber.stepexpression.TypeRegistry;
 import io.qameta.allure.AllureLifecycle;
+import io.qameta.allure.model.Status;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -44,9 +46,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.lang.annotation.Annotation;
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 import static com.griddynamics.qa.sprimber.engine.scope.TestCaseScope.TEST_CASE_SCOPE_NAME;
 
@@ -114,6 +114,18 @@ public class SprimberBeans {
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    public Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping() {
+        HashMap<ExecutionResult.Status, Status> statusMapping = new HashMap<>();
+        statusMapping.put(ExecutionResult.Status.PASSED, Status.PASSED);
+        statusMapping.put(ExecutionResult.Status.SKIPPED, Status.SKIPPED);
+        statusMapping.put(ExecutionResult.Status.FAILED, Status.FAILED);
+        statusMapping.put(ExecutionResult.Status.PENDING, Status.BROKEN);
+        statusMapping.put(ExecutionResult.Status.BROKEN, Status.BROKEN);
+        return statusMapping;
+    }
+
+    @Bean
     public List<String> skippedExceptionNames() {
         List<String> skippedExceptions = new ArrayList<>();
         skippedExceptions.add("org.junit.AssumptionViolatedException");
@@ -124,9 +136,9 @@ public class SprimberBeans {
 
     @Bean
     public List<String> failedExceptionNames() {
-        List<String> skippedExceptions = new ArrayList<>();
-        skippedExceptions.add("java.lang.AssertionError");
-        return skippedExceptions;
+        List<String> failedExceptions = new ArrayList<>();
+        failedExceptions.add("java.lang.AssertionError");
+        return failedExceptions;
     }
 
     @Bean

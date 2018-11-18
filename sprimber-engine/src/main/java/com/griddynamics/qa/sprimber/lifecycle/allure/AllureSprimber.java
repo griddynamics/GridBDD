@@ -49,7 +49,6 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -64,21 +63,17 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class AllureSprimber {
 
     private static final int DEFAULT_AWAIT_TERMINATION_SECONDS = 5;
-    private final Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping = new HashMap<ExecutionResult.Status, Status>() {{
-        put(ExecutionResult.Status.PASSED, Status.PASSED);
-        put(ExecutionResult.Status.SKIPPED, Status.SKIPPED);
-        put(ExecutionResult.Status.FAILED, Status.FAILED);
-        put(ExecutionResult.Status.PENDING, Status.BROKEN);
-        put(ExecutionResult.Status.BROKEN, Status.BROKEN);
-    }};
+    private final Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping;
 
     private final Clock clock;
     private final AllureLifecycle lifecycle;
     private ThreadPoolTaskExecutor taskExecutor;
     private ThreadLocal<String> testCaseRuntimeId = new ThreadLocal<>();
 
-    public AllureSprimber(Clock clock,
+    public AllureSprimber(Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping,
+                          Clock clock,
                           AllureLifecycle lifecycle) {
+        this.allureToSprimberStatusMapping = allureToSprimberStatusMapping;
         this.clock = clock;
         this.lifecycle = lifecycle;
         taskExecutor = new ThreadPoolTaskExecutor();

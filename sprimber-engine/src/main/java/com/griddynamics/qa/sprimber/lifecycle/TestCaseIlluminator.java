@@ -90,11 +90,13 @@ public class TestCaseIlluminator {
 
     @EventListener
     public void illuminateTestHookStart(TestHookStartedEvent startEvent) {
-        LOGGER.debug("Test hook of type {} started", startEvent.getHookDefinition().getActionType());
+        LOGGER.debug("Test hook of type {} and scope {} started",
+                startEvent.getHookDefinition().getActionType(), startEvent.getHookDefinition().getActionScope());
     }
 
     @EventListener
     public void illuminateTestHookFinish(TestHookFinishedEvent finishEvent) {
-        LOGGER.debug("Test hook of type {} finished", finishEvent.getHookDefinition().getActionType());
+        LOGGER.debug("Test hook of type {} and scope {} finished",
+                finishEvent.getHookDefinition().getActionType(), finishEvent.getHookDefinition().getActionScope());
     }
 }

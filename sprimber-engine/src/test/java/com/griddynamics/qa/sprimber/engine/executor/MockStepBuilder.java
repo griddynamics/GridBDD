@@ -20,9 +20,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 $Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
-*/
+ */
 
-package com.griddynamics.qa.sprimber.engine.model.testcase;
+package com.griddynamics.qa.sprimber.engine.executor;
 
-public interface Invokable {
+import com.griddynamics.qa.sprimber.engine.model.TestStep;
+
+/**
+ * @author fparamonov
+ */
+public class MockStepBuilder {
+
+    public static TestStep mockGivenStep() {
+        TestStep testStep = new TestStep();
+        testStep.setStepAction(MockActionBuilder.mockGivenAction());
+        return testStep;
+    }
+
+    public static TestStep mockWhenStep() {
+        TestStep testStep = new TestStep();
+        testStep.setStepAction(MockActionBuilder.mockWhenAction());
+        return testStep;
+    }
 }

@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.loader;
 
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
+import com.griddynamics.qa.sprimber.engine.model.action.ActionScope;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionType;
 import com.griddynamics.qa.sprimber.engine.model.action.Actions;
 import com.griddynamics.qa.sprimber.engine.model.action.details.CucumberHookDetails;
@@ -59,11 +60,22 @@ public class CucumberDefinitionLoader implements ActionDefinitionLoader {
             new HashMap<Class<? extends Annotation>, ActionType>() {{
                 put(Before.class, ActionType.Before);
                 put(After.class, ActionType.After);
-                put(BeforeStep.class, ActionType.BeforeStep);
-                put(AfterStep.class, ActionType.AfterStep);
+                put(BeforeStep.class, ActionType.Before);
+                put(AfterStep.class, ActionType.After);
                 put(Given.class, ActionType.Given);
                 put(When.class, ActionType.When);
                 put(Then.class, ActionType.Then);
+            }};
+
+    private final Map<Class<? extends Annotation>, ActionScope> scopesByActionAnnotation =
+            new HashMap<Class<? extends Annotation>, ActionScope>() {{
+                put(Before.class, ActionScope.SCENARIO);
+                put(After.class, ActionScope.SCENARIO);
+                put(BeforeStep.class, ActionScope.STEP);
+                put(AfterStep.class, ActionScope.STEP);
+                put(Given.class, ActionScope.STEP);
+                put(When.class, ActionScope.STEP);
+                put(Then.class, ActionScope.STEP);
             }};
 
     private final List<Class<? extends Annotation>> hookAnnotations =
@@ -78,9 +90,13 @@ public class CucumberDefinitionLoader implements ActionDefinitionLoader {
     }
 
     public List<ActionDefinition> load() {
-        return applicationContext.getBeansWithAnnotation(Actions.class).values().stream().flatMap(actionBean ->
-                Arrays.stream(actionBean.getClass().getDeclaredMethods()).map(this::processMethod)
-        ).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
+        return applicationContext.getBeansWithAnnotation(Actions.class).values().stream()
+                .flatMap(actionBean ->
+                        Arrays.stream(actionBean.getClass().getDeclaredMethods())
+                                .map(this::processMethod))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
     }
 
     private Optional<ActionDefinition> processMethod(Method method) {
@@ -94,6 +110,7 @@ public class CucumberDefinitionLoader implements ActionDefinitionLoader {
         ActionDefinition definition = new ActionDefinition();
         definition.setMethod(method);
         definition.setActionType(typesByActionAnnotation.get(annotation.annotationType()));
+        definition.setActionScope(scopesByActionAnnotation.get(annotation.annotationType()));
         if (hookAnnotations.contains(annotation.annotationType())) {
             resolveHookAnnotation(annotation, definition);
         }
