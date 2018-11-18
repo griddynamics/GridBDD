@@ -31,7 +31,7 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.*;
+import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status;
 
 /**
  * @author fparamonov
@@ -40,24 +40,29 @@ import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.*;
 public class ErrorMapper {
 
     private final List<String> skippedExceptionNames;
+    private final List<String> failedExceptionNames;
     private final List<Class<? extends Annotation>> pendingExceptionAnnotations;
 
     public ErrorMapper(List<String> skippedExceptionNames,
-                       List<Class<? extends Annotation>> pendingExceptionAnnotations) {
+                       List<String> failedExceptionNames, List<Class<? extends Annotation>> pendingExceptionAnnotations) {
         this.skippedExceptionNames = skippedExceptionNames;
+        this.failedExceptionNames = failedExceptionNames;
         this.pendingExceptionAnnotations = pendingExceptionAnnotations;
     }
 
     public ExecutionResult parseThrowable(Throwable throwable) {
 
         if (isPendingException(throwable)) {
-            return PENDING;
+            return new ExecutionResult(Status.PENDING, throwable);
         }
         if (Arrays.binarySearch(skippedExceptionNames.toArray(), throwable.getClass().getName()) >= 0) {
-            return SKIPPED;
+            return new ExecutionResult(Status.SKIPPED, throwable);
+        }
+        if (Arrays.binarySearch(failedExceptionNames.toArray(), throwable.getClass().getName()) >= 0) {
+            return new ExecutionResult(Status.FAILED, throwable);
         }
         // TODO: 15/06/2018 to handle here situations where step not found or found more then one
-        return FAILED;
+        return new ExecutionResult(Status.BROKEN, throwable);
 
     }
 

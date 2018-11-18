@@ -99,6 +99,12 @@ public class BaseEchoSteps {
         Assertions.assertThat("true").as("True should never be false").isEqualTo("false");
     }
 
+    @Then("every time action with exception")
+    public void thenException() {
+        LOGGER.info("Hey, I'm every time failed action");
+        throw new RuntimeException("Everything is broken");
+    }
+
     @AfterStep
     public void afterStep() {
         LOGGER.info("Hey, I'm afterStep action");

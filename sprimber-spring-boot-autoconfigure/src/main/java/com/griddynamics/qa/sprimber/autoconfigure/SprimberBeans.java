@@ -116,6 +116,13 @@ public class SprimberBeans {
     }
 
     @Bean
+    public List<String> failedExceptionNames() {
+        List<String> skippedExceptions = new ArrayList<>();
+        skippedExceptions.add("java.lang.AssertionError");
+        return skippedExceptions;
+    }
+
+    @Bean
     public List<Class<? extends Annotation>> pendingExceptionAnnotations() {
         List<Class<? extends Annotation>> pendingAnnotations = new ArrayList<>();
         pendingAnnotations.add(Pending.class);

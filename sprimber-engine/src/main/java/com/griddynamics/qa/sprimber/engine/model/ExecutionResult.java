@@ -24,9 +24,54 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.model;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Optional;
+
 /**
  * @author fparamonov
  */
-public enum ExecutionResult {
-    PASSED, SKIPPED, PENDING, FAILED
+public class ExecutionResult {
+
+    private final Status status;
+    private final Optional<Throwable> optionalError;
+
+    public ExecutionResult(Status status) {
+        this.status = status;
+        this.optionalError = Optional.empty();
+    }
+
+    public ExecutionResult(Status status, Throwable error) {
+        this.status = status;
+        this.optionalError = Optional.of(error);
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public Optional<Throwable> getOptionalError() {
+        return optionalError;
+    }
+
+    /**
+     * Execute raw {@code printStackTrace} if there is unknown failures,
+     * in other words if the status is BROKEN
+     */
+    public void conditionallyPrintStacktrace() {
+        if (status.equals(Status.BROKEN)) {
+            optionalError.ifPresent(Throwable::printStackTrace);
+        }
+    }
+
+    public String getErrorMessage() {
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        optionalError.ifPresent(error -> error.printStackTrace(printWriter));
+        return stringWriter.getBuffer().toString();
+    }
+
+    public enum Status {
+        PASSED, SKIPPED, PENDING, FAILED, BROKEN
+    }
 }

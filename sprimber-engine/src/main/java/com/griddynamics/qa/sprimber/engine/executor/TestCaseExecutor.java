@@ -33,6 +33,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CountDownLatch;
 
+import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.PASSED;
 import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_EXECUTOR_NAME;
 
 /**
@@ -60,20 +61,31 @@ public class TestCaseExecutor {
 
     @Async(SPRIMBER_EXECUTOR_NAME)
     public ExecutionResult execute(TestCase testCase) {
+        ExecutionResult testCaseResult = new ExecutionResult(PASSED);
         // TODO: 10/06/2018 make countdown latch handling more attractive
         LOGGER.debug("Remaining TC count {}", countDownLatch.getCount());
-        boolean isBeforeStepsPassed = testCase.getBeforeActions().stream()
-                .map(actionsExecutor::executeHookAction)
-                .allMatch(executionResult -> executionResult.equals(ExecutionResult.PASSED));
-        boolean isStepsPassed = testCase.getSteps().stream()
-                .map(actionsExecutor::executeStep)
-                .allMatch(executionResult -> executionResult.equals(ExecutionResult.PASSED));
-        boolean isAfterStepsPassed = testCase.getAfterActions().stream()
-                .map(actionsExecutor::executeHookAction)
-                .allMatch(executionResult -> executionResult.equals(ExecutionResult.PASSED));
+
+        actionsExecutor.cleanStageResults();
+        testCase.getBeforeActions().forEach(actionsExecutor::executeHookAction);
+        if (actionsExecutor.currentFailures().isEmpty()) {
+            actionsExecutor.cleanStageResults();
+            // TODO: 11/15/18 implement graceful feedback mechanism/backpressure to producer
+            testCase.getSteps().stream()
+                    .map(actionsExecutor::executeStep)
+                    .allMatch(executionResult -> executionResult.getStatus().equals(PASSED));
+        } else {
+            testCaseResult = actionsExecutor.currentFailures().get(0);
+        }
+        if (!actionsExecutor.currentFailures().isEmpty()) {
+            testCaseResult = actionsExecutor.currentFailures().get(0);
+        }
+        actionsExecutor.cleanStageResults();
+        testCase.getAfterActions().forEach(actionsExecutor::executeHookAction);
+        if (!actionsExecutor.currentFailures().isEmpty()) {
+            testCaseResult = actionsExecutor.currentFailures().get(0);
+        }
         countDownLatch.countDown();
         LOGGER.debug("Remaining TC count {}", countDownLatch.getCount());
-        return isBeforeStepsPassed && isStepsPassed && isAfterStepsPassed ?
-                ExecutionResult.PASSED : ExecutionResult.FAILED;
+        return testCaseResult;
     }
 }

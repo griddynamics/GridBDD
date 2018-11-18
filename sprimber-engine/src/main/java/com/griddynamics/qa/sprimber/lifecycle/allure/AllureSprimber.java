@@ -36,8 +36,10 @@ import com.griddynamics.qa.sprimber.lifecycle.model.executor.teststep.TestStepFi
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.teststep.TestStepStartedEvent;
 import io.qameta.allure.AllureLifecycle;
 import io.qameta.allure.model.Status;
+import io.qameta.allure.model.StatusDetails;
 import io.qameta.allure.model.StepResult;
 import io.qameta.allure.model.TestResult;
+import io.qameta.allure.util.ResultsUtils;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -49,10 +51,10 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -62,11 +64,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class AllureSprimber {
 
     private static final int DEFAULT_AWAIT_TERMINATION_SECONDS = 5;
-    private final Map<ExecutionResult, Status> allureToSprimberStatusMapping = new HashMap<ExecutionResult, Status>() {{
-        put(PASSED, Status.PASSED);
-        put(SKIPPED, Status.SKIPPED);
-        put(FAILED, Status.FAILED);
-        put(PENDING, Status.BROKEN);
+    private final Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping = new HashMap<ExecutionResult.Status, Status>() {{
+        put(ExecutionResult.Status.PASSED, Status.PASSED);
+        put(ExecutionResult.Status.SKIPPED, Status.SKIPPED);
+        put(ExecutionResult.Status.FAILED, Status.FAILED);
+        put(ExecutionResult.Status.PENDING, Status.BROKEN);
+        put(ExecutionResult.Status.BROKEN, Status.BROKEN);
     }};
 
     private final Clock clock;
@@ -108,9 +111,12 @@ public class AllureSprimber {
 
     @EventListener
     public void testCaseFinished(TestCaseFinishedEvent finishedEvent) throws ExecutionException, InterruptedException, TimeoutException {
+        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(finishedEvent.getExecutionResult().getOptionalError().orElse(null));
         String runtimeUuid = testCaseRuntimeId.get();
-        lifecycle.updateTestCase(runtimeUuid, scenarioResult ->
-                scenarioResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult())));
+        lifecycle.updateTestCase(runtimeUuid, scenarioResult -> {
+            scenarioResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult().getStatus()));
+            statusDetails.ifPresent(scenarioResult::withStatusDetails);
+        });
         lifecycle.stopTestCase(runtimeUuid);
         taskExecutor.execute(() -> lifecycle.writeTestCase(runtimeUuid));
     }
@@ -125,8 +131,13 @@ public class AllureSprimber {
 
     @EventListener
     public void testHookFinished(TestHookFinishedEvent finishedEvent) {
+        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(finishedEvent.getExecutionResult().getOptionalError().orElse(null));
         lifecycle.updateStep(getHookId(finishedEvent.getHookDefinition()),
-                stepResult -> stepResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult())));
+                stepResult -> {
+                    stepResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult().getStatus()));
+                    statusDetails.ifPresent(stepResult::withStatusDetails);
+                }
+        );
         lifecycle.stopStep(getHookId(finishedEvent.getHookDefinition()));
     }
 
@@ -140,8 +151,13 @@ public class AllureSprimber {
 
     @EventListener
     public void testStepFinished(TestStepFinishedEvent finishedEvent) {
+        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(finishedEvent.getExecutionResult().getOptionalError().orElse(null));
         lifecycle.updateStep(getStepId(finishedEvent.getTestStep()),
-                stepResult -> stepResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult())));
+                stepResult -> {
+                    stepResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult().getStatus()));
+                    statusDetails.ifPresent(stepResult::withStatusDetails);
+                }
+        );
         lifecycle.stopStep(getStepId(finishedEvent.getTestStep()));
     }
 
