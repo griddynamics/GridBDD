@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.FAILED;
 import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.PASSED;
 
 /**
@@ -73,20 +72,8 @@ public class TestCaseActionsExecutor {
                 .collect(Collectors.toList());
     }
 
-    // TODO: 10/06/2018 to reformat this method to handle exception and pass it to report
-    // TODO: 10/06/2018 move hook action to separate class since AOP cannot work correctly with this
-    // TODO: 11/15/18 Add exception handling to before/after step hooks
-    public ExecutionResult executeStep(TestStep testStep) {
-        ExecutionResult stepResult;
-        boolean isBeforeStepsPassed = testStep.getBeforeStepActions().stream()
-                .map(this::executeHookAction)
-                .allMatch(actionExecutionResult -> actionExecutionResult.getStatus().equals(PASSED));
-        stepResult = executeMethod(testStep.getStepAction().getMethod(), testStep.getStepArguments());
-        boolean isAfterStepsPassed = testStep.getAfterStepActions().stream()
-                .map(this::executeHookAction)
-                .allMatch(actionExecutionResult -> actionExecutionResult.getStatus().equals(PASSED));
-        return isBeforeStepsPassed && isAfterStepsPassed ?
-                stepResult.getStatus().equals(PASSED) ? new ExecutionResult(PASSED) : stepResult : new ExecutionResult(FAILED);
+    public ExecutionResult executeStepAction(TestStep testStep) {
+        return executeMethod(testStep.getStepAction().getMethod(), testStep.getStepArguments());
     }
 
     public ExecutionResult executeHookAction(ActionDefinition actionDefinition) {

@@ -27,6 +27,7 @@ package com.griddynamics.qa.sprimber.engine.model.action;
 import com.griddynamics.qa.sprimber.engine.model.action.details.MetaInfo;
 
 import java.lang.reflect.Method;
+import java.util.Optional;
 
 /**
  * One of the central classes. It is a main holder for step text and Java methods beside them.
@@ -37,13 +38,14 @@ import java.lang.reflect.Method;
  */
 public class ActionDefinition {
 
-    private String actionText;     // TODO: 15/06/2018 make this field optional
+    private String actionText;
     private ActionType actionType;
+    private ActionScope actionScope;
     private MetaInfo metaInfo;
     private Method method;
 
-    public String getActionText() {
-        return actionText;
+    public Optional<String> getActionText() {
+        return Optional.ofNullable(actionText);
     }
 
     public void setActionText(String actionText) {
@@ -72,5 +74,13 @@ public class ActionDefinition {
 
     public void setMethod(Method method) {
         this.method = method;
+    }
+
+    public ActionScope getActionScope() {
+        return actionScope;
+    }
+
+    public void setActionScope(ActionScope actionScope) {
+        this.actionScope = actionScope;
     }
 }

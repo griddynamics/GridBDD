@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.engine.executor;
 
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
+import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -65,22 +66,35 @@ public class TestCaseExecutor {
         // TODO: 10/06/2018 make countdown latch handling more attractive
         LOGGER.debug("Remaining TC count {}", countDownLatch.getCount());
 
+        // TODO: 11/17/18 Make stage management more graceful
         actionsExecutor.cleanStageResults();
-        testCase.getBeforeActions().forEach(actionsExecutor::executeHookAction);
+        testCase.getBeforeScenarioActions().forEach(actionsExecutor::executeHookAction);
         if (actionsExecutor.currentFailures().isEmpty()) {
-            actionsExecutor.cleanStageResults();
-            // TODO: 11/15/18 implement graceful feedback mechanism/backpressure to producer
-            testCase.getSteps().stream()
-                    .map(actionsExecutor::executeStep)
-                    .allMatch(executionResult -> executionResult.getStatus().equals(PASSED));
+            for (TestStep testStep : testCase.getSteps()) {
+                actionsExecutor.cleanStageResults();
+                testCase.getBeforeStepActions().forEach(actionsExecutor::executeHookAction);
+                if (!actionsExecutor.currentFailures().isEmpty()) {
+                    testCaseResult = actionsExecutor.currentFailures().get(0);
+                    break;
+                }
+                actionsExecutor.cleanStageResults();
+                actionsExecutor.executeStepAction(testStep);
+                if (!actionsExecutor.currentFailures().isEmpty()) {
+                    testCaseResult = actionsExecutor.currentFailures().get(0);
+                    break;
+                }
+                actionsExecutor.cleanStageResults();
+                testCase.getAfterStepActions().forEach(actionsExecutor::executeHookAction);
+                if (!actionsExecutor.currentFailures().isEmpty()) {
+                    testCaseResult = actionsExecutor.currentFailures().get(0);
+                    break;
+                }
+            }
         } else {
             testCaseResult = actionsExecutor.currentFailures().get(0);
         }
-        if (!actionsExecutor.currentFailures().isEmpty()) {
-            testCaseResult = actionsExecutor.currentFailures().get(0);
-        }
         actionsExecutor.cleanStageResults();
-        testCase.getAfterActions().forEach(actionsExecutor::executeHookAction);
+        testCase.getAfterScenarioActions().forEach(actionsExecutor::executeHookAction);
         if (!actionsExecutor.currentFailures().isEmpty()) {
             testCaseResult = actionsExecutor.currentFailures().get(0);
         }

@@ -25,9 +25,12 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.model;
 
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
+import com.griddynamics.qa.sprimber.engine.model.action.ActionScope;
+import com.griddynamics.qa.sprimber.engine.model.action.ActionType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Central abstraction on top of BDD scenario. This one class that hold all information that related to each scenario
@@ -37,8 +40,7 @@ import java.util.List;
  */
 public class TestCase {
 
-    private List<ActionDefinition> beforeActions = new ArrayList<>();
-    private List<ActionDefinition> afterActions = new ArrayList<>();
+    private List<ActionDefinition> allHooks = new ArrayList<>();
     private List<TestStep> steps = new ArrayList<>();
     // TODO: 12/06/2018 If this changes not enough need to add more meta details
 
@@ -66,12 +68,36 @@ public class TestCase {
     private String runtimeId;
 
 
-    public List<ActionDefinition> getBeforeActions() {
-        return beforeActions;
+    public List<ActionDefinition> getBeforeScenarioActions() {
+        return allHooks.stream()
+                .filter(definition ->
+                        ActionScope.SCENARIO.equals(definition.getActionScope()) && ActionType.Before.equals(definition.getActionType()))
+                .collect(Collectors.toList());
     }
 
-    public List<ActionDefinition> getAfterActions() {
-        return afterActions;
+    public List<ActionDefinition> getBeforeStepActions() {
+        return allHooks.stream()
+                .filter(definition ->
+                        ActionScope.STEP.equals(definition.getActionScope()) && ActionType.Before.equals(definition.getActionType()))
+                .collect(Collectors.toList());
+    }
+
+    public List<ActionDefinition> getAfterStepActions() {
+        return allHooks.stream()
+                .filter(definition ->
+                        ActionScope.STEP.equals(definition.getActionScope()) && ActionType.After.equals(definition.getActionType()))
+                .collect(Collectors.toList());
+    }
+
+    public List<ActionDefinition> getAfterScenarioActions() {
+        return allHooks.stream()
+                .filter(definition ->
+                        ActionScope.SCENARIO.equals(definition.getActionScope()) && ActionType.After.equals(definition.getActionType()))
+                .collect(Collectors.toList());
+    }
+
+    public List<ActionDefinition> getAllHooks() {
+        return allHooks;
     }
 
     public List<TestStep> getSteps() {

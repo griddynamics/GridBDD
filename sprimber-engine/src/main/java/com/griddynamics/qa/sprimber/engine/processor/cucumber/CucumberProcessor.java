@@ -27,6 +27,7 @@ package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
+import com.griddynamics.qa.sprimber.engine.model.action.ActionScope;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionType;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
 import com.griddynamics.qa.sprimber.engine.model.action.details.CucumberHookDetails;
@@ -110,16 +111,14 @@ public class CucumberProcessor implements ResourceProcessor {
     private TestCase processPickle(TestCaseMetaInfo testCaseMetaInfo) {
         TestCase testCase = new TestCase();
         Pickle pickle = testCaseMetaInfo.getPickle();
-        testCase.getBeforeActions().addAll(
-                findDefinitionsByType(ActionType.Before).stream()
+        testCase.getAllHooks().addAll(
+                actionsContainer.getDefinitions().stream()
+                        .filter(testCaseScopePredicate())
+                        .filter(testCaseHookTypePredicate())
                         .filter(hookTagPredicate(pickle))
-                        .collect(Collectors.toList()));
+                        .collect(Collectors.toList())
+        );
         testCase.getSteps().addAll(pickle.getSteps().stream().map(this::processPickleStep).collect(Collectors.toList()));
-        testCase.getAfterActions().addAll(
-                findDefinitionsByType(ActionType.After).stream()
-                        .filter(hookTagPredicate(pickle))
-                        .collect(Collectors.toList()));
-
         testCase.setName(pickle.getName());
         testCase.setParentName(testCaseMetaInfo.getFeature().getName());
         testCase.setDescription(testCaseMetaInfo.getFeature().getDescription());
@@ -131,12 +130,9 @@ public class CucumberProcessor implements ResourceProcessor {
     private TestStep processPickleStep(PickleStep pickleStep) {
         TestStep testStep = new TestStep();
         testStep.setActualText(pickleStep.getText());
-        testStep.getBeforeStepActions().addAll(findDefinitionsByType(ActionType.BeforeStep));
-
         ActionDefinitionAndArguments pair = findDefinitionAndArgumentsByActualStep(pickleStep);
         testStep.setStepAction(pair.getDefinition());
         testStep.setStepArguments(processArguments(pair));
-        testStep.getAfterStepActions().addAll(findDefinitionsByType(ActionType.AfterStep));
         return testStep;
     }
 
@@ -175,7 +171,7 @@ public class CucumberProcessor implements ResourceProcessor {
 
     private ActionDefinitionAndArguments findDefinitionAndArgumentsByActualStep(PickleStep pickleStep) {
         return actionsContainer.getDefinitions().stream()
-                .filter(definition -> Objects.nonNull(definition.getActionText()))
+                .filter(definition -> definition.getActionText().isPresent())
                 .map(definition -> buildPairFromDefinitionAndStep(definition, pickleStep))
                 .filter(pair -> Objects.nonNull(pair.getArguments()))
                 .findFirst().orElseThrow(() -> new StepNotFoundException(pickleStep));
@@ -183,7 +179,7 @@ public class CucumberProcessor implements ResourceProcessor {
     }
 
     private ActionDefinitionAndArguments buildPairFromDefinitionAndStep(ActionDefinition definition, PickleStep pickleStep) {
-        StepExpression stepExpression = stepExpressionFactory.createExpression(definition.getActionText());
+        StepExpression stepExpression = stepExpressionFactory.createExpression(definition.getActionText().orElse(""));
         ExpressionArgumentMatcher argumentMatcher = new ExpressionArgumentMatcher(stepExpression);
         ActionDefinitionAndArguments actionDefinitionAndArguments = new ActionDefinitionAndArguments();
         actionDefinitionAndArguments.setDefinition(definition);
@@ -191,10 +187,15 @@ public class CucumberProcessor implements ResourceProcessor {
         return actionDefinitionAndArguments;
     }
 
-    private List<ActionDefinition> findDefinitionsByType(ActionType actionType) {
-        return actionsContainer.getDefinitions().stream()
-                .filter(definition -> actionType.equals(definition.getActionType()))
-                .collect(Collectors.toList());
+    private Predicate<ActionDefinition> testCaseScopePredicate() {
+        return actionDefinition ->
+                ActionScope.SCENARIO.equals(actionDefinition.getActionScope()) || ActionScope.STEP.equals(actionDefinition.getActionScope());
+    }
+
+    private Predicate<ActionDefinition> testCaseHookTypePredicate() {
+        return actionDefinition ->
+                ActionType.Before.equals(actionDefinition.getActionType()) ||
+                        ActionType.After.equals(actionDefinition.getActionType());
     }
 
     private Predicate<TestCaseMetaInfo> testCaseTagPredicate() {

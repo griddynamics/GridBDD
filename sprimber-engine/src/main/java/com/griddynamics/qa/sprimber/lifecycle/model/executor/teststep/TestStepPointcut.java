@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TestStepPointcut {
 
-    @Pointcut("execution(public * com.griddynamics.qa.sprimber.engine.executor.TestCaseActionsExecutor.executeStep(..))")
+    @Pointcut("execution(public * com.griddynamics.qa.sprimber.engine.executor.TestCaseActionsExecutor.executeStepAction(..))")
     public void actionExecutorMethodExecute() {
     }
 

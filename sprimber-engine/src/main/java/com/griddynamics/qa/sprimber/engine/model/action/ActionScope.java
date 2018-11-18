@@ -17,50 +17,16 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine.model;
-
-import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
+package com.griddynamics.qa.sprimber.engine.model.action;
 
 /**
- * This class will represent actual steps in scenario. Main difference between steep and hook, that first one should
- * handle arguments that should be passed for method invocation, rather then hooks will be represented directly by
- * action definitions, since methods should not accept any arguments
- *
  * @author fparamonov
  */
-public class TestStep {
-
-    private ActionDefinition stepAction;
-    // TODO: 08/06/2018 rework this to appropriate type
-    private Object[] stepArguments;
-    private String actualText;
-
-    public ActionDefinition getStepAction() {
-        return stepAction;
-    }
-
-    public void setStepAction(ActionDefinition stepAction) {
-        this.stepAction = stepAction;
-    }
-
-    public Object[] getStepArguments() {
-        return stepArguments;
-    }
-
-    public void setStepArguments(Object[] stepArguments) {
-        this.stepArguments = stepArguments;
-    }
-
-    public String getActualText() {
-        return actualText;
-    }
-
-    public void setActualText(String actualText) {
-        this.actualText = actualText;
-    }
+public enum ActionScope {
+    GLOBAL, STORY, SCENARIO, STEP
 }
