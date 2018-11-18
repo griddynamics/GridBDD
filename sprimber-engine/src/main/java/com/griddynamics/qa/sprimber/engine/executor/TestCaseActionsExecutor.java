@@ -27,13 +27,19 @@ package com.griddynamics.qa.sprimber.engine.executor;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
+import com.griddynamics.qa.sprimber.engine.scope.annotation.ScenarioComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
-import java.util.Arrays;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.FAILED;
+import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.PASSED;
 
 /**
  * This class is actual executor for each action inside of test case such as hooks, steps etc.
@@ -41,7 +47,7 @@ import java.util.Arrays;
  * @author fparamonov
  */
 
-@Component
+@ScenarioComponent
 public class TestCaseActionsExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestCaseActionsExecutor.class);
@@ -49,43 +55,59 @@ public class TestCaseActionsExecutor {
     private final ErrorMapper errorMapper;
     private final ApplicationContext applicationContext;
 
+    private List<ExecutionResult> currentStageResults = new ArrayList<>();
+
     public TestCaseActionsExecutor(ErrorMapper errorMapper,
                                    ApplicationContext applicationContext) {
         this.errorMapper = errorMapper;
         this.applicationContext = applicationContext;
     }
 
+    public void cleanStageResults() {
+        currentStageResults.clear();
+    }
+
+    public List<ExecutionResult> currentFailures() {
+        return currentStageResults.stream()
+                .filter(executionResult -> !executionResult.getStatus().equals(PASSED))
+                .collect(Collectors.toList());
+    }
+
     // TODO: 10/06/2018 to reformat this method to handle exception and pass it to report
     // TODO: 10/06/2018 move hook action to separate class since AOP cannot work correctly with this
+    // TODO: 11/15/18 Add exception handling to before/after step hooks
     public ExecutionResult executeStep(TestStep testStep) {
         ExecutionResult stepResult;
-        Object targetObject = applicationContext.getBean(testStep.getStepAction().getMethod().getDeclaringClass());
         boolean isBeforeStepsPassed = testStep.getBeforeStepActions().stream()
                 .map(this::executeHookAction)
-                .allMatch(actionExecutionResult -> actionExecutionResult.equals(ExecutionResult.PASSED));
-        try {
-            ReflectionUtils.invokeMethod(testStep.getStepAction().getMethod(), targetObject, testStep.getStepArguments());
-            stepResult = ExecutionResult.PASSED;
-        } catch (Throwable throwable) {
-            LOGGER.trace(Arrays.toString(throwable.getStackTrace()));
-            LOGGER.error(throwable.getLocalizedMessage());
-            stepResult = errorMapper.parseThrowable(throwable);
-        }
+                .allMatch(actionExecutionResult -> actionExecutionResult.getStatus().equals(PASSED));
+        stepResult = executeMethod(testStep.getStepAction().getMethod(), testStep.getStepArguments());
         boolean isAfterStepsPassed = testStep.getAfterStepActions().stream()
                 .map(this::executeHookAction)
-                .allMatch(actionExecutionResult -> actionExecutionResult.equals(ExecutionResult.PASSED));
+                .allMatch(actionExecutionResult -> actionExecutionResult.getStatus().equals(PASSED));
         return isBeforeStepsPassed && isAfterStepsPassed ?
-                stepResult.equals(ExecutionResult.PASSED) ? ExecutionResult.PASSED : stepResult : ExecutionResult.FAILED;
+                stepResult.getStatus().equals(PASSED) ? new ExecutionResult(PASSED) : stepResult : new ExecutionResult(FAILED);
     }
 
     public ExecutionResult executeHookAction(ActionDefinition actionDefinition) {
-        Object targetObject = applicationContext.getBean(actionDefinition.getMethod().getDeclaringClass());
+        return executeMethod(actionDefinition.getMethod(), new Object[0]);
+    }
+
+    public ExecutionResult executeMethod(Method method, Object[] args) {
+        Object targetObject = applicationContext.getBean(method.getDeclaringClass());
         try {
-            ReflectionUtils.invokeMethod(actionDefinition.getMethod(), targetObject);
-            return ExecutionResult.PASSED;
+            ReflectionUtils.invokeMethod(method, targetObject, args);
+            ExecutionResult result = new ExecutionResult(PASSED);
+            currentStageResults.add(result);
+            // TODO: 11/15/18 currently return back the result for compatibility with event listeners
+            return result;
         } catch (Throwable throwable) {
+            ExecutionResult result = errorMapper.parseThrowable(throwable);
+            result.conditionallyPrintStacktrace();
+            currentStageResults.add(result);
+            LOGGER.trace(result.getErrorMessage());
             LOGGER.error(throwable.getLocalizedMessage());
-            return errorMapper.parseThrowable(throwable);
+            return result;
         }
     }
 }

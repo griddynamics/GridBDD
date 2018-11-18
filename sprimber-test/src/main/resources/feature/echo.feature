@@ -44,3 +44,8 @@ Feature: This is a test feature for echo application
   Scenario: Scenario to check failed steps
     When some when action with param 'hi'
     Then every time failed action
+
+  @echo
+  Scenario: Scenario to check broken steps
+    When some when action with param 'hi'
+    Then every time action with exception
