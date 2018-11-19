@@ -114,7 +114,6 @@ public class SprimberBeans {
     }
 
     @Bean
-    @ConditionalOnMissingBean
     public Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping() {
         HashMap<ExecutionResult.Status, Status> statusMapping = new HashMap<>();
         statusMapping.put(ExecutionResult.Status.PASSED, Status.PASSED);
