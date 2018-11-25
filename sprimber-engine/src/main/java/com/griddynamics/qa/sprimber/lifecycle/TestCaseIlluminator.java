@@ -75,7 +75,7 @@ public class TestCaseIlluminator {
     @EventListener
     public void illuminateTestCaseFinish(TestCaseFinishedEvent finishEvent) {
         LOGGER.debug("Test case finished: '{}' with status {}",
-                finishEvent.getTestCase().getName(), finishEvent.getExecutionResult());
+                finishEvent.getTestCase().getName(), finishEvent.getExecutionResult().getStatus());
     }
 
     @EventListener
