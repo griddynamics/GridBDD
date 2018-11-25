@@ -7,7 +7,7 @@
     <groupId>com.griddynamics.qa</groupId>
     <artifactId>sprimber-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.5-SNAPSHOT</version>
 
     <name>Sprimber</name>
     <description>Spring BDD engine for popular frameworks</description>
