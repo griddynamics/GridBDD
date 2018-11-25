@@ -24,6 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.lifecycle;
 
+import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFinishedEvent;
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseStartedEvent;
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook.TestHookFinishedEvent;
@@ -34,9 +35,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.NamedThreadLocal;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
- * This is a helper class that able to print shor summary after each scenario to info log level
+ * This is a helper class that able to print short summary after each scenario to info log level
  * By default this bean not configured automatically,
  * use property {@code sprimber.configuration.summary.printer.enable} to enable it
  *
@@ -46,13 +48,14 @@ import java.util.Arrays;
 public class TestCaseSummaryPrinter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestCaseSummaryPrinter.class);
+    private static final String EMPTY_STRING = "";
     private ThreadLocal<StringBuilder> reportBuilder = new NamedThreadLocal<>("Testcase report builder");
 
     @EventListener
     public void illuminateTestCaseStart(TestCaseStartedEvent startEvent) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n\n");
-        stringBuilder.append(String.format("Test Case Started: %s", startEvent.getTestCase().getName()));
+        stringBuilder.append(String.format("Test Case Completed: %s", startEvent.getTestCase().getName()));
         reportBuilder.set(stringBuilder);
     }
 
@@ -71,14 +74,24 @@ public class TestCaseSummaryPrinter {
         stringBuilder.append(String.format("   %s", finishEvent.getTestStep().getStepAction().getActionType()));
         stringBuilder.append(String.format(" %s", finishEvent.getTestStep().getActualText()));
         stringBuilder.append(String.format(" %s", Arrays.toString(finishEvent.getTestStep().getStepArguments())));
-        stringBuilder.append(String.format(" (%s) ", finishEvent.getExecutionResult()));
+        stringBuilder.append(String.format(" (%s) ", finishEvent.getExecutionResult().getStatus()));
+        stringBuilder.append(String.format(" (%s) ", getExceptionMessageIfAny(finishEvent.getExecutionResult())));
     }
 
     @EventListener
     public void illuminateTestHookFinish(TestHookFinishedEvent finishEvent) {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
-        stringBuilder.append(String.format(" %s from:", finishEvent.getHookDefinition().getActionType()));
+        stringBuilder.append(String.format(" %s of scope", finishEvent.getHookDefinition().getActionType()));
+        stringBuilder.append(String.format(" %s from:", finishEvent.getHookDefinition().getActionScope()));
         stringBuilder.append(String.format(" %s", finishEvent.getHookDefinition().getMethod()));
+    }
+
+    private String getExceptionMessageIfAny(ExecutionResult executionResult) {
+        return executionResult.getOptionalError().map(this::buildExceptionMessage).orElse(EMPTY_STRING);
+    }
+
+    private String buildExceptionMessage(Throwable throwable) {
+        return Optional.ofNullable(throwable.getMessage()).orElse(throwable.getClass().getName());
     }
 }
