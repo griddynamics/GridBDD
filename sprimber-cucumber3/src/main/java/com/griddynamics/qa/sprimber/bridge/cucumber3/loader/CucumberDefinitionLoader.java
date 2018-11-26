@@ -22,14 +22,15 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine.loader;
+package com.griddynamics.qa.sprimber.bridge.cucumber3.loader;
 
+import com.griddynamics.qa.sprimber.engine.loader.ActionDefinitionLoader;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionScope;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionType;
 import com.griddynamics.qa.sprimber.engine.model.action.Actions;
-import com.griddynamics.qa.sprimber.engine.model.action.details.CucumberHookDetails;
-import com.griddynamics.qa.sprimber.engine.model.action.details.CucumberStepDetails;
+import com.griddynamics.qa.sprimber.bridge.cucumber3.model.details.CucumberHookDetails;
+import com.griddynamics.qa.sprimber.bridge.cucumber3.model.details.CucumberStepDetails;
 import cucumber.api.java.After;
 import cucumber.api.java.AfterStep;
 import cucumber.api.java.Before;

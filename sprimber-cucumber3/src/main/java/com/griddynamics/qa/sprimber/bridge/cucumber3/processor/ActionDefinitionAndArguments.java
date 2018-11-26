@@ -22,39 +22,33 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine.model.action.details;
+package com.griddynamics.qa.sprimber.bridge.cucumber3.processor;
 
-import java.util.ArrayList;
+import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
+import io.cucumber.stepexpression.Argument;
+
 import java.util.List;
 
 /**
- * This class mirrors additional fields from Cucumber Hooks annotations like @Before, @After, @BeforeStep, @AfterStep
- *
  * @author fparamonov
  */
-public class CucumberHookDetails implements MetaInfo {
+class ActionDefinitionAndArguments {
+    private ActionDefinition definition;
+    private List<Argument> arguments;
 
-    private List<String> values = new ArrayList<>();
-    private Long timeout;
-    private Integer order;
-
-    public List<String> getValues() {
-        return values;
+    ActionDefinition getDefinition() {
+        return definition;
     }
 
-    public Long getTimeout() {
-        return timeout;
+    void setDefinition(ActionDefinition definition) {
+        this.definition = definition;
     }
 
-    public void setTimeout(Long timeout) {
-        this.timeout = timeout;
+    List<Argument> getArguments() {
+        return arguments;
     }
 
-    public Integer getOrder() {
-        return order;
-    }
-
-    public void setOrder(Integer order) {
-        this.order = order;
+    void setArguments(List<Argument> arguments) {
+        this.arguments = arguments;
     }
 }

@@ -17,42 +17,29 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id:
+$Id: 
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine.processor.cucumber;
+package com.griddynamics.qa.sprimber.bridge.cucumber3.model.details;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.cucumber.datatable.TableCellByTypeTransformer;
-import io.cucumber.datatable.TableEntryByTypeTransformer;
-import org.springframework.stereotype.Component;
-
-import java.util.Map;
+import com.griddynamics.qa.sprimber.engine.model.action.details.MetaInfo;
 
 /**
- * This is a default implementation for any case data table transformer that currently missed in official Cucumber release
+ * This class mirrors additional fields from Cucumber step annotations - @Given, @When, @Then
  *
  * @author fparamonov
  */
+public class CucumberStepDetails implements MetaInfo {
 
-@Component
-public class JacksonDataTableTransformer implements TableEntryByTypeTransformer, TableCellByTypeTransformer {
+    private Long timeout;
 
-    private final ObjectMapper objectMapper;
-
-    public JacksonDataTableTransformer(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public Long getTimeout() {
+        return timeout;
     }
 
-    @Override
-    public <T> T transform(String value, Class<T> cellType) throws Throwable {
-        return objectMapper.convertValue(value, cellType);
-    }
-
-    @Override
-    public <T> T transform(Map<String, String> entry, Class<T> type, TableCellByTypeTransformer cellTransformer) throws Throwable {
-        return objectMapper.convertValue(entry, type);
+    public void setTimeout(Long timeout) {
+        this.timeout = timeout;
     }
 }

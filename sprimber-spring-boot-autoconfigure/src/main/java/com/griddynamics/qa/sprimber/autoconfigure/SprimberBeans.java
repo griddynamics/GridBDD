@@ -25,17 +25,9 @@ $Id:
 package com.griddynamics.qa.sprimber.autoconfigure;
 
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
-import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
 import com.griddynamics.qa.sprimber.engine.scope.TestCaseScope;
 import com.griddynamics.qa.sprimber.lifecycle.TestCaseSummaryPrinter;
 import cucumber.api.Pending;
-import gherkin.AstBuilder;
-import gherkin.Parser;
-import gherkin.TokenMatcher;
-import gherkin.ast.GherkinDocument;
-import gherkin.pickles.Compiler;
-import io.cucumber.stepexpression.StepExpressionFactory;
-import io.cucumber.stepexpression.TypeRegistry;
 import io.qameta.allure.AllureLifecycle;
 import io.qameta.allure.model.Status;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
@@ -46,7 +38,10 @@ import org.springframework.context.annotation.Configuration;
 
 import java.lang.annotation.Annotation;
 import java.time.Clock;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.griddynamics.qa.sprimber.engine.scope.TestCaseScope.TEST_CASE_SCOPE_NAME;
 
@@ -57,39 +52,9 @@ import static com.griddynamics.qa.sprimber.engine.scope.TestCaseScope.TEST_CASE_
 public class SprimberBeans {
 
     @Bean
-    public Parser<GherkinDocument> gherkinParser() {
-        return new Parser<>(new AstBuilder());
-    }
-
-    @Bean
-    public TokenMatcher tokenMatcher() {
-        return new TokenMatcher();
-    }
-
-    @Bean
-    public Compiler compiler() {
-        return new Compiler();
-    }
-
-    @Bean
     @ConditionalOnMissingBean
     public AllureLifecycle allureLifecycle() {
         return new AllureLifecycle();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public StepExpressionFactory stepExpressionFactory(TypeRegistry typeRegistry) {
-        return new StepExpressionFactory(typeRegistry);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public TypeRegistry typeRegistry(JacksonDataTableTransformer jacksonDataTableTransformer) {
-        TypeRegistry typeRegistry = new TypeRegistry(Locale.ENGLISH);
-        typeRegistry.dataTableTypeRegistry().setDefaultDataTableEntryTransformer(jacksonDataTableTransformer);
-        typeRegistry.dataTableTypeRegistry().setDefaultDataTableCellTransformer(jacksonDataTableTransformer);
-        return typeRegistry;
     }
 
     @Bean

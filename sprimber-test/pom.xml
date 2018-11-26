@@ -14,7 +14,7 @@
     <dependencies>
         <dependency>
             <groupId>com.griddynamics.qa</groupId>
-            <artifactId>sprimber-spring-boot-starter</artifactId>
+            <artifactId>sprimber-cucumber3-spring-boot-starter</artifactId>
             <version>1.0.5-SNAPSHOT</version>
         </dependency>
     </dependencies>

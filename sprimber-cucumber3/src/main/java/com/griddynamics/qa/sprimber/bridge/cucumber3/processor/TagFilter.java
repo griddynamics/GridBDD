@@ -22,7 +22,7 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine.processor.cucumber;
+package com.griddynamics.qa.sprimber.bridge.cucumber3.processor;
 
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleTag;

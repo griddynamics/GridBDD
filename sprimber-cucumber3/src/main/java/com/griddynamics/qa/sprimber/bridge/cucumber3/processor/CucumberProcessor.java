@@ -22,7 +22,7 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine.processor.cucumber;
+package com.griddynamics.qa.sprimber.bridge.cucumber3.processor;
 
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
@@ -30,7 +30,7 @@ import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionScope;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionType;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
-import com.griddynamics.qa.sprimber.engine.model.action.details.CucumberHookDetails;
+import com.griddynamics.qa.sprimber.bridge.cucumber3.model.details.CucumberHookDetails;
 import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.processor.ResourceProcessor;
 import gherkin.Parser;

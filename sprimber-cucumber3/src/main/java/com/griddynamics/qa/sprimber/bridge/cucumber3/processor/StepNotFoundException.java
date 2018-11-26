@@ -17,36 +17,34 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine.processor.cucumber;
+package com.griddynamics.qa.sprimber.bridge.cucumber3.processor;
 
-import gherkin.ast.Feature;
-import gherkin.pickles.Pickle;
+import gherkin.pickles.PickleStep;
 
 /**
  * @author fparamonov
  */
-class TestCaseMetaInfo {
-    private Pickle pickle;
-    private Feature feature;
 
-    Pickle getPickle() {
-        return pickle;
+public class StepNotFoundException extends RuntimeException {
+
+    public StepNotFoundException() {
+        super();
     }
 
-    void setPickle(Pickle pickle) {
-        this.pickle = pickle;
+    public StepNotFoundException(PickleStep pickleStep) {
+        super(String.format("Step '%s' not found!", pickleStep.getText()));
     }
 
-    Feature getFeature() {
-        return feature;
+    public StepNotFoundException(String message) {
+        super(message);
     }
 
-    void setFeature(Feature feature) {
-        this.feature = feature;
+    public StepNotFoundException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

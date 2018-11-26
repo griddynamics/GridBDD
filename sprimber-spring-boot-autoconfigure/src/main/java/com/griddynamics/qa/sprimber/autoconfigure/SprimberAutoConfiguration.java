@@ -36,7 +36,9 @@ import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER
  * @author fparamonov
  */
 @Configuration
-@ComponentScan(basePackages = {"com.griddynamics.qa.sprimber.engine", "com.griddynamics.qa.sprimber.lifecycle"})
+@ComponentScan(basePackages = {"com.griddynamics.qa.sprimber.engine",
+        "com.griddynamics.qa.sprimber.lifecycle", "com.griddynamics.qa.sprimber.bridge", "com.griddynamics.qa.sprimber.autoconfigure"
+})
 @EnableAspectJAutoProxy
 @Import(SprimberBeans.class)
 public class SprimberAutoConfiguration {
