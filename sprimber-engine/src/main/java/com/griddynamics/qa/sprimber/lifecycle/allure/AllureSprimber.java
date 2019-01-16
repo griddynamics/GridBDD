@@ -166,7 +166,8 @@ public class AllureSprimber {
 
     private String getTestCaseHistoryId(TestCase testCase) {
         try {
-            byte[] bytes = MessageDigest.getInstance("md5").digest(testCase.getName().getBytes(UTF_8));
+            byte[] bytes = MessageDigest.getInstance("md5")
+                    .digest((testCase.getParentName() + testCase.getName()).getBytes(UTF_8));
             return new BigInteger(1, bytes).toString(16);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("Could not find md5 hashing algorithm", e);
