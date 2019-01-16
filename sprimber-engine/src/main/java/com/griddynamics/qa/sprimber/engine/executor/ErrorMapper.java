@@ -27,8 +27,10 @@ package com.griddynamics.qa.sprimber.engine.executor;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status;
@@ -48,6 +50,12 @@ public class ErrorMapper {
         this.skippedExceptionNames = skippedExceptionNames;
         this.failedExceptionNames = failedExceptionNames;
         this.pendingExceptionAnnotations = pendingExceptionAnnotations;
+    }
+
+    @PostConstruct
+    private void sortCollections() {
+        Collections.sort(skippedExceptionNames);
+        Collections.sort(failedExceptionNames);
     }
 
     public ExecutionResult parseThrowable(Throwable throwable) {
