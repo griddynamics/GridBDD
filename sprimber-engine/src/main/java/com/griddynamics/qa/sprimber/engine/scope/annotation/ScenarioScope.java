@@ -35,11 +35,11 @@ import static com.griddynamics.qa.sprimber.engine.scope.TestCaseScope.TEST_CASE_
 /**
  * {@code @ScenarioScope} is a specialization of {@link Scope @Scope} for a
  * component whose lifecycle is bound to the current test case.
- *
+ * <p>
  * <p>Specifically, {@code @ScenarioScope} is a <em>composed annotation</em> that
  * acts as a shortcut for {@code @Scope("testcase")} with the default
  * {@link #proxyMode} set to {@link ScopedProxyMode#TARGET_CLASS TARGET_CLASS}.
- *
+ * <p>
  * <p>{@code @RequestScope} may be used as a meta-annotation to create custom
  * composed annotations.
  *

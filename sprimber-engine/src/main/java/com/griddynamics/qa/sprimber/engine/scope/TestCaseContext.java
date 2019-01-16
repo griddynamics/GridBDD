@@ -27,6 +27,8 @@ package com.griddynamics.qa.sprimber.engine.scope;
 import org.springframework.beans.factory.ObjectFactory;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * This class represent the place where test case related objects can be stored.
@@ -38,13 +40,15 @@ import java.util.HashMap;
 public class TestCaseContext extends HashMap<String, Object> {
 
     private static final String CONVERSATION_ID_KEY = "conversationId";
+    private static final String DESTRUCTION_CALLBACK_POSTFIX = ".callback";
+    private static final String SCOPED_BEAN_NAME_PREFIX = "scopedTarget.";
 
     /**
      * Method to return object by bean name for current thread.
      * If object already initialised then the value for actual key will be returned
      * Otherwise Spring Object factory {@code getObject()} will be invoked and object initialisation happens
      *
-     * @param name - target object name
+     * @param name          - target object name
      * @param objectFactory - Spring Object factory
      * @return - new or already exist object for current thread
      */
@@ -53,13 +57,37 @@ public class TestCaseContext extends HashMap<String, Object> {
     }
 
     /**
-     * Method to check if object with target name already exist or not. If exist, then mapping will be removed.
+     * Method to find all registered scoped beans
+     *
+     * @return collection of scoped beans like scopedTarget.beanA
+     */
+    public List<String> getAllScopedBeanNames() {
+        return keySet().stream()
+                .filter(name -> name.startsWith(SCOPED_BEAN_NAME_PREFIX))
+                .filter(name -> !name.endsWith(DESTRUCTION_CALLBACK_POSTFIX))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Method to check if object with target name already exist or not.
+     * If exist, then mapping will be removed and destruction callback will be called if present
      *
      * @param name - target object name
      * @return - null
      */
     public Object removeCurrentObjectByName(String name) {
-        return computeIfPresent(name, (k, v) -> null);
+        return computeIfPresent(name, (k, v) -> executeDestructionCallback(k));
+    }
+
+    /**
+     * Method to put the destruction callback to current map. The key will be computed from bean name and
+     * predefined postfix
+     *
+     * @param name
+     * @param callback
+     */
+    public void registerBeanDestructionCallback(String name, Runnable callback) {
+        put(name + DESTRUCTION_CALLBACK_POSTFIX, callback);
     }
 
     public void saveConversationId(String conversationId) {
@@ -68,5 +96,21 @@ public class TestCaseContext extends HashMap<String, Object> {
 
     public String getConversationId() {
         return String.valueOf(get(CONVERSATION_ID_KEY));
+    }
+
+    /**
+     * Method to find and execute destruction callback at applicable bean.
+     * Method to be used ONLY in {@code removeCurrentObjectByName} call, since method targeted to return null,
+     * that will be treated as action to remove the object by key.
+     * Current implementation doesn't care about the callback presence and correct execution.
+     *
+     * @param name - bean name that require callback execution
+     * @return null as a marker that bean should be removed from scope.
+     */
+    private Object executeDestructionCallback(String name) {
+        if (this.get(name + DESTRUCTION_CALLBACK_POSTFIX) != null) {
+            ((Runnable) this.get(name + DESTRUCTION_CALLBACK_POSTFIX)).run();
+        }
+        return null;
     }
 }
