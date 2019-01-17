@@ -67,6 +67,7 @@ public class TestCase {
      */
     private String runtimeId;
 
+    private String url;
 
     public List<ActionDefinition> getBeforeScenarioActions() {
         return allHooks.stream()
@@ -138,5 +139,13 @@ public class TestCase {
 
     public void setRuntimeId(String runtimeId) {
         this.runtimeId = runtimeId;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 }

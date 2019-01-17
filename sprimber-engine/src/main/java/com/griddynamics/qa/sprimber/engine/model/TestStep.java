@@ -39,6 +39,10 @@ public class TestStep {
     // TODO: 08/06/2018 rework this to appropriate type
     private Object[] stepArguments;
     private String actualText;
+    /**
+     * In some cases step contains additional data like DataTable that should be stored separately
+     */
+    private String stepDataAsText;
 
     public ActionDefinition getStepAction() {
         return stepAction;
@@ -62,5 +66,13 @@ public class TestStep {
 
     public void setActualText(String actualText) {
         this.actualText = actualText;
+    }
+
+    public void setStepDataAsText(String stepDataAsText) {
+        this.stepDataAsText = stepDataAsText;
+    }
+
+    public String getStepDataAsText() {
+        return stepDataAsText;
     }
 }

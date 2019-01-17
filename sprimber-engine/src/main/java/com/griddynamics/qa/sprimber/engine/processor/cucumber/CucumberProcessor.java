@@ -25,12 +25,6 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
-import com.griddynamics.qa.sprimber.engine.model.TestStep;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionScope;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionType;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
-import com.griddynamics.qa.sprimber.engine.model.action.details.CucumberHookDetails;
 import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.processor.ResourceProcessor;
 import gherkin.Parser;
@@ -38,24 +32,18 @@ import gherkin.TokenMatcher;
 import gherkin.ast.GherkinDocument;
 import gherkin.pickles.Compiler;
 import gherkin.pickles.Pickle;
-import gherkin.pickles.PickleStep;
 import gherkin.pickles.PickleTag;
-import io.cucumber.datatable.DataTable;
-import io.cucumber.stepexpression.Argument;
-import io.cucumber.stepexpression.ExpressionArgumentMatcher;
-import io.cucumber.stepexpression.StepExpression;
-import io.cucumber.stepexpression.StepExpressionFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -72,23 +60,20 @@ public class CucumberProcessor implements ResourceProcessor {
     private final TokenMatcher tokenMatcher;
     private final Compiler compiler;
     private final SprimberProperties sprimberProperties;
-    private final ActionsContainer actionsContainer;
-    private final StepExpressionFactory stepExpressionFactory;
     private final ApplicationContext applicationContext;
+    private final PickleProcessor pickleProcessor;
 
     public CucumberProcessor(Parser<GherkinDocument> gherkinParser,
                              TokenMatcher tokenMatcher,
                              Compiler compiler,
                              SprimberProperties sprimberProperties,
-                             ActionsContainer actionsContainer,
-                             StepExpressionFactory stepExpressionFactory,
-                             ApplicationContext applicationContext) {
+                             ApplicationContext applicationContext,
+                             PickleProcessor pickleProcessor) {
         this.gherkinParser = gherkinParser;
         this.tokenMatcher = tokenMatcher;
         this.compiler = compiler;
         this.sprimberProperties = sprimberProperties;
-        this.actionsContainer = actionsContainer;
-        this.stepExpressionFactory = stepExpressionFactory;
+        this.pickleProcessor = pickleProcessor;
         this.applicationContext = applicationContext;
     }
 
@@ -97,10 +82,8 @@ public class CucumberProcessor implements ResourceProcessor {
         List<TestCase> testCases = new ArrayList<>();
         try {
             testCases = Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()))
-                    .map(this::buildGherkinDocument)
-                    .flatMap(this::bundlePickleAndFeature)
-                    .filter(testCaseTagPredicate())
-                    .map(this::processPickle)
+                    .map(this::buildCucumberDocument)
+                    .flatMap(this::buildTestCasesStream)
                     .collect(Collectors.toList());
         } catch (IOException e) {
             e.printStackTrace();
@@ -108,107 +91,34 @@ public class CucumberProcessor implements ResourceProcessor {
         return testCases;
     }
 
-    private TestCase processPickle(TestCaseMetaInfo testCaseMetaInfo) {
-        TestCase testCase = new TestCase();
-        Pickle pickle = testCaseMetaInfo.getPickle();
-        testCase.getAllHooks().addAll(
-                actionsContainer.getDefinitions().stream()
-                        .filter(testCaseScopePredicate())
-                        .filter(testCaseHookTypePredicate())
-                        .filter(hookTagPredicate(pickle))
-                        .collect(Collectors.toList())
-        );
-        testCase.getSteps().addAll(pickle.getSteps().stream().map(this::processPickleStep).collect(Collectors.toList()));
-        testCase.setName(pickle.getName());
-        testCase.setParentName(testCaseMetaInfo.getFeature().getName());
-        testCase.setDescription(testCaseMetaInfo.getFeature().getDescription());
-        testCase.setRuntimeId(UUID.randomUUID().toString());
-        testCase.getTags().addAll(pickle.getTags().stream().map(PickleTag::getName).collect(Collectors.toList()));
-        return testCase;
-    }
-
-    private TestStep processPickleStep(PickleStep pickleStep) {
-        TestStep testStep = new TestStep();
-        testStep.setActualText(pickleStep.getText());
-        ActionDefinitionAndArguments pair = findDefinitionAndArgumentsByActualStep(pickleStep);
-        testStep.setStepAction(pair.getDefinition());
-        testStep.setStepArguments(processArguments(pair));
-        return testStep;
-    }
-
-    private Object[] processArguments(ActionDefinitionAndArguments pair) {
-        List<Argument> arguments = pair.getArguments();
-        List<Type> parameters = Arrays.asList(pair.getDefinition().getMethod().getGenericParameterTypes());
-        return IntStream.range(0, parameters.size())
-                .mapToObj(counter -> processArgument(arguments.get(counter), parameters.get(counter))).toArray();
-    }
-
-    private Object processArgument(Argument argument, Type type) {
-        Object value = argument.getValue();
-        if (value instanceof DataTable) {
-            value = ((DataTable) value).convert(type, false);
-        }
-        return value;
-    }
-
-    private GherkinDocument buildGherkinDocument(Resource resource) {
+    private CucumberDocument buildCucumberDocument(Resource resource) {
         try {
-            return gherkinParser.parse(new InputStreamReader(resource.getInputStream()), tokenMatcher);
+            GherkinDocument document = gherkinParser.parse(new InputStreamReader(resource.getInputStream()), tokenMatcher);
+            CucumberDocument cucumberDocument = new CucumberDocument();
+            cucumberDocument.setDocument(document);
+            cucumberDocument.setUrl(resource.getURL());
+            return cucumberDocument;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private Stream<TestCaseMetaInfo> bundlePickleAndFeature(GherkinDocument document) {
-        return compiler.compile(document).stream().map(pickle -> {
-                    TestCaseMetaInfo testCaseMetaInfo = new TestCaseMetaInfo();
-                    testCaseMetaInfo.setFeature(document.getFeature());
-                    testCaseMetaInfo.setPickle(pickle);
-                    return testCaseMetaInfo;
-                }
-        );
+    private Stream<TestCase> buildTestCasesStream(CucumberDocument cucumberDocument) {
+        return compiler.compile(cucumberDocument.getDocument()).stream()
+                .filter(pickleTagPredicate())
+                .map(pickle -> pickleProcessor.processPickle(cucumberDocument, pickle));
     }
 
-    private ActionDefinitionAndArguments findDefinitionAndArgumentsByActualStep(PickleStep pickleStep) {
-        return actionsContainer.getDefinitions().stream()
-                .filter(definition -> definition.getActionText().isPresent())
-                .map(definition -> buildPairFromDefinitionAndStep(definition, pickleStep))
-                .filter(pair -> Objects.nonNull(pair.getArguments()))
-                .findFirst().orElseThrow(() -> new StepNotFoundException(pickleStep));
-        // TODO: 09/06/2018 Need to handle case when step not found and handle case when more then one steps found
-    }
-
-    private ActionDefinitionAndArguments buildPairFromDefinitionAndStep(ActionDefinition definition, PickleStep pickleStep) {
-        StepExpression stepExpression = stepExpressionFactory.createExpression(definition.getActionText().orElse(""));
-        ExpressionArgumentMatcher argumentMatcher = new ExpressionArgumentMatcher(stepExpression);
-        ActionDefinitionAndArguments actionDefinitionAndArguments = new ActionDefinitionAndArguments();
-        actionDefinitionAndArguments.setDefinition(definition);
-        actionDefinitionAndArguments.setArguments(argumentMatcher.argumentsFrom(pickleStep));
-        return actionDefinitionAndArguments;
-    }
-
-    private Predicate<ActionDefinition> testCaseScopePredicate() {
-        return actionDefinition ->
-                ActionScope.SCENARIO.equals(actionDefinition.getActionScope()) || ActionScope.STEP.equals(actionDefinition.getActionScope());
-    }
-
-    private Predicate<ActionDefinition> testCaseHookTypePredicate() {
-        return actionDefinition ->
-                ActionType.Before.equals(actionDefinition.getActionType()) ||
-                        ActionType.After.equals(actionDefinition.getActionType());
-    }
-
-    private Predicate<TestCaseMetaInfo> testCaseTagPredicate() {
-        return testCaseMetaInfo -> {
+    private Predicate<Pickle> pickleTagPredicate() {
+        return pickle -> {
             TagFilter tagFilter = new TagFilter(sprimberProperties.getTagFilters());
-            return tagFilter.filter(testCaseMetaInfo.getPickle());
+            return tagFilter.filter(getTagsForPickle(pickle));
         };
     }
 
-    private Predicate<ActionDefinition> hookTagPredicate(Pickle pickle) {
-        return definition -> {
-            TagFilter tagFilter = new TagFilter(((CucumberHookDetails) definition.getMetaInfo()).getValues());
-            return tagFilter.filter(pickle);
-        };
+    private List<String> getTagsForPickle(Pickle pickle) {
+        return pickle.getTags().stream()
+                .map(PickleTag::getName)
+                .collect(Collectors.toList());
     }
 }

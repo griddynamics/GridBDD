@@ -17,15 +17,13 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
 package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
-import gherkin.pickles.Pickle;
-import gherkin.pickles.PickleTag;
 import io.cucumber.tagexpressions.Expression;
 import io.cucumber.tagexpressions.TagExpressionParser;
 
@@ -51,11 +49,7 @@ class TagFilter {
         expressions.addAll(targetTagFilters.stream().map(tagExpressionParser::parse).collect(Collectors.toList()));
     }
 
-    boolean filter(Pickle pickle) {
-        return expressions.stream().allMatch(expression -> expression.evaluate(getTagsFromPickle(pickle)));
-    }
-
-    private List<String> getTagsFromPickle(Pickle pickle) {
-        return pickle.getTags().stream().map(PickleTag::getName).collect(Collectors.toList());
+    boolean filter(List<String> tags) {
+        return expressions.stream().allMatch(expression -> expression.evaluate(tags));
     }
 }

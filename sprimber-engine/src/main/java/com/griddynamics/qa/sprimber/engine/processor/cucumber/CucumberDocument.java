@@ -17,38 +17,40 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
 package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
-import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
-import io.cucumber.stepexpression.Argument;
+import gherkin.ast.GherkinDocument;
 
-import java.util.List;
+import java.net.URL;
 
 /**
+ * This is helper class to combine together GherkinDocument and URL for it
+ *
  * @author fparamonov
  */
-class ActionDefinitionAndArguments {
-    private ActionDefinition definition;
-    private List<Argument> arguments;
+public class CucumberDocument {
 
-    ActionDefinition getDefinition() {
-        return definition;
+    private GherkinDocument document;
+    private URL url;
+
+    public GherkinDocument getDocument() {
+        return document;
     }
 
-    void setDefinition(ActionDefinition definition) {
-        this.definition = definition;
+    public void setDocument(GherkinDocument document) {
+        this.document = document;
     }
 
-    List<Argument> getArguments() {
-        return arguments;
+    public URL getUrl() {
+        return url;
     }
 
-    void setArguments(List<Argument> arguments) {
-        this.arguments = arguments;
+    public void setUrl(URL url) {
+        this.url = url;
     }
 }
