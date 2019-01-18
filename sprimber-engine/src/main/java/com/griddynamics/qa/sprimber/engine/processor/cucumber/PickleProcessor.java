@@ -25,18 +25,13 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionScope;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionType;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
-import com.griddynamics.qa.sprimber.engine.model.action.details.CucumberHookDetails;
 import gherkin.pickles.Pickle;
+import gherkin.pickles.PickleLocation;
 import gherkin.pickles.PickleTag;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -46,56 +41,42 @@ import java.util.stream.Collectors;
 @Component
 public class PickleProcessor {
 
-    private final ActionsContainer actionsContainer;
     private final PickleStepProcessor pickleStepProcessor;
+    private final PickleHookProcessor pickleHookProcessor;
 
-    public PickleProcessor(ActionsContainer actionsContainer,
-                           PickleStepProcessor pickleStepProcessor) {
-        this.actionsContainer = actionsContainer;
+    public PickleProcessor(PickleStepProcessor pickleStepProcessor,
+                           PickleHookProcessor pickleHookProcessor) {
         this.pickleStepProcessor = pickleStepProcessor;
+        this.pickleHookProcessor = pickleHookProcessor;
     }
 
     public TestCase processPickle(CucumberDocument cucumberDocument, Pickle pickle) {
         TestCase testCase = new TestCase();
-        List<String> tags = getTagsForPickle(pickle);
-        testCase.getAllHooks().addAll(
-                actionsContainer.getDefinitions().stream()
-                        .filter(testCaseScopePredicate())
-                        .filter(testCaseHookTypePredicate())
-                        .filter(hookTagPredicate(tags))
-                        .collect(Collectors.toList())
-        );
+
+        testCase.getAllHooks().addAll(pickleHookProcessor.processPickleHook(pickle));
         testCase.getSteps().addAll(
                 pickle.getSteps().stream()
                         .map(pickleStepProcessor::processPickleStep)
                         .collect(Collectors.toList())
         );
 
-        testCase.getTags().addAll(tags);
+        testCase.getTags().addAll(getTagsForPickle(pickle));
         testCase.setName(pickle.getName());
-        testCase.setParentName(cucumberDocument.getDocument().getFeature().getName());
-        testCase.setDescription(cucumberDocument.getDocument().getFeature().getDescription());
-        testCase.setUrl(cucumberDocument.getUrl().getPath());
+        testCase.setLocation(buildLocationString(pickle));
+
+        TestCase.Parent parent = new TestCase.Parent();
+        parent.setName(cucumberDocument.getDocument().getFeature().getName());
+        parent.setDescription(cucumberDocument.getDocument().getFeature().getDescription());
+        parent.setUrl(cucumberDocument.getUrl().getPath());
+        testCase.setParent(parent);
+
         testCase.setRuntimeId(UUID.randomUUID().toString());
         return testCase;
     }
 
-    private Predicate<ActionDefinition> testCaseScopePredicate() {
-        return actionDefinition ->
-                ActionScope.SCENARIO.equals(actionDefinition.getActionScope()) || ActionScope.STEP.equals(actionDefinition.getActionScope());
-    }
-
-    private Predicate<ActionDefinition> testCaseHookTypePredicate() {
-        return actionDefinition ->
-                ActionType.Before.equals(actionDefinition.getActionType()) ||
-                        ActionType.After.equals(actionDefinition.getActionType());
-    }
-
-    private Predicate<ActionDefinition> hookTagPredicate(List<String> tags) {
-        return definition -> {
-            TagFilter tagFilter = new TagFilter(((CucumberHookDetails) definition.getMetaInfo()).getValues());
-            return tagFilter.filter(tags);
-        };
+    private String buildLocationString(Pickle pickle) {
+        PickleLocation pickleLocation = pickle.getLocations().get(0);
+        return pickleLocation.getLine() + ":" + pickleLocation.getColumn();
     }
 
     private List<String> getTagsForPickle(Pickle pickle) {

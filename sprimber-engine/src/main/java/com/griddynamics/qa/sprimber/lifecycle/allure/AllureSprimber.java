@@ -57,6 +57,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * @author fparamonov
@@ -101,7 +102,7 @@ public class AllureSprimber {
                 .withName(startedEvent.getTestCase().getName())
                 .withLinks(helperInfoBuilder.getLinks())
                 .withLabels(helperInfoBuilder.getLabels())
-                .withDescription(startedEvent.getTestCase().getDescription());
+                .withDescription(startedEvent.getTestCase().getParent().getDescription());
         lifecycle.scheduleTestCase(testResult);
         lifecycle.startTestCase(testCaseRuntimeId.get());
     }
@@ -146,10 +147,16 @@ public class AllureSprimber {
                 .withStart(clock.millis());
         lifecycle.startStep(testCaseRuntimeId.get(), getStepId(startedEvent.getTestStep()), stepResult);
 
-        final String attachmentSource = lifecycle
-                .prepareAttachment("Data table", "text/tab-separated-values", "csv");
-        lifecycle.writeAttachment(attachmentSource,
-                new ByteArrayInputStream(startedEvent.getTestStep().getStepDataAsText().getBytes(Charset.forName("UTF-8"))));
+        attachStepDataParameterIfPresent(startedEvent.getTestStep().getStepDataAsText());
+    }
+
+    private void attachStepDataParameterIfPresent(String stepData) {
+        if (isNotBlank(stepData)) {
+            final String attachmentSource = lifecycle
+                    .prepareAttachment("Data table", "text/tab-separated-values", "csv");
+            lifecycle.writeAttachment(attachmentSource,
+                    new ByteArrayInputStream(stepData.getBytes(Charset.forName("UTF-8"))));
+        }
     }
 
     @EventListener
@@ -175,7 +182,11 @@ public class AllureSprimber {
     private String getTestCaseHistoryId(TestCase testCase) {
         try {
             byte[] bytes = MessageDigest.getInstance("md5")
-                    .digest((testCase.getUrl()).getBytes(UTF_8));
+                    .digest((testCase.getParent().getUrl() +
+                            testCase.getParent().getName() +
+                            testCase.getName() +
+                            testCase.getLocation()
+                    ).getBytes(UTF_8));
             return new BigInteger(1, bytes).toString(16);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("Could not find md5 hashing algorithm", e);

@@ -50,15 +50,6 @@ public class TestCase {
      * Equivalent to scenario name/description
      */
     private String name;
-    /**
-     * Equivalent to feature/story name
-     */
-    private String parentName;
-
-    /**
-     * Equivalent to feature/story description
-     */
-    private String description;
 
     /**
      * Each scenario tagged with unique id for current execution
@@ -67,7 +58,13 @@ public class TestCase {
      */
     private String runtimeId;
 
-    private String url;
+    /**
+     * Represent the location of the scenario in the feature file in format
+     * $line:$column like 24:7
+     */
+    private String location;
+
+    private Parent parent;
 
     public List<ActionDefinition> getBeforeScenarioActions() {
         return allHooks.stream()
@@ -117,22 +114,6 @@ public class TestCase {
         this.name = name;
     }
 
-    public String getParentName() {
-        return parentName;
-    }
-
-    public void setParentName(String parentName) {
-        this.parentName = parentName;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
     public String getRuntimeId() {
         return runtimeId;
     }
@@ -141,11 +122,55 @@ public class TestCase {
         this.runtimeId = runtimeId;
     }
 
-    public String getUrl() {
-        return url;
+    public String getLocation() {
+        return location;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public Parent getParent() {
+        return parent;
+    }
+
+    public void setParent(Parent parent) {
+        this.parent = parent;
+    }
+
+    public static class Parent {
+        /**
+         * Equivalent to feature/story name
+         */
+        private String name;
+        /**
+         * Equivalent to feature/story description
+         */
+        private String description;
+        private String url;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
     }
 }

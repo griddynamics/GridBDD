@@ -62,7 +62,7 @@ public class HelperInfoBuilder {
     public List<Label> getLabels() {
         List<Label> labels = new ArrayList<>();
         TagParser tagParser = new TagParser(testCase);
-        labels.add(ResultsUtils.createFeatureLabel(testCase.getParentName()));
+        labels.add(ResultsUtils.createFeatureLabel(testCase.getParent().getName()));
         labels.add(ResultsUtils.createStoryLabel(testCase.getName()));
 
         keyValueFromScenario()
@@ -76,8 +76,8 @@ public class HelperInfoBuilder {
                 .forEach(tag -> labels.add(createTagLabel(tag.substring(1))));
 
         labels.add(new Label().withName("host").withValue(getHostName()));
-        labels.add(new Label().withName("package").withValue(testCase.getParentName()));
-        labels.add(new Label().withName("suite").withValue(testCase.getParentName()));
+        labels.add(new Label().withName("package").withValue(testCase.getParent().getName()));
+        labels.add(new Label().withName("suite").withValue(testCase.getParent().getName()));
         labels.add(new Label().withName("testClass").withValue(testCase.getName()));
         labels.add(new Label().withName("thread").withValue(getThreadName()));
         return labels;
