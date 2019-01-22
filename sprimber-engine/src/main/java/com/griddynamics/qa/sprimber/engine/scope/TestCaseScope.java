@@ -24,8 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.scope;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.config.Scope;
 
@@ -48,7 +46,6 @@ import org.springframework.beans.factory.config.Scope;
 public class TestCaseScope implements Scope {
 
     public static final String TEST_CASE_SCOPE_NAME = "testcase";
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestCaseScope.class);
 
     @Override
     public Object get(String name, ObjectFactory<?> objectFactory) {
@@ -64,8 +61,8 @@ public class TestCaseScope implements Scope {
 
     @Override
     public void registerDestructionCallback(String name, Runnable callback) {
-        LOGGER.warn("TestCaseScope does not support destruction callbacks. " +
-                "Consider using other scopes.");
+        TestCaseContext testCaseContext = TestCaseContextHolder.getCurrentContext();
+        testCaseContext.registerBeanDestructionCallback(name, callback);
     }
 
     @Override

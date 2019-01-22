@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.scope;
 
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
+import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.core.NamedThreadLocal;
 
 /**
@@ -42,7 +43,8 @@ public abstract class TestCaseContextHolder {
     private TestCaseContextHolder() {
     }
 
-    public static void cleanContext() {
+    public static void cleanContext(AbstractBeanFactory beanFactory) {
+        destroyScopedBeans(beanFactory);
         TEST_CASE_OBJECTS_HOLDER.remove();
     }
 
@@ -58,5 +60,10 @@ public abstract class TestCaseContextHolder {
 
     public static TestCaseContext getCurrentContext() {
         return TEST_CASE_OBJECTS_HOLDER.get();
+    }
+
+    private static void destroyScopedBeans(AbstractBeanFactory beanFactory) {
+        TestCaseContext testCaseContext = getCurrentContext();
+        testCaseContext.getAllScopedBeanNames().forEach(beanFactory::destroyScopedBean);
     }
 }

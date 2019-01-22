@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.engine.scope;
 
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFinishedEvent;
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseStartedEvent;
+import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +40,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class FlowOrchestrator {
 
+    private final AbstractBeanFactory beanFactory;
+
+    public FlowOrchestrator(AbstractBeanFactory beanFactory) {
+        this.beanFactory = beanFactory;
+    }
+
     @EventListener
     public void setupTestCaseContext(TestCaseStartedEvent startEvent) {
         TestCaseContextHolder.setupNewContext(startEvent.getTestCase());
@@ -46,6 +53,6 @@ public class FlowOrchestrator {
 
     @EventListener
     public void resetTestCaseContext(TestCaseFinishedEvent finishEvent) {
-        TestCaseContextHolder.cleanContext();
+        TestCaseContextHolder.cleanContext(beanFactory);
     }
 }
