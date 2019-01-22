@@ -48,6 +48,8 @@ public class HelperInfoBuilder {
     private static final String COMPOSITE_TAG_DELIMITER = "=";
 
     private static final String SEVERITY = "@SEVERITY";
+    private static final String FEATURE_TAG_NAME = "@Feature";
+    private static final String STORY_TAG_NAME = "@Story";
     private static final String ISSUE_LINK = "@ISSUE";
     private static final String TMS_LINK = "@TMSLINK";
     private static final String PLAIN_LINK = "@LINK";
@@ -62,8 +64,8 @@ public class HelperInfoBuilder {
     public List<Label> getLabels() {
         List<Label> labels = new ArrayList<>();
         TagParser tagParser = new TagParser(testCase);
-        labels.add(ResultsUtils.createFeatureLabel(testCase.getParent().getName()));
-        labels.add(ResultsUtils.createStoryLabel(testCase.getName()));
+        labels.add(ResultsUtils.createFeatureLabel(getFeatureName()));
+        labels.add(ResultsUtils.createStoryLabel(getStoryName()));
 
         keyValueFromScenario()
                 .filter(tagKeyValue -> SEVERITY.equals(tagKeyValue.getKey()))
@@ -98,6 +100,20 @@ public class HelperInfoBuilder {
                 .filter(tagKeyValue -> PLAIN_LINK.equals(tagKeyValue.getKey()))
                 .forEach(tagKeyValue -> links.add(createLink(null, tagKeyValue.getKey(), tagKeyValue.getValue(), null)));
         return links;
+    }
+
+    private String getFeatureName() {
+        return keyValueFromScenario()
+                .filter(tagKeyValue -> FEATURE_TAG_NAME.equals(tagKeyValue.getKey()))
+                .findFirst()
+                .map(TagKeyValue::getValue).orElse(testCase.getParent().getName());
+    }
+
+    private String getStoryName() {
+        return keyValueFromScenario()
+                .filter(tagKeyValue -> STORY_TAG_NAME.equals(tagKeyValue.getKey()))
+                .findFirst()
+                .map(TagKeyValue::getValue).orElse(testCase.getName());
     }
 
     private Stream<TagKeyValue> keyValueFromScenario() {

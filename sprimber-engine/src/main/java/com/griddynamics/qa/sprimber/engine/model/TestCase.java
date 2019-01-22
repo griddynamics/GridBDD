@@ -47,9 +47,14 @@ public class TestCase {
     private List<String> tags = new ArrayList<>();
 
     /**
-     * Equivalent to scenario name/description
+     * Equivalent to scenario name, usually what comes after keyword
      */
     private String name;
+
+    /**
+     * Additional field to keep scenario description. Can be set the same as name if syntax doesn't support this
+     */
+    private String description;
 
     /**
      * Each scenario tagged with unique id for current execution
@@ -112,6 +117,14 @@ public class TestCase {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getRuntimeId() {

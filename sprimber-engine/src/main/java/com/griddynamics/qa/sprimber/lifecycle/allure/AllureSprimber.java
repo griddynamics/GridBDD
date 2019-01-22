@@ -102,7 +102,7 @@ public class AllureSprimber {
                 .withName(startedEvent.getTestCase().getName())
                 .withLinks(helperInfoBuilder.getLinks())
                 .withLabels(helperInfoBuilder.getLabels())
-                .withDescription(startedEvent.getTestCase().getParent().getDescription());
+                .withDescription(startedEvent.getTestCase().getDescription());
         lifecycle.scheduleTestCase(testResult);
         lifecycle.startTestCase(testCaseRuntimeId.get());
     }

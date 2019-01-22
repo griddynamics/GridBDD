@@ -25,12 +25,14 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
+import gherkin.ast.ScenarioDefinition;
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleLocation;
 import gherkin.pickles.PickleTag;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -62,6 +64,9 @@ public class PickleProcessor {
 
         testCase.getTags().addAll(getTagsForPickle(pickle));
         testCase.setName(pickle.getName());
+        String description = getScenarioDescriptionByPickleName(cucumberDocument, pickle)
+                .map(ScenarioDefinition::getDescription).orElse(pickle.getName());
+        testCase.setDescription(description);
         testCase.setLocation(buildLocationString(pickle));
 
         TestCase.Parent parent = new TestCase.Parent();
@@ -72,6 +77,13 @@ public class PickleProcessor {
 
         testCase.setRuntimeId(UUID.randomUUID().toString());
         return testCase;
+    }
+
+    private Optional<ScenarioDefinition> getScenarioDescriptionByPickleName(CucumberDocument cucumberDocument,
+                                                                            Pickle pickle) {
+        return cucumberDocument.getDocument().getFeature().getChildren().stream()
+                .filter(scenarioDefinition -> pickle.getName().equals(scenarioDefinition.getName()))
+                .findFirst();
     }
 
     private String buildLocationString(Pickle pickle) {
