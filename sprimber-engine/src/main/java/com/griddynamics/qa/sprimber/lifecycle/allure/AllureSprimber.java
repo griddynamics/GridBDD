@@ -45,7 +45,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
+import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
@@ -55,6 +57,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * @author fparamonov
@@ -119,7 +122,8 @@ public class AllureSprimber {
     @EventListener
     public void testHookStarted(TestHookStartedEvent startedEvent) {
         StepResult stepResult = new StepResult()
-                .withName(String.valueOf(startedEvent.getHookDefinition().getActionType()))
+                .withName(String.valueOf(startedEvent.getHookDefinition().getActionType()) + " " +
+                        String.valueOf(startedEvent.getHookDefinition().getActionScope()).toLowerCase())
                 .withStart(clock.millis());
         lifecycle.startStep(testCaseRuntimeId.get(), getHookId(startedEvent.getHookDefinition()), stepResult);
     }
@@ -142,6 +146,17 @@ public class AllureSprimber {
                 .withName(String.format("%s %s", startedEvent.getTestStep().getStepAction().getActionType(), startedEvent.getTestStep().getActualText()))
                 .withStart(clock.millis());
         lifecycle.startStep(testCaseRuntimeId.get(), getStepId(startedEvent.getTestStep()), stepResult);
+
+        attachStepDataParameterIfPresent(startedEvent.getTestStep().getStepDataAsText());
+    }
+
+    private void attachStepDataParameterIfPresent(String stepData) {
+        if (isNotBlank(stepData)) {
+            final String attachmentSource = lifecycle
+                    .prepareAttachment("Data table", "text/tab-separated-values", "csv");
+            lifecycle.writeAttachment(attachmentSource,
+                    new ByteArrayInputStream(stepData.getBytes(Charset.forName("UTF-8"))));
+        }
     }
 
     @EventListener
@@ -166,7 +181,12 @@ public class AllureSprimber {
 
     private String getTestCaseHistoryId(TestCase testCase) {
         try {
-            byte[] bytes = MessageDigest.getInstance("md5").digest(testCase.getName().getBytes(UTF_8));
+            byte[] bytes = MessageDigest.getInstance("md5")
+                    .digest((testCase.getParent().getUrl() +
+                            testCase.getParent().getName() +
+                            testCase.getName() +
+                            testCase.getLocation()
+                    ).getBytes(UTF_8));
             return new BigInteger(1, bytes).toString(16);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("Could not find md5 hashing algorithm", e);

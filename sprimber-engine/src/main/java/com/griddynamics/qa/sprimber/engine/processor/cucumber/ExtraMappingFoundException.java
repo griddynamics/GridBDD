@@ -17,36 +17,34 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
 package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
-import gherkin.ast.Feature;
-import gherkin.pickles.Pickle;
+import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
+import gherkin.pickles.PickleStep;
+
+import java.lang.reflect.Method;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
+ * This exception indicated that more then one method mapped to actual step
+ *
  * @author fparamonov
  */
-class TestCaseMetaInfo {
-    private Pickle pickle;
-    private Feature feature;
+public class ExtraMappingFoundException extends RuntimeException {
 
-    Pickle getPickle() {
-        return pickle;
-    }
-
-    void setPickle(Pickle pickle) {
-        this.pickle = pickle;
-    }
-
-    Feature getFeature() {
-        return feature;
-    }
-
-    void setFeature(Feature feature) {
-        this.feature = feature;
+    public ExtraMappingFoundException(List<ActionDefinition> actionDefinitions, PickleStep pickleStep) {
+        super(String.format("Step '%s' mapped to next methods '%s'!",
+                pickleStep.getText(),
+                actionDefinitions.stream()
+                        .map(ActionDefinition::getMethod)
+                        .map(Method::toString)
+                        .collect(Collectors.joining(","))
+        ));
     }
 }
