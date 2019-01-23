@@ -125,8 +125,8 @@ public class SprimberBeans {
     }
 
     @Bean
-    public List<String> skippedExceptionNames() {
-        List<String> skippedExceptions = new ArrayList<>();
+    public Set<String> skippedExceptionNames() {
+        Set<String> skippedExceptions = new HashSet<>();
         skippedExceptions.add("org.junit.AssumptionViolatedException");
         skippedExceptions.add("org.junit.internal.AssumptionViolatedException");
         skippedExceptions.add("org.testng.SkipException");
@@ -134,8 +134,8 @@ public class SprimberBeans {
     }
 
     @Bean
-    public List<String> failedExceptionNames() {
-        List<String> failedExceptions = new ArrayList<>();
+    public Set<String> failedExceptionNames() {
+        Set<String> failedExceptions = new HashSet<>();
         failedExceptions.add("java.lang.AssertionError");
         return failedExceptions;
     }

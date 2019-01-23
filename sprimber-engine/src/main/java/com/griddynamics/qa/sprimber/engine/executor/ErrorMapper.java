@@ -28,8 +28,8 @@ import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import org.springframework.stereotype.Component;
 
 import java.lang.annotation.Annotation;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status;
 
@@ -39,12 +39,13 @@ import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status;
 @Component
 public class ErrorMapper {
 
-    private final List<String> skippedExceptionNames;
-    private final List<String> failedExceptionNames;
+    private final Set<String> skippedExceptionNames;
+    private final Set<String> failedExceptionNames;
     private final List<Class<? extends Annotation>> pendingExceptionAnnotations;
 
-    public ErrorMapper(List<String> skippedExceptionNames,
-                       List<String> failedExceptionNames, List<Class<? extends Annotation>> pendingExceptionAnnotations) {
+    public ErrorMapper(Set<String> skippedExceptionNames,
+                       Set<String> failedExceptionNames,
+                       List<Class<? extends Annotation>> pendingExceptionAnnotations) {
         this.skippedExceptionNames = skippedExceptionNames;
         this.failedExceptionNames = failedExceptionNames;
         this.pendingExceptionAnnotations = pendingExceptionAnnotations;
@@ -55,10 +56,10 @@ public class ErrorMapper {
         if (isPendingException(throwable)) {
             return new ExecutionResult(Status.PENDING, throwable);
         }
-        if (Arrays.binarySearch(skippedExceptionNames.toArray(), throwable.getClass().getName()) >= 0) {
+        if (skippedExceptionNames.contains(throwable.getClass().getName())) {
             return new ExecutionResult(Status.SKIPPED, throwable);
         }
-        if (Arrays.binarySearch(failedExceptionNames.toArray(), throwable.getClass().getName()) >= 0) {
+        if (failedExceptionNames.contains(throwable.getClass().getName())) {
             return new ExecutionResult(Status.FAILED, throwable);
         }
         // TODO: 15/06/2018 to handle here situations where step not found or found more then one
