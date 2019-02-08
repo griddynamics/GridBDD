@@ -1,0 +1,10 @@
+org.springframework.context.ApplicationContextInitializer=\
+  com.griddynamics.qa.sprimber.reporter.TransformationClassLoaderInitializer
+
+# API, AssertJ implementation
+com.griddynamics.qa.sprimber.reporter.resolver.ReportByteCodeResolver=\
+  com.griddynamics.qa.sprimber.reporter.resolver.assertj.AssertJReportByteCodeResolver
+
+# API, dev mode (if `sr_dev` profile is active)
+com.griddynamics.qa.sprimber.reporter.service.ReportDescriptionService=\
+  com.griddynamics.qa.sprimber.reporter.service.dev.DevConsoleReportDescriptionResolver
