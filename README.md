@@ -1,5 +1,5 @@
 # sprimber
-![Maven Central](https://img.shields.io/maven-central/v/com.griddynamics.qa/sprimber-parent.svg?color=green&style=for-the-badge)
+[![Maven Central](https://img.shields.io/maven-central/v/com.griddynamics.qa/sprimber-parent.svg?color=green&style=for-the-badge)](https://search.maven.org/search?q=g:%22com.griddynamics.qa%22%20AND%20a:%22sprimber-spring-boot-starter%22)
 
 Cloud ready and customiaztion friendly BDD-style test automation framework that support multithreading.
 
