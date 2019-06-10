@@ -30,6 +30,8 @@ import com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook.TestHookFi
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook.TestHookStartedEvent;
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.teststep.TestStepFinishedEvent;
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.teststep.TestStepStartedEvent;
+import com.griddynamics.qa.sprimber.lifecycle.model.executor.testsuite.TestSuiteFinishedEvent;
+import com.griddynamics.qa.sprimber.lifecycle.model.executor.testsuite.TestSuiteStartedEvent;
 import com.griddynamics.qa.sprimber.lifecycle.model.loader.DefinitionLoadingFinishEvent;
 import com.griddynamics.qa.sprimber.lifecycle.model.loader.DefinitionLoadingStartEvent;
 import com.griddynamics.qa.sprimber.lifecycle.model.processor.ResourceProcessingFinishEvent;
@@ -65,6 +67,17 @@ public class TestCaseIlluminator {
     @EventListener
     public void illuminateDefinitionLoadingFinish(ResourceProcessingFinishEvent finishEvent) {
         LOGGER.debug("Resource processing finished from {}", finishEvent.getSource().getClass());
+    }
+
+    @EventListener
+    public void illuminateTestSuiteStart(TestSuiteStartedEvent startEvent) {
+        LOGGER.debug("Test suite started: {}", startEvent.getTestSuite().getRuntimeId());
+    }
+
+    @EventListener
+    public void illuminateTestSuiteFinish(TestSuiteFinishedEvent finishEvent) {
+        LOGGER.debug("Test suite finished: '{}' with status {}",
+                finishEvent.getTestSuite().getRuntimeId(), finishEvent.getExecutionResult().getStatus());
     }
 
     @EventListener

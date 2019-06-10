@@ -9,4 +9,4 @@ sprimber:
       printer:
         enable: true
     tagFilters:
-      - "@echo"
+      - "@scope"

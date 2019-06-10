@@ -73,6 +73,7 @@ public class PickleProcessor {
         parent.setName(cucumberDocument.getDocument().getFeature().getName());
         parent.setDescription(cucumberDocument.getDocument().getFeature().getDescription());
         parent.setUrl(cucumberDocument.getUrl().getPath());
+        parent.setId(cucumberDocument.getParentId());
         testCase.setParent(parent);
 
         testCase.setRuntimeId(UUID.randomUUID().toString());

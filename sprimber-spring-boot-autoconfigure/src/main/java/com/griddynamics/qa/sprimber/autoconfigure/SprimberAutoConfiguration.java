@@ -24,13 +24,14 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
 import org.springframework.context.annotation.*;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
 
-import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_EXECUTOR_NAME;
+import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_TC_EXECUTOR_NAME;
+import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_TS_EXECUTOR_NAME;
 
 /**
  * @author fparamonov
@@ -41,13 +42,24 @@ import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER
 @Import(SprimberBeans.class)
 public class SprimberAutoConfiguration {
 
-    @Bean(SPRIMBER_EXECUTOR_NAME)
-    @ConditionalOnMissingBean
-    public Executor asyncExecutor() {
+    @Bean(SPRIMBER_TC_EXECUTOR_NAME)
+    public Executor asyncTcExecutor(SprimberProperties sprimberProperties) {
         ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-        taskExecutor.setCorePoolSize(3);
-        taskExecutor.setMaxPoolSize(3);
-        taskExecutor.setThreadNamePrefix("TCExecutor-");
+        taskExecutor.setCorePoolSize(sprimberProperties.getTcExecutorPool().getCoreSize());
+        taskExecutor.setMaxPoolSize(sprimberProperties.getTcExecutorPool().getMaxSIze());
+        taskExecutor.setKeepAliveSeconds(sprimberProperties.getTcExecutorPool().getKeepAliveSeconds());
+        taskExecutor.setThreadNamePrefix(sprimberProperties.getTcExecutorPool().getThreadNamePrefix());
+        taskExecutor.initialize();
+        return taskExecutor;
+    }
+
+    @Bean(SPRIMBER_TS_EXECUTOR_NAME)
+    public Executor asyncTsExecutor(SprimberProperties sprimberProperties) {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(sprimberProperties.getTsExecutorPool().getCoreSize());
+        taskExecutor.setMaxPoolSize(sprimberProperties.getTsExecutorPool().getMaxSIze());
+        taskExecutor.setKeepAliveSeconds(sprimberProperties.getTsExecutorPool().getKeepAliveSeconds());
+        taskExecutor.setThreadNamePrefix(sprimberProperties.getTsExecutorPool().getThreadNamePrefix());
         taskExecutor.initialize();
         return taskExecutor;
     }

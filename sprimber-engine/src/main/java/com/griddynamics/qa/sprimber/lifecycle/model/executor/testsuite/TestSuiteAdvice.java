@@ -22,10 +22,10 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase;
+package com.griddynamics.qa.sprimber.lifecycle.model.executor.testsuite;
 
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
-import com.griddynamics.qa.sprimber.engine.model.TestCase;
+import com.griddynamics.qa.sprimber.engine.model.TestSuite;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -37,22 +37,23 @@ import java.util.concurrent.CompletableFuture;
 /**
  * @author fparamonov
  */
+
 @Aspect
 @Component
-public class TestCaseAdvice {
+public class TestSuiteAdvice {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    public TestCaseAdvice(ApplicationEventPublisher eventPublisher) {
+    public TestSuiteAdvice(ApplicationEventPublisher eventPublisher) {
         this.eventPublisher = eventPublisher;
     }
 
-    @Around("com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCasePointcut.testCaseExecution(testCase)")
-    public Object surroundTestCaseExecution(ProceedingJoinPoint joinPoint, TestCase testCase) throws Throwable {
-        TestCaseStartedEvent startedEvent = new TestCaseStartedEvent(joinPoint.getTarget());
-        TestCaseFinishedEvent finishedEvent = new TestCaseFinishedEvent(joinPoint.getTarget());
-        startedEvent.setTestCase(testCase);
-        finishedEvent.setTestCase(testCase);
+    @Around("com.griddynamics.qa.sprimber.lifecycle.model.executor.testsuite.TestSuitePointcut.testSuiteExecution(testSuite)")
+    public Object surroundTestSuiteExecution(ProceedingJoinPoint joinPoint, TestSuite testSuite) throws Throwable {
+        TestSuiteStartedEvent startedEvent = new TestSuiteStartedEvent(joinPoint.getTarget());
+        TestSuiteFinishedEvent finishedEvent = new TestSuiteFinishedEvent(joinPoint.getTarget());
+        startedEvent.setTestSuite(testSuite);
+        finishedEvent.setTestSuite(testSuite);
         eventPublisher.publishEvent(startedEvent);
         Object result = joinPoint.proceed();
         CompletableFuture<ExecutionResult> executionResultFuture = (CompletableFuture<ExecutionResult>) result;

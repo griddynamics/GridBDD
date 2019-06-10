@@ -29,5 +29,6 @@ package com.griddynamics.qa.sprimber.engine.model;
  */
 public class ThreadConstants {
 
-    public static final String SPRIMBER_EXECUTOR_NAME = "sprimber-executor";
+    public static final String SPRIMBER_TC_EXECUTOR_NAME = "sprimber-tc-executor";
+    public static final String SPRIMBER_TS_EXECUTOR_NAME = "sprimber-ts-executor";
 }

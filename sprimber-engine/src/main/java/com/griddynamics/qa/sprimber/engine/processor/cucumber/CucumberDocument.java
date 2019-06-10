@@ -37,6 +37,7 @@ public class CucumberDocument {
 
     private GherkinDocument document;
     private URL url;
+    private String parentId;
 
     public GherkinDocument getDocument() {
         return document;
@@ -52,5 +53,13 @@ public class CucumberDocument {
 
     public void setUrl(URL url) {
         this.url = url;
+    }
+
+    public String getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(String parentId) {
+        this.parentId = parentId;
     }
 }

@@ -22,28 +22,42 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.lifecycle.model.processor;
+package com.griddynamics.qa.sprimber.engine.executor;
 
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
+import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.model.TestSuite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.CompletableFuture;
+
+import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_TS_EXECUTOR_NAME;
 
 /**
  * @author fparamonov
  */
-@Aspect
+
 @Component
-public class ProcessorPointcut {
+public class TestSuiteExecutor {
 
-    @Pointcut("target(com.griddynamics.qa.sprimber.engine.processor.TestSuiteProvider)")
-    public void targetProcessor() {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestSuiteExecutor.class);
+
+    private final TestCaseExecutor testCaseExecutor;
+
+    public TestSuiteExecutor(TestCaseExecutor testCaseExecutor) {
+        this.testCaseExecutor = testCaseExecutor;
     }
 
-    @Pointcut("execution(public * provide(..))")
-    public void executeProcessing() {
-    }
+    @Async(SPRIMBER_TS_EXECUTOR_NAME)
+    public CompletableFuture<ExecutionResult> execute(TestSuite testSuite) {
 
-    @Pointcut("targetProcessor() && executeProcessing()")
-    public void executeProcessingOnChilds() {
+        CompletableFuture.allOf(testSuite.getTestCases().stream()
+                .map(testCaseExecutor::execute).toArray(CompletableFuture[]::new)).join();
+
+        // TODO: 2019-06-08 Add actual status for test suite execution
+        ExecutionResult successResult = new ExecutionResult(ExecutionResult.Status.PASSED);
+        return CompletableFuture.completedFuture(successResult);
     }
 }

@@ -17,33 +17,37 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id:
+$Id: 
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.lifecycle.model.processor;
+package com.griddynamics.qa.sprimber.lifecycle.model.executor.testsuite;
 
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
-import org.springframework.stereotype.Component;
+import com.griddynamics.qa.sprimber.engine.model.TestSuite;
+import org.springframework.context.ApplicationEvent;
 
 /**
  * @author fparamonov
  */
-@Aspect
-@Component
-public class ProcessorPointcut {
+public class TestSuiteStartedEvent extends ApplicationEvent {
 
-    @Pointcut("target(com.griddynamics.qa.sprimber.engine.processor.TestSuiteProvider)")
-    public void targetProcessor() {
+    private TestSuite testSuite;
+
+    /**
+     * Create a new ApplicationEvent.
+     *
+     * @param source the object on which the event initially occurred (never {@code null})
+     */
+    public TestSuiteStartedEvent(Object source) {
+        super(source);
     }
 
-    @Pointcut("execution(public * provide(..))")
-    public void executeProcessing() {
+    public TestSuite getTestSuite() {
+        return testSuite;
     }
 
-    @Pointcut("targetProcessor() && executeProcessing()")
-    public void executeProcessingOnChilds() {
+    public void setTestSuite(TestSuite testSuite) {
+        this.testSuite = testSuite;
     }
 }

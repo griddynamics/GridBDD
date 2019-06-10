@@ -27,6 +27,9 @@ package com.griddynamics.qa.sprimber.autoconfigure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.griddynamics.qa.sprimber.autoconfigure.annotation.EnableSprimber;
 import com.griddynamics.qa.sprimber.engine.executor.CliRunner;
+import com.griddynamics.qa.sprimber.engine.executor.TestCaseActionsExecutor;
+import com.griddynamics.qa.sprimber.engine.executor.TestCaseExecutor;
+import com.griddynamics.qa.sprimber.engine.executor.TestSuiteExecutor;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
 import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
@@ -38,6 +41,7 @@ import gherkin.pickles.Compiler;
 import io.cucumber.stepexpression.StepExpressionFactory;
 import io.cucumber.stepexpression.TypeRegistry;
 import io.qameta.allure.AllureLifecycle;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -49,7 +53,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.time.Clock;
 
 import static com.griddynamics.qa.sprimber.autoconfigure.SprimberRegistrar.ATTRIBUTES_BEAN_NAME;
-import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_EXECUTOR_NAME;
+import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_TC_EXECUTOR_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -80,8 +84,34 @@ public class BaseTest {
                             assertThat(context).hasSingleBean(JacksonDataTableTransformer.class);
                             assertThat(context).hasSingleBean(FlowOrchestrator.class);
                             assertThat(context).hasSingleBean(TestCaseSummaryPrinter.class);
-                            assertThat(context).hasBean(SPRIMBER_EXECUTOR_NAME);
+                            assertThat(context).hasBean(SPRIMBER_TC_EXECUTOR_NAME);
                             assertThat(context).hasBean(ATTRIBUTES_BEAN_NAME);
+                        }
+                );
+    }
+
+    @Test
+    public void testExecutorBeans() {
+        contextRunner.withUserConfiguration(SomeTestConfiguration.class)
+                .run(
+                        context -> {
+                            assertThat(context).hasSingleBean(TestCaseExecutor.class);
+                            assertThat(context).hasSingleBean(TestSuiteExecutor.class);
+                        }
+                );
+    }
+
+    @Test
+    public void testDefaultPoolProperties() {
+        SprimberProperties.PoolExecutorProperties tcTargetPool =
+                new SprimberProperties.PoolExecutorProperties(3, 3, 60, "TC-Executor-");
+        SprimberProperties.PoolExecutorProperties tsTargetPool =
+                new SprimberProperties.PoolExecutorProperties(1, 1, 60, "TS-Executor-");
+        contextRunner.withUserConfiguration(SomeTestConfiguration.class)
+                .run(
+                        context -> {
+                            assertThat(context.getBean(SprimberProperties.class).getTcExecutorPool()).isEqualToComparingFieldByField(tcTargetPool);
+                            assertThat(context.getBean(SprimberProperties.class).getTsExecutorPool()).isEqualToComparingFieldByField(tsTargetPool);
                         }
                 );
     }

@@ -26,15 +26,13 @@ package com.griddynamics.qa.sprimber.engine.executor;
 
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
-import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
-import org.mockito.BDDMockito;
 import org.mockito.Mockito;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author fparamonov
@@ -43,23 +41,19 @@ public class TestCaseExecutorTest {
 
     private TestCaseActionsExecutor actionsExecutor;
     private TestCaseExecutor testCaseExecutor;
-    private CountDownLatch countDownLatch;
 
     @Before
     public void setUp() throws Exception {
         actionsExecutor = Mockito.mock(TestCaseActionsExecutor.class);
         testCaseExecutor = new TestCaseExecutor(actionsExecutor);
-        countDownLatch = new CountDownLatch(1);
-        testCaseExecutor.setCountDownLatch(countDownLatch);
     }
 
     @Test
     public void onePositiveBeforeScenarioHook() throws Exception {
         TestCase testCase = new TestCase();
         testCase.getAllHooks().add(MockActionBuilder.mockBeforeScenarioAction());
-        ExecutionResult result = testCaseExecutor.execute(testCase);
-        Assertions.assertThat(result.getStatus()).as("Test case finished with wrong status").isEqualTo(ExecutionResult.Status.PASSED);
-        Assertions.assertThat(countDownLatch.getCount()).as("Test case not finished").isEqualTo(0);
+        CompletableFuture<ExecutionResult> resultFuture = testCaseExecutor.execute(testCase);
+        Assertions.assertThat(resultFuture.get().getStatus()).as("Test case finished with wrong status").isEqualTo(ExecutionResult.Status.PASSED);
         Mockito.verify(actionsExecutor, Mockito.never()).executeStepAction(ArgumentMatchers.any());
         Mockito.verify(actionsExecutor, Mockito.times(1)).executeHookAction(ArgumentMatchers.any());
     }
@@ -73,9 +67,9 @@ public class TestCaseExecutorTest {
         testCase.getAllHooks().add(MockActionBuilder.mockAfterStepAction());
         testCase.getSteps().add(MockStepBuilder.mockGivenStep());
 
-        ExecutionResult result = testCaseExecutor.execute(testCase);
+        CompletableFuture<ExecutionResult> resultFuture = testCaseExecutor.execute(testCase);
+        ExecutionResult result = resultFuture.get();
         Assertions.assertThat(result.getStatus()).as("Test case finished with wrong status").isEqualTo(ExecutionResult.Status.PASSED);
-        Assertions.assertThat(countDownLatch.getCount()).as("Test case not finished").isEqualTo(0);
         Mockito.verify(actionsExecutor, Mockito.times(1)).executeStepAction(ArgumentMatchers.any());
         Mockito.verify(actionsExecutor, Mockito.times(4)).executeHookAction(ArgumentMatchers.any());
     }

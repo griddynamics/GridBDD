@@ -17,33 +17,19 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id:
+$Id: 
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.lifecycle.model.processor;
+package com.griddynamics.qa.sprimber.engine.processor;
 
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
-import org.springframework.stereotype.Component;
+import com.griddynamics.qa.sprimber.engine.model.TestSuite;
 
 /**
  * @author fparamonov
  */
-@Aspect
-@Component
-public class ProcessorPointcut {
+public interface TestSuiteProvider {
 
-    @Pointcut("target(com.griddynamics.qa.sprimber.engine.processor.TestSuiteProvider)")
-    public void targetProcessor() {
-    }
-
-    @Pointcut("execution(public * provide(..))")
-    public void executeProcessing() {
-    }
-
-    @Pointcut("targetProcessor() && executeProcessing()")
-    public void executeProcessingOnChilds() {
-    }
+    TestSuite provide();
 }

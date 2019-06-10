@@ -25,10 +25,11 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.executor;
 
 import com.griddynamics.qa.sprimber.engine.loader.ActionDefinitionLoader;
-import com.griddynamics.qa.sprimber.engine.model.TestCase;
+import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.model.TestSuite;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
-import com.griddynamics.qa.sprimber.engine.processor.ResourceProcessor;
+import com.griddynamics.qa.sprimber.engine.processor.TestSuiteProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -37,7 +38,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -49,29 +50,31 @@ public class CliRunner implements ApplicationRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(CliRunner.class);
 
     private final List<ActionDefinitionLoader> loaders;
-    private final List<ResourceProcessor> processors;
-    private final TestCaseExecutor testCaseExecutor;
+    private final List<TestSuiteProvider> processors;
+    private final TestSuiteExecutor testSuiteExecutor;
     private final ActionsContainer actionsContainer;
 
     public CliRunner(List<ActionDefinitionLoader> loaders,
-                     List<ResourceProcessor> processors,
-                     TestCaseExecutor testCaseExecutor,
+                     List<TestSuiteProvider> processors,
+                     TestSuiteExecutor testSuiteExecutor,
                      ActionsContainer actionsContainer) {
         this.loaders = loaders;
         this.processors = processors;
-        this.testCaseExecutor = testCaseExecutor;
+        this.testSuiteExecutor = testSuiteExecutor;
         this.actionsContainer = actionsContainer;
     }
 
     public void run(ApplicationArguments args) throws Exception {
-        LOGGER.info("I'm running from CLI");
         List<ActionDefinition> actionDefinitions =
-                loaders.stream().map(ActionDefinitionLoader::load).flatMap(Collection::stream).collect(Collectors.toList());
+                loaders.stream()
+                        .map(ActionDefinitionLoader::load)
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
         actionsContainer.addDefinitions(actionDefinitions);
-        List<TestCase> testCases = processors.stream().map(ResourceProcessor::process).flatMap(Collection::stream).collect(Collectors.toList());
-        CountDownLatch countDownLatch = new CountDownLatch(testCases.size());
-        testCaseExecutor.setCountDownLatch(countDownLatch);
-        testCases.forEach(testCaseExecutor::execute);
-        countDownLatch.await();
+        List<TestSuite> testSuites = processors.stream()
+                .map(TestSuiteProvider::provide)
+                .collect(Collectors.toList());
+        CompletableFuture.allOf(testSuites.stream()
+                .map(testSuiteExecutor::execute).toArray(CompletableFuture[]::new)).join();
     }
 }

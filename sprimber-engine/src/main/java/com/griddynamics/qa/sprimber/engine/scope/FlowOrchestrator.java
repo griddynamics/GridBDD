@@ -28,6 +28,8 @@ import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFi
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseStartedEvent;
 import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
@@ -47,10 +49,12 @@ public class FlowOrchestrator {
     }
 
     @EventListener
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     public void setupTestCaseContext(TestCaseStartedEvent startEvent) {
         TestCaseContextHolder.setupNewContext(startEvent.getTestCase());
     }
 
+    @Order
     @EventListener
     public void resetTestCaseContext(TestCaseFinishedEvent finishEvent) {
         TestCaseContextHolder.cleanContext(beanFactory);

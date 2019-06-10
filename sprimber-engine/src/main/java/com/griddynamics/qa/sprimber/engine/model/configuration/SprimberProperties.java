@@ -37,6 +37,10 @@ public class SprimberProperties {
 
     private List<String> tagFilters = new ArrayList<>();
     private String featurePath;
+    private PoolExecutorProperties tcExecutorPool =
+            new PoolExecutorProperties(3, 3, 60, "TC-Executor-");
+    private PoolExecutorProperties tsExecutorPool =
+            new PoolExecutorProperties(1, 1, 60, "TS-Executor-");
 
     public String getFeaturePath() {
         return featurePath;
@@ -52,5 +56,67 @@ public class SprimberProperties {
 
     public void setTagFilters(List<String> tagFilters) {
         this.tagFilters = tagFilters;
+    }
+
+    public PoolExecutorProperties getTcExecutorPool() {
+        return tcExecutorPool;
+    }
+
+    public void setTcExecutorPool(PoolExecutorProperties tcExecutorPool) {
+        this.tcExecutorPool = tcExecutorPool;
+    }
+
+    public PoolExecutorProperties getTsExecutorPool() {
+        return tsExecutorPool;
+    }
+
+    public void setTsExecutorPool(PoolExecutorProperties tsExecutorPool) {
+        this.tsExecutorPool = tsExecutorPool;
+    }
+
+    public static class PoolExecutorProperties {
+        private int coreSize;
+        private int maxSIze;
+        private int keepAliveSeconds;
+        private String threadNamePrefix;
+
+        public PoolExecutorProperties(int coreSize, int maxSIze, int keepAliveSeconds, String threadNamePrefix) {
+            this.coreSize = coreSize;
+            this.maxSIze = maxSIze;
+            this.keepAliveSeconds = keepAliveSeconds;
+            this.threadNamePrefix = threadNamePrefix;
+        }
+
+        public int getCoreSize() {
+            return coreSize;
+        }
+
+        public void setCoreSize(int coreSize) {
+            this.coreSize = coreSize;
+        }
+
+        public int getMaxSIze() {
+            return maxSIze;
+        }
+
+        public void setMaxSIze(int maxSIze) {
+            this.maxSIze = maxSIze;
+        }
+
+        public int getKeepAliveSeconds() {
+            return keepAliveSeconds;
+        }
+
+        public void setKeepAliveSeconds(int keepAliveSeconds) {
+            this.keepAliveSeconds = keepAliveSeconds;
+        }
+
+        public String getThreadNamePrefix() {
+            return threadNamePrefix;
+        }
+
+        public void setThreadNamePrefix(String threadNamePrefix) {
+            this.threadNamePrefix = threadNamePrefix;
+        }
     }
 }

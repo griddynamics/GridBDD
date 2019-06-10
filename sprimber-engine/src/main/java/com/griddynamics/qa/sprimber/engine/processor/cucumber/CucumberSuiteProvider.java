@@ -25,8 +25,9 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
+import com.griddynamics.qa.sprimber.engine.model.TestSuite;
 import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
-import com.griddynamics.qa.sprimber.engine.processor.ResourceProcessor;
+import com.griddynamics.qa.sprimber.engine.processor.TestSuiteProvider;
 import gherkin.Parser;
 import gherkin.TokenMatcher;
 import gherkin.ast.GherkinDocument;
@@ -42,6 +43,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -54,7 +56,7 @@ import java.util.stream.Stream;
  */
 
 @Component
-public class CucumberProcessor implements ResourceProcessor {
+public class CucumberSuiteProvider implements TestSuiteProvider {
 
     private final Parser<GherkinDocument> gherkinParser;
     private final TokenMatcher tokenMatcher;
@@ -63,12 +65,12 @@ public class CucumberProcessor implements ResourceProcessor {
     private final ApplicationContext applicationContext;
     private final PickleProcessor pickleProcessor;
 
-    public CucumberProcessor(Parser<GherkinDocument> gherkinParser,
-                             TokenMatcher tokenMatcher,
-                             Compiler compiler,
-                             SprimberProperties sprimberProperties,
-                             ApplicationContext applicationContext,
-                             PickleProcessor pickleProcessor) {
+    public CucumberSuiteProvider(Parser<GherkinDocument> gherkinParser,
+                                 TokenMatcher tokenMatcher,
+                                 Compiler compiler,
+                                 SprimberProperties sprimberProperties,
+                                 ApplicationContext applicationContext,
+                                 PickleProcessor pickleProcessor) {
         this.gherkinParser = gherkinParser;
         this.tokenMatcher = tokenMatcher;
         this.compiler = compiler;
@@ -78,25 +80,29 @@ public class CucumberProcessor implements ResourceProcessor {
     }
 
     @Override
-    public List<TestCase> process() {
-        List<TestCase> testCases = new ArrayList<>();
+    public TestSuite provide() {
+        TestSuite testSuite = new TestSuite();
+        String suiteId = UUID.randomUUID().toString();
+        testSuite.setRuntimeId(suiteId);
         try {
-            testCases = Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()))
-                    .map(this::buildCucumberDocument)
+            List<TestCase> testCases = Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()))
+                    .map(resource -> buildCucumberDocument(resource, suiteId))
                     .flatMap(this::buildTestCasesStream)
                     .collect(Collectors.toList());
+            testSuite.addTestCasesForExecution(testCases);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return testCases;
+        return testSuite;
     }
 
-    private CucumberDocument buildCucumberDocument(Resource resource) {
+    private CucumberDocument buildCucumberDocument(Resource resource, String parentId) {
         try {
             GherkinDocument document = gherkinParser.parse(new InputStreamReader(resource.getInputStream()), tokenMatcher);
             CucumberDocument cucumberDocument = new CucumberDocument();
             cucumberDocument.setDocument(document);
             cucumberDocument.setUrl(resource.getURL());
+            cucumberDocument.setParentId(parentId);
             return cucumberDocument;
         } catch (IOException e) {
             throw new RuntimeException(e);

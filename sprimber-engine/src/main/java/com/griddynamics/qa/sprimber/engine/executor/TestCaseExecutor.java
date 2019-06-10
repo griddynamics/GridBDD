@@ -32,10 +32,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
 import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.PASSED;
-import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_EXECUTOR_NAME;
+import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_TC_EXECUTOR_NAME;
 
 /**
  * This class play a role of test case orchestrator. Main goal here to schedule execution in right order.
@@ -50,21 +51,14 @@ public class TestCaseExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestCaseExecutor.class);
 
     private final TestCaseActionsExecutor actionsExecutor;
-    private CountDownLatch countDownLatch;
 
     public TestCaseExecutor(TestCaseActionsExecutor actionsExecutor) {
         this.actionsExecutor = actionsExecutor;
     }
 
-    public void setCountDownLatch(CountDownLatch countDownLatch) {
-        this.countDownLatch = countDownLatch;
-    }
-
-    @Async(SPRIMBER_EXECUTOR_NAME)
-    public ExecutionResult execute(TestCase testCase) {
+    @Async(SPRIMBER_TC_EXECUTOR_NAME)
+    public CompletableFuture<ExecutionResult> execute(TestCase testCase) {
         ExecutionResult testCaseResult = new ExecutionResult(PASSED);
-        // TODO: 10/06/2018 make countdown latch handling more attractive
-        LOGGER.debug("Remaining TC count {}", countDownLatch.getCount());
 
         // TODO: 11/17/18 Make stage management more graceful
         actionsExecutor.cleanStageResults();
@@ -98,8 +92,7 @@ public class TestCaseExecutor {
         if (!actionsExecutor.currentFailures().isEmpty()) {
             testCaseResult = actionsExecutor.currentFailures().get(0);
         }
-        countDownLatch.countDown();
-        LOGGER.debug("Remaining TC count {}", countDownLatch.getCount());
-        return testCaseResult;
+
+        return CompletableFuture.completedFuture(testCaseResult);
     }
 }
