@@ -42,9 +42,4 @@ public class EchoTestBackend {
     public static void main(String[] args) throws Exception {
         SpringApplication.exit(SpringApplication.run(EchoTestBackend.class));
     }
-
-    @Bean
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper();
-    }
 }

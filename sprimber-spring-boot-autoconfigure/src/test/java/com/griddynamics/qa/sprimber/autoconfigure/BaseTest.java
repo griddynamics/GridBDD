@@ -43,7 +43,6 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.Clock;
@@ -74,7 +73,11 @@ public class BaseTest {
                             assertThat(context).hasSingleBean(SprimberProperties.class);
                             assertThat(context).hasSingleBean(ActionsContainer.class);
                             assertThat(context).hasSingleBean(AllureLifecycle.class);
+                            assertThat(context).getBeanNames(AllureLifecycle.class).contains("sprimberAllureLifecycle");
                             assertThat(context).hasSingleBean(Clock.class);
+                            assertThat(context).getBeanNames(Clock.class).contains("systemClock");
+                            assertThat(context).hasSingleBean(ObjectMapper.class);
+                            assertThat(context).getBeanNames(ObjectMapper.class).contains("dataTableObjectMapper");
                             assertThat(context).hasSingleBean(StepExpressionFactory.class);
                             assertThat(context).hasSingleBean(TypeRegistry.class);
                             assertThat(context).hasSingleBean(JacksonDataTableTransformer.class);
@@ -89,10 +92,5 @@ public class BaseTest {
     @SpringBootApplication
     @EnableSprimber
     static class SomeTestConfiguration {
-
-        @Bean
-        public ObjectMapper objectMapper() {
-            return new ObjectMapper();
-        }
     }
 }

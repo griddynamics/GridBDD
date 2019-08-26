@@ -40,19 +40,19 @@ import java.util.Map;
 @Component
 public class JacksonDataTableTransformer implements TableEntryByTypeTransformer, TableCellByTypeTransformer {
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper dataTableObjectMapper;
 
-    public JacksonDataTableTransformer(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public JacksonDataTableTransformer(ObjectMapper dataTableObjectMapper) {
+        this.dataTableObjectMapper = dataTableObjectMapper;
     }
 
     @Override
     public <T> T transform(String value, Class<T> cellType) throws Throwable {
-        return objectMapper.convertValue(value, cellType);
+        return dataTableObjectMapper.convertValue(value, cellType);
     }
 
     @Override
     public <T> T transform(Map<String, String> entry, Class<T> type, TableCellByTypeTransformer cellTransformer) throws Throwable {
-        return objectMapper.convertValue(entry, type);
+        return dataTableObjectMapper.convertValue(entry, type);
     }
 }

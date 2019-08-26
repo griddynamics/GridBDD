@@ -24,6 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
 import com.griddynamics.qa.sprimber.engine.scope.TestCaseScope;
@@ -73,8 +74,14 @@ public class SprimberBeans {
 
     @Bean
     @ConditionalOnMissingBean
-    public AllureLifecycle allureLifecycle() {
+    public AllureLifecycle sprimberAllureLifecycle() {
         return new AllureLifecycle();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ObjectMapper dataTableObjectMapper() {
+        return new ObjectMapper();
     }
 
     @Bean
@@ -109,7 +116,7 @@ public class SprimberBeans {
 
     @Bean
     @ConditionalOnMissingBean
-    public Clock clock() {
+    public Clock systemClock() {
         return Clock.systemDefaultZone();
     }
 
