@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.model.configuration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,8 @@ import java.util.List;
 /**
  * @author fparamonov
  */
+
+@Component
 @ConfigurationProperties("sprimber.configuration")
 public class SprimberProperties {
 
