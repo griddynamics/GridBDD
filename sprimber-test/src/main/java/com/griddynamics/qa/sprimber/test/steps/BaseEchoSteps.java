@@ -55,9 +55,19 @@ public class BaseEchoSteps {
         LOGGER.info("Hey, I'm before action");
     }
 
+    @Before("@echo")
+    public void beforeTagged() {
+        LOGGER.info("Hey, I'm tagged before action");
+    }
+
     @BeforeStep
     public void beforeStep() {
         LOGGER.info("Hey, I'm beforeStep action");
+    }
+
+    @BeforeStep("@echo")
+    public void beforeStepTagged() {
+        LOGGER.info("Hey, I'm tagged beforeStep action");
     }
 
     @Given("^test given action$")
@@ -110,9 +120,19 @@ public class BaseEchoSteps {
         LOGGER.info("Hey, I'm afterStep action");
     }
 
+    @AfterStep("@echo")
+    public void afterStepTagged() {
+        LOGGER.info("Hey, I'm tagged afterStep action");
+    }
+
     @After
     public void after() {
         LOGGER.info("Hey, I'm after action");
+    }
+
+    @After("@echo")
+    public void afterTagged() {
+        LOGGER.info("Hey, I'm tagged after action");
     }
 
     public void dummy() {
