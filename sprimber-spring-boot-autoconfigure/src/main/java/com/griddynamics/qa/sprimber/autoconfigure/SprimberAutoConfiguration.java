@@ -25,7 +25,10 @@ $Id:
 package com.griddynamics.qa.sprimber.autoconfigure;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
@@ -36,8 +39,9 @@ import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER
  * @author fparamonov
  */
 @Configuration
-@ComponentScan(basePackages = {"com.griddynamics.qa.sprimber.engine", "com.griddynamics.qa.sprimber.lifecycle"})
-@EnableAspectJAutoProxy
+@ComponentScan(basePackages = {"com.griddynamics.qa.sprimber.engine",
+        "com.griddynamics.qa.sprimber.lifecycle",
+        "com.griddynamics.qa.sprimber.aspect"})
 @Import(SprimberBeans.class)
 public class SprimberAutoConfiguration {
 

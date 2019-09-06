@@ -26,13 +26,12 @@ package com.griddynamics.qa.sprimber.engine.executor;
 
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
-import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
-import org.mockito.BDDMockito;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.support.AbstractBeanFactory;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -42,13 +41,15 @@ import java.util.concurrent.CountDownLatch;
 public class TestCaseExecutorTest {
 
     private TestCaseActionsExecutor actionsExecutor;
+    private AbstractBeanFactory beanFactory;
     private TestCaseExecutor testCaseExecutor;
     private CountDownLatch countDownLatch;
 
     @Before
     public void setUp() throws Exception {
         actionsExecutor = Mockito.mock(TestCaseActionsExecutor.class);
-        testCaseExecutor = new TestCaseExecutor(actionsExecutor);
+        beanFactory = Mockito.mock(AbstractBeanFactory.class);
+        testCaseExecutor = new TestCaseExecutor(actionsExecutor, beanFactory);
         countDownLatch = new CountDownLatch(1);
         testCaseExecutor.setCountDownLatch(countDownLatch);
     }
