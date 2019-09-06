@@ -22,39 +22,45 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook;
+package com.griddynamics.qa.sprimber.aspect;
 
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
+import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Component;
+import org.aspectj.lang.annotation.Pointcut;
 
 /**
  * @author fparamonov
  */
-//@Aspect
-//@Component
-public class TestHookAdvice {
 
-    private final ApplicationEventPublisher eventPublisher;
+@Slf4j
+@Aspect
+public class StepExecutionCatcher {
 
-    public TestHookAdvice(ApplicationEventPublisher eventPublisher) {
-        this.eventPublisher = eventPublisher;
+    @Around("stepMethodsExecution()")
+    public Object surroundStepExecution(ProceedingJoinPoint joinPoint) {
+        Object result = null;
+        try {
+            log.info("Starting point");
+            result = joinPoint.proceed();
+            log.info("Point completed");
+        } catch (Throwable throwable) {
+            log.error("Some error here");
+            throwable.printStackTrace();
+        }
+        return result;
     }
 
-//    @Around("com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook.TestHookPointcut.actionsExecution(actionDefinition)")
-    public Object surroundHookExecution(ProceedingJoinPoint joinPoint, ActionDefinition actionDefinition) throws Throwable {
-        TestHookStartedEvent startedEvent = new TestHookStartedEvent(joinPoint.getTarget());
-        TestHookFinishedEvent finishedEvent = new TestHookFinishedEvent(joinPoint.getTarget());
-        startedEvent.setHookDefinition(actionDefinition);
-        finishedEvent.setHookDefinition(actionDefinition);
-        eventPublisher.publishEvent(startedEvent);
-        Object result = joinPoint.proceed();
-        finishedEvent.setExecutionResult((ExecutionResult) result);
-        eventPublisher.publishEvent(finishedEvent);
-        return result;
+    @Pointcut("execution(@(@cucumber.runtime.java.StepDefAnnotation *) public void *(..))")
+    public void withinComponent() {
+    }
+
+    @Pointcut("within(@com.griddynamics.qa.sprimber.engine.model.action.Actions *)")
+    public void withinTest() {
+    }
+
+    @Pointcut("withinTest() && withinComponent()")
+    public void stepMethodsExecution() {
     }
 }

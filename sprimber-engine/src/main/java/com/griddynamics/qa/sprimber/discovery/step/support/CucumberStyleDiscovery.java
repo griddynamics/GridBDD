@@ -17,37 +17,23 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id:
+$Id: 
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
- */
+*/
 
-package com.griddynamics.qa.sprimber.lifecycle.model.processor;
+package com.griddynamics.qa.sprimber.discovery.step.support;
 
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Component;
+import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
+
+import java.util.List;
 
 /**
  * @author fparamonov
  */
-//@Aspect
-//@Component
-public class ProcessorAdvice {
-
-    private final ApplicationEventPublisher eventPublisher;
-
-    public ProcessorAdvice(ApplicationEventPublisher eventPublisher) {
-        this.eventPublisher = eventPublisher;
-    }
-
-//    @Around("com.griddynamics.qa.sprimber.lifecycle.model.processor.ProcessorPointcut.executeProcessingOnChilds()")
-    public Object surroundResourceProcessing(ProceedingJoinPoint joinPoint) throws Throwable {
-        eventPublisher.publishEvent(new ResourceProcessingStartEvent(joinPoint.getTarget()));
-        Object result = joinPoint.proceed();
-        eventPublisher.publishEvent(new ResourceProcessingFinishEvent(joinPoint.getTarget()));
-        return result;
+public class CucumberStyleDiscovery implements StepDefinitionDiscovery {
+    @Override
+    public List<StepDefinition> discover() {
+        return null;
     }
 }
