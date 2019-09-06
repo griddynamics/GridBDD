@@ -32,8 +32,8 @@ import org.springframework.stereotype.Component;
 /**
  * @author fparamonov
  */
-@Aspect
-@Component
+//@Aspect
+//@Component
 public class LoaderAdvice {
 
     private final ApplicationEventPublisher eventPublisher;
@@ -42,7 +42,7 @@ public class LoaderAdvice {
         this.eventPublisher = eventPublisher;
     }
 
-    @Around("com.griddynamics.qa.sprimber.lifecycle.model.loader.LoaderPointcut.executeLoadOnChilds()")
+//    @Around("com.griddynamics.qa.sprimber.lifecycle.model.loader.LoaderPointcut.executeLoadOnChilds()")
     public Object surroundDefinitionLoad(ProceedingJoinPoint joinPoint) throws Throwable {
         eventPublisher.publishEvent(new DefinitionLoadingStartEvent(joinPoint.getTarget()));
         Object result = joinPoint.proceed();

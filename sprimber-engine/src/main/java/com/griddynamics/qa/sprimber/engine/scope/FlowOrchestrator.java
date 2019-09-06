@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
  * @author fparamonov
  */
 
-@Component
+//@Component
 public class FlowOrchestrator {
 
     private final AbstractBeanFactory beanFactory;
@@ -46,12 +46,12 @@ public class FlowOrchestrator {
         this.beanFactory = beanFactory;
     }
 
-    @EventListener
+//    @EventListener
     public void setupTestCaseContext(TestCaseStartedEvent startEvent) {
         TestCaseContextHolder.setupNewContext(startEvent.getTestCase());
     }
 
-    @EventListener
+//    @EventListener
     public void resetTestCaseContext(TestCaseFinishedEvent finishEvent) {
         TestCaseContextHolder.cleanContext(beanFactory);
     }

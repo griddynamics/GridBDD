@@ -1,0 +1,13 @@
+<!DOCTYPE aspectj PUBLIC "-//AspectJ//DTD//EN" "https://www.eclipse.org/aspectj/dtd/aspectj.dtd">
+<aspectj>
+
+    <weaver options="-showWeaveInfo">
+        <include within="com.griddynamics.qa..*"/>
+    </weaver>
+
+    <aspects>
+        <!-- weave in just this aspect -->
+        <aspect name="com.griddynamics.qa.sprimber.aspect.StepExecutionCatcher"/>
+    </aspects>
+
+</aspectj>

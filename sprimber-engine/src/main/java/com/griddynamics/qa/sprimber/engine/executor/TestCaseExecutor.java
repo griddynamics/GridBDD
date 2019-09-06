@@ -27,8 +27,10 @@ package com.griddynamics.qa.sprimber.engine.executor;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
+import com.griddynamics.qa.sprimber.engine.scope.TestCaseContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -50,10 +52,12 @@ public class TestCaseExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestCaseExecutor.class);
 
     private final TestCaseActionsExecutor actionsExecutor;
+    private final AbstractBeanFactory beanFactory;
     private CountDownLatch countDownLatch;
 
-    public TestCaseExecutor(TestCaseActionsExecutor actionsExecutor) {
+    public TestCaseExecutor(TestCaseActionsExecutor actionsExecutor, AbstractBeanFactory beanFactory) {
         this.actionsExecutor = actionsExecutor;
+        this.beanFactory = beanFactory;
     }
 
     public void setCountDownLatch(CountDownLatch countDownLatch) {
@@ -62,6 +66,7 @@ public class TestCaseExecutor {
 
     @Async(SPRIMBER_EXECUTOR_NAME)
     public ExecutionResult execute(TestCase testCase) {
+        TestCaseContextHolder.setupNewContext(testCase);
         ExecutionResult testCaseResult = new ExecutionResult(PASSED);
         // TODO: 10/06/2018 make countdown latch handling more attractive
         LOGGER.debug("Remaining TC count {}", countDownLatch.getCount());
@@ -98,6 +103,7 @@ public class TestCaseExecutor {
         if (!actionsExecutor.currentFailures().isEmpty()) {
             testCaseResult = actionsExecutor.currentFailures().get(0);
         }
+        TestCaseContextHolder.cleanContext(beanFactory);
         countDownLatch.countDown();
         LOGGER.debug("Remaining TC count {}", countDownLatch.getCount());
         return testCaseResult;

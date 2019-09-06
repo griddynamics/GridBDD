@@ -20,34 +20,34 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 $Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
- */
+*/
 
-package com.griddynamics.qa.sprimber.lifecycle.model.processor;
+package com.griddynamics.qa.sprimber.discovery.step.annotation;
 
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.annotation.AliasFor;
 import org.springframework.stereotype.Component;
 
+import java.lang.annotation.*;
+
 /**
+ * Convenient annotation that helps Spring to identify marked class as a bean candidate
+ * And allows to identify this class as a holder of step definitions for Sprimber
+ *
  * @author fparamonov
  */
-//@Aspect
-//@Component
-public class ProcessorAdvice {
 
-    private final ApplicationEventPublisher eventPublisher;
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Component
+public @interface StepController {
 
-    public ProcessorAdvice(ApplicationEventPublisher eventPublisher) {
-        this.eventPublisher = eventPublisher;
-    }
-
-//    @Around("com.griddynamics.qa.sprimber.lifecycle.model.processor.ProcessorPointcut.executeProcessingOnChilds()")
-    public Object surroundResourceProcessing(ProceedingJoinPoint joinPoint) throws Throwable {
-        eventPublisher.publishEvent(new ResourceProcessingStartEvent(joinPoint.getTarget()));
-        Object result = joinPoint.proceed();
-        eventPublisher.publishEvent(new ResourceProcessingFinishEvent(joinPoint.getTarget()));
-        return result;
-    }
+    /**
+     * The value may indicate a suggestion for a logical component name,
+     * to be turned into a Spring bean in case of an autodetected component.
+     *
+     * @return the suggested component name, if any (or empty String otherwise)
+     */
+    @AliasFor(annotation = Component.class)
+    String value() default "";
 }

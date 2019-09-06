@@ -35,8 +35,8 @@ import org.springframework.stereotype.Component;
 /**
  * @author fparamonov
  */
-@Aspect
-@Component
+//@Aspect
+//@Component
 public class TestCaseAdvice {
 
     private final ApplicationEventPublisher eventPublisher;
@@ -45,7 +45,7 @@ public class TestCaseAdvice {
         this.eventPublisher = eventPublisher;
     }
 
-    @Around("com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCasePointcut.testCaseExecution(testCase)")
+//    @Around("com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCasePointcut.testCaseExecution(testCase)")
     public Object surroundTestCaseExecution(ProceedingJoinPoint joinPoint, TestCase testCase) throws Throwable {
         TestCaseStartedEvent startedEvent = new TestCaseStartedEvent(joinPoint.getTarget());
         TestCaseFinishedEvent finishedEvent = new TestCaseFinishedEvent(joinPoint.getTarget());
