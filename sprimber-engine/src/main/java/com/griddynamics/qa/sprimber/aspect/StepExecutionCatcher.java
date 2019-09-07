@@ -24,11 +24,24 @@ $Id:
 
 package com.griddynamics.qa.sprimber.aspect;
 
+import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.step.support.StepDefinitionConverter;
+import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
+import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import cucumber.runtime.java.StepDefAnnotation;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.PASSED;
 
 /**
  * @author fparamonov
@@ -36,31 +49,75 @@ import org.aspectj.lang.annotation.Pointcut;
 
 @Slf4j
 @Aspect
+@Component
 public class StepExecutionCatcher {
+
+    private static ApplicationEventPublisher eventPublisher;
+    private static ErrorMapper errorMapper;
+    private static List<StepDefinitionConverter> converters;
+
+    @Autowired
+    public void setEventPublisher(ApplicationEventPublisher eventPublisher) {
+        StepExecutionCatcher.eventPublisher = eventPublisher;
+    }
+
+    @Autowired
+    public void setErrorMapper(ErrorMapper errorMapper) {
+        StepExecutionCatcher.errorMapper = errorMapper;
+    }
+
+    @Autowired
+    public void setConverters(List<StepDefinitionConverter> stepDefinitionConverters) {
+        StepExecutionCatcher.converters = stepDefinitionConverters;
+    }
 
     @Around("stepMethodsExecution()")
     public Object surroundStepExecution(ProceedingJoinPoint joinPoint) {
         Object result = null;
+        ExecutionResult executionResult = new ExecutionResult(PASSED);
+        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+        StepDefinition stepDefinition = converters.stream()
+                .flatMap(converter -> converter.convert(methodSignature.getMethod()).stream())
+                .findAny().get();
+        StepStartedEvent stepStartedEvent = new StepStartedEvent(joinPoint.getTarget(), stepDefinition);
+        StepFinishedEvent stepFinishedEvent = new StepFinishedEvent(joinPoint.getTarget(), stepDefinition);
         try {
             log.info("Starting point");
+            StepExecutionCatcher.eventPublisher.publishEvent(stepStartedEvent);
             result = joinPoint.proceed();
+            stepFinishedEvent.setExecutionResult(executionResult);
+            StepExecutionCatcher.eventPublisher.publishEvent(stepFinishedEvent);
             log.info("Point completed");
         } catch (Throwable throwable) {
             log.error("Some error here");
-            throwable.printStackTrace();
+            executionResult = errorMapper.parseThrowable(throwable);
+            executionResult.conditionallyPrintStacktrace();
+            log.trace(executionResult.getErrorMessage());
+            log.error(throwable.getLocalizedMessage());
         }
         return result;
     }
 
+    /**
+     * This pointcut designed to catch all Cucumber step definition annotation that has parent
+     * meta annotation <code>{@link StepDefAnnotation}</code>
+     */
     @Pointcut("execution(@(@cucumber.runtime.java.StepDefAnnotation *) public void *(..))")
-    public void withinComponent() {
+    public void cucumberStepExecution() {
+    }
+
+    /**
+     * This pointcut designed to catch the Cucumber hook annotations
+     */
+    @Pointcut("execution(@cucumber.api.java.* public void *(..))")
+    public void cucumberHookExecution() {
     }
 
     @Pointcut("within(@com.griddynamics.qa.sprimber.engine.model.action.Actions *)")
     public void withinTest() {
     }
 
-    @Pointcut("withinTest() && withinComponent()")
+    @Pointcut("withinTest() && (cucumberStepExecution() || cucumberHookExecution())")
     public void stepMethodsExecution() {
     }
 }

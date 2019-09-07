@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.support.AbstractBeanFactory;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -41,15 +42,15 @@ import java.util.concurrent.CountDownLatch;
 public class TestCaseExecutorTest {
 
     private TestCaseActionsExecutor actionsExecutor;
-    private AbstractBeanFactory beanFactory;
+    private ApplicationEventPublisher eventPublisher;
     private TestCaseExecutor testCaseExecutor;
     private CountDownLatch countDownLatch;
 
     @Before
     public void setUp() throws Exception {
         actionsExecutor = Mockito.mock(TestCaseActionsExecutor.class);
-        beanFactory = Mockito.mock(AbstractBeanFactory.class);
-        testCaseExecutor = new TestCaseExecutor(actionsExecutor, beanFactory);
+        eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        testCaseExecutor = new TestCaseExecutor(actionsExecutor, eventPublisher);
         countDownLatch = new CountDownLatch(1);
         testCaseExecutor.setCountDownLatch(countDownLatch);
     }

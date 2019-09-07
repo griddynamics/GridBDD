@@ -27,6 +27,8 @@ package com.griddynamics.qa.sprimber.discovery.step;
 import lombok.Data;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The step definition present the referenced Java method along with the binding text pattern
@@ -39,10 +41,13 @@ import java.lang.reflect.Method;
 public class StepDefinition {
 
     private String bindingTextPattern;
+    private String name;
+    private String resolvedTextPattern;
     private Method method;
     private StepType stepType;
     private StepPhase stepPhase;
     private CustomDetails customDetails;
+    private Map<String, Object> parameters = new HashMap<>();
     private String hash;
 
     /**
@@ -64,12 +69,15 @@ public class StepDefinition {
      *     <li>
      *         AFTER - kind of "hidden" step. Usually some helpful routine that executed after something
      *     </li>
+     *     <li>
+     *         GENERAL - kind of step when the exact type doesn't matter
+     *     </li>
      * </ul>
      *
      * Any other possible combination are derivative from this, like "AND", "BUT", etc.
      */
     public enum StepType {
-        BEFORE, GIVEN, WHEN, THEN, AFTER
+        BEFORE, GIVEN, WHEN, THEN, AFTER, GENERAL
     }
 
     /**

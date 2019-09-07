@@ -27,10 +27,12 @@ package com.griddynamics.qa.sprimber.engine.executor;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
-import com.griddynamics.qa.sprimber.engine.scope.TestCaseContextHolder;
+import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFinishedEvent;
+import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseStartedEvent;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.support.AbstractBeanFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -47,18 +49,15 @@ import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER
  */
 
 @Component
+@RequiredArgsConstructor
 public class TestCaseExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestCaseExecutor.class);
 
     private final TestCaseActionsExecutor actionsExecutor;
-    private final AbstractBeanFactory beanFactory;
-    private CountDownLatch countDownLatch;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public TestCaseExecutor(TestCaseActionsExecutor actionsExecutor, AbstractBeanFactory beanFactory) {
-        this.actionsExecutor = actionsExecutor;
-        this.beanFactory = beanFactory;
-    }
+    private CountDownLatch countDownLatch;
 
     public void setCountDownLatch(CountDownLatch countDownLatch) {
         this.countDownLatch = countDownLatch;
@@ -66,7 +65,13 @@ public class TestCaseExecutor {
 
     @Async(SPRIMBER_EXECUTOR_NAME)
     public ExecutionResult execute(TestCase testCase) {
-        TestCaseContextHolder.setupNewContext(testCase);
+        TestCaseStartedEvent startedEvent = new TestCaseStartedEvent(this);
+        TestCaseFinishedEvent finishedEvent = new TestCaseFinishedEvent(this);
+        startedEvent.setTestCase(testCase);
+        finishedEvent.setTestCase(testCase);
+
+        eventPublisher.publishEvent(startedEvent);
+
         ExecutionResult testCaseResult = new ExecutionResult(PASSED);
         // TODO: 10/06/2018 make countdown latch handling more attractive
         LOGGER.debug("Remaining TC count {}", countDownLatch.getCount());
@@ -103,7 +108,9 @@ public class TestCaseExecutor {
         if (!actionsExecutor.currentFailures().isEmpty()) {
             testCaseResult = actionsExecutor.currentFailures().get(0);
         }
-        TestCaseContextHolder.cleanContext(beanFactory);
+        finishedEvent.setExecutionResult(testCaseResult);
+        eventPublisher.publishEvent(finishedEvent);
+
         countDownLatch.countDown();
         LOGGER.debug("Remaining TC count {}", countDownLatch.getCount());
         return testCaseResult;

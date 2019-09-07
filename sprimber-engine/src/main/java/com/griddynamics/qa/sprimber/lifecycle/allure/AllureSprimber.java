@@ -24,6 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.lifecycle.allure;
 
+import com.griddynamics.qa.sprimber.aspect.StepFinishedEvent;
+import com.griddynamics.qa.sprimber.aspect.StepStartedEvent;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
@@ -117,6 +119,36 @@ public class AllureSprimber {
         });
         lifecycle.stopTestCase(runtimeUuid);
         taskExecutor.execute(() -> lifecycle.writeTestCase(runtimeUuid));
+    }
+
+    @EventListener
+    public void testStepStarted(StepStartedEvent stepStartedEvent) {
+        String stepReportName = stepStartedEvent.getStepDefinition().getStepType() + " " +
+                stepStartedEvent.getStepDefinition().getStepPhase() + " " +
+                stepStartedEvent.getStepDefinition().getName();
+        StepResult stepResult = new StepResult()
+                .withName(stepReportName)
+                .withStart(clock.millis());
+        lifecycle.startStep(testCaseRuntimeId.get(), testCaseRuntimeId.get() + stepReportName, stepResult);
+        StringBuilder dataTableCsv = new StringBuilder();
+        stepStartedEvent.getStepDefinition().getParameters().forEach((key, value) ->
+                dataTableCsv.append(key).append("\t").append(value).append("\n"));
+        lifecycle.addAttachment("Step Parameters", "text/tab-separated-values", "csv", dataTableCsv.toString().getBytes());
+    }
+
+    @EventListener
+    public void testStepFinished(StepFinishedEvent stepFinishedEvent) {
+        String stepReportName = stepFinishedEvent.getStepDefinition().getStepType() + " " +
+                stepFinishedEvent.getStepDefinition().getStepPhase() + " " +
+                stepFinishedEvent.getStepDefinition().getName();
+        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(stepFinishedEvent.getExecutionResult().getOptionalError().orElse(null));
+        lifecycle.updateStep(testCaseRuntimeId.get() + stepReportName,
+                stepResult -> {
+                    stepResult.withStatus(allureToSprimberStatusMapping.get(stepFinishedEvent.getExecutionResult().getStatus()));
+                    statusDetails.ifPresent(stepResult::withStatusDetails);
+                }
+        );
+        lifecycle.stopStep(testCaseRuntimeId.get() + stepReportName);
     }
 
     @EventListener
