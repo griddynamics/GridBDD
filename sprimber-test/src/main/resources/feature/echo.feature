@@ -25,6 +25,7 @@
 Feature: This is a test feature for echo application
 
   @echo
+    @test_me
   @Story=positive
   Scenario: Simple scenario to check just steps
 
