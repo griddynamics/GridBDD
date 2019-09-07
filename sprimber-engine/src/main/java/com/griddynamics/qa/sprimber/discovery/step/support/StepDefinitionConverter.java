@@ -17,42 +17,22 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id:
+$Id: 
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
- */
+*/
 
-package com.griddynamics.qa.sprimber.engine.scope;
+package com.griddynamics.qa.sprimber.discovery.step.support;
 
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFinishedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseStartedEvent;
-import org.springframework.beans.factory.support.AbstractBeanFactory;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
+import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
+
+import java.lang.reflect.Method;
+import java.util.List;
 
 /**
- * Kind of event listener that monitor test case start and finish events.
- * Based on this events test case context cleaned and removed or created
- *
  * @author fparamonov
  */
+public interface StepDefinitionConverter {
 
-@Component
-public class FlowOrchestrator {
-
-    private final AbstractBeanFactory beanFactory;
-
-    public FlowOrchestrator(AbstractBeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
-    }
-
-    @EventListener
-    public void setupTestCaseContext(TestCaseStartedEvent startEvent) {
-        TestCaseContextHolder.setupNewContext(startEvent.getTestCase());
-    }
-
-    @EventListener
-    public void resetTestCaseContext(TestCaseFinishedEvent finishEvent) {
-        TestCaseContextHolder.cleanContext(beanFactory);
-    }
+    List<StepDefinition> convert(Method method);
 }
