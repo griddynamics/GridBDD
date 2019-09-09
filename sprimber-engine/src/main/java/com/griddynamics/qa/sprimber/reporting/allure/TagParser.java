@@ -22,7 +22,7 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.lifecycle.allure;
+package com.griddynamics.qa.sprimber.reporting.allure;
 
 import io.qameta.allure.SeverityLevel;
 
