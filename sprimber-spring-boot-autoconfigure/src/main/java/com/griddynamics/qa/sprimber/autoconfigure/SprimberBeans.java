@@ -27,7 +27,7 @@ package com.griddynamics.qa.sprimber.autoconfigure;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
 import com.griddynamics.qa.sprimber.engine.scope.TestCaseScope;
-import com.griddynamics.qa.sprimber.lifecycle.TestCaseSummaryPrinter;
+import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
 import cucumber.api.Pending;
 import gherkin.AstBuilder;
 import gherkin.Parser;

@@ -22,15 +22,13 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.lifecycle.allure;
+package com.griddynamics.qa.sprimber.reporting.allure;
 
-import com.griddynamics.qa.sprimber.aspect.StepFinishedEvent;
-import com.griddynamics.qa.sprimber.aspect.StepStartedEvent;
-import com.griddynamics.qa.sprimber.discovery.testsuite.support.ClassicTestExecutor;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
+import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFinishedEvent;
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseStartedEvent;
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook.TestHookFinishedEvent;
@@ -95,7 +93,7 @@ public class AllureSprimber {
     }
 
     @EventListener
-    public void testStarted(ClassicTestExecutor.TestStartedEvent testStartedEvent) {
+    public void testStarted(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
         testCaseRuntimeId.set(testStartedEvent.getTestDefinition().getRuntimeId());
         TestResult testResult = new TestResult()
                 .withUuid(testCaseRuntimeId.get())
@@ -107,7 +105,7 @@ public class AllureSprimber {
     }
 
     @EventListener
-    public void testFinished(ClassicTestExecutor.TestFinishedEvent testFinishedEvent) {
+    public void testFinished(SprimberEventPublisher.TestFinishedEvent testFinishedEvent) {
         ExecutionResult result = testFinishedEvent.getTestDefinition().getExecutionResult();
         Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
         String runtimeUuid = testCaseRuntimeId.get();
@@ -150,7 +148,7 @@ public class AllureSprimber {
     }
 
     @EventListener
-    public void testStepStarted(StepStartedEvent stepStartedEvent) {
+    public void testStepStarted(SprimberEventPublisher.StepStartedEvent stepStartedEvent) {
         String stepReportName = stepStartedEvent.getStepDefinition().getStepType() + " " +
                 stepStartedEvent.getStepDefinition().getStepPhase() + " " +
                 stepStartedEvent.getStepDefinition().getName();
@@ -165,14 +163,15 @@ public class AllureSprimber {
     }
 
     @EventListener
-    public void testStepFinished(StepFinishedEvent stepFinishedEvent) {
+    public void testStepFinished(SprimberEventPublisher.StepFinishedEvent stepFinishedEvent) {
         String stepReportName = stepFinishedEvent.getStepDefinition().getStepType() + " " +
                 stepFinishedEvent.getStepDefinition().getStepPhase() + " " +
                 stepFinishedEvent.getStepDefinition().getName();
-        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(stepFinishedEvent.getExecutionResult().getOptionalError().orElse(null));
+        ExecutionResult result = stepFinishedEvent.getStepDefinition().getExecutionResult();
+        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
         lifecycle.updateStep(testCaseRuntimeId.get() + stepReportName,
                 stepResult -> {
-                    stepResult.withStatus(allureToSprimberStatusMapping.get(stepFinishedEvent.getExecutionResult().getStatus()));
+                    stepResult.withStatus(allureToSprimberStatusMapping.get(result.getStatus()));
                     statusDetails.ifPresent(stepResult::withStatusDetails);
                 }
         );

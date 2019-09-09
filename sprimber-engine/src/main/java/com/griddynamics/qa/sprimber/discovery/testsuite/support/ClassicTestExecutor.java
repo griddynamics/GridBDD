@@ -27,13 +27,10 @@ package com.griddynamics.qa.sprimber.discovery.testsuite.support;
 import com.griddynamics.qa.sprimber.discovery.testsuite.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
-import lombok.Getter;
+import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationEvent;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
@@ -52,21 +49,19 @@ import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.P
 public class ClassicTestExecutor implements TestSuiteDefinition.TestExecutor {
 
     private final ApplicationContext applicationContext;
-    private final ApplicationEventPublisher eventPublisher;
+    private final SprimberEventPublisher eventPublisher;
     private final ErrorMapper errorMapper;
 
     @Override
     public CompletableFuture<ExecutionResult> execute(TestSuiteDefinition.TestDefinition testDefinition) {
         try {
-            TestStartedEvent testStartedEvent = new TestStartedEvent(this, testDefinition);
-            eventPublisher.publishEvent(testStartedEvent);
+            eventPublisher.testStarted(this, testDefinition);
             Method testMethod = testDefinition.getStepDefinitions().get(0).getMethod();
             Object target = applicationContext.getBean(testMethod.getDeclaringClass());
             ReflectionUtils.invokeMethod(testMethod, target);
             ExecutionResult result = new ExecutionResult(PASSED);
-            TestFinishedEvent testFinishedEvent = new TestFinishedEvent(this, testDefinition);
             testDefinition.setExecutionResult(result);
-            eventPublisher.publishEvent(testFinishedEvent);
+            eventPublisher.testFinished(this, testDefinition);
             return CompletableFuture.completedFuture(result);
         } catch (Throwable throwable) {
             ExecutionResult result = errorMapper.parseThrowable(throwable);
@@ -74,49 +69,6 @@ public class ClassicTestExecutor implements TestSuiteDefinition.TestExecutor {
             log.trace(result.getErrorMessage());
             log.error(throwable.getLocalizedMessage());
             return CompletableFuture.completedFuture(result);
-        }
-    }
-
-    public class TestStartedEvent extends TestEvent {
-
-        public TestStartedEvent(Object source) {
-            super(source);
-        }
-
-        public TestStartedEvent(Object source, TestSuiteDefinition.TestDefinition testDefinition) {
-            super(source, testDefinition);
-        }
-    }
-
-    public class TestFinishedEvent extends TestEvent {
-
-        public TestFinishedEvent(Object source) {
-            super(source);
-        }
-
-        public TestFinishedEvent(Object source, TestSuiteDefinition.TestDefinition testDefinition) {
-            super(source, testDefinition);
-        }
-    }
-
-    @Getter
-    @Setter
-    public class TestEvent extends ApplicationEvent {
-
-        private TestSuiteDefinition.TestDefinition testDefinition;
-
-        /**
-         * Create a new ApplicationEvent.
-         *
-         * @param source the object on which the event initially occurred (never {@code null})
-         */
-        public TestEvent(Object source) {
-            super(source);
-        }
-
-        public TestEvent(Object source, TestSuiteDefinition.TestDefinition testDefinition) {
-            super(source);
-            this.testDefinition = testDefinition;
         }
     }
 }

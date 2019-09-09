@@ -42,7 +42,8 @@ import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER
 @ComponentScan(basePackages = {"com.griddynamics.qa.sprimber.engine",
         "com.griddynamics.qa.sprimber.lifecycle",
         "com.griddynamics.qa.sprimber.discovery",
-        "com.griddynamics.qa.sprimber.aspect"})
+        "com.griddynamics.qa.sprimber.reporting",
+        "com.griddynamics.qa.sprimber.event"})
 @Import(SprimberBeans.class)
 public class SprimberAutoConfiguration {
 

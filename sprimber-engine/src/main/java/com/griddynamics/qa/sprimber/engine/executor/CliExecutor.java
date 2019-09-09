@@ -27,13 +27,10 @@ package com.griddynamics.qa.sprimber.engine.executor;
 import com.griddynamics.qa.sprimber.discovery.testsuite.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.discovery.testsuite.support.TestSuiteDiscovery;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.ApplicationEvent;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -69,58 +66,5 @@ public class CliExecutor implements ApplicationRunner {
         testCaseDefinition.getTestDefinitions()
                 .forEach(classicTestExecutor::execute);
         return CompletableFuture.completedFuture(new ExecutionResult(ExecutionResult.Status.PASSED));
-    }
-
-    public class TestCaseStartedEvent extends TestCaseEvent {
-
-        public TestCaseStartedEvent(Object source) {
-            super(source);
-        }
-
-        public TestCaseStartedEvent(Object source, TestSuiteDefinition.TestCaseDefinition testCaseDefinition) {
-            super(source, testCaseDefinition);
-        }
-    }
-
-    public class TestCaseFinishedEvent extends TestCaseEvent {
-
-        private ExecutionResult executionResult;
-
-        public TestCaseFinishedEvent(Object source) {
-            super(source);
-        }
-
-        public TestCaseFinishedEvent(Object source, TestSuiteDefinition.TestCaseDefinition testCaseDefinition) {
-            super(source, testCaseDefinition);
-        }
-
-        public ExecutionResult getExecutionResult() {
-            return executionResult;
-        }
-
-        public void setExecutionResult(ExecutionResult executionResult) {
-            this.executionResult = executionResult;
-        }
-    }
-
-    @Getter
-    @Setter
-    public class TestCaseEvent extends ApplicationEvent {
-
-        private TestSuiteDefinition.TestCaseDefinition testCaseDefinition;
-
-        /**
-         * Create a new ApplicationEvent.
-         *
-         * @param source the object on which the event initially occurred (never {@code null})
-         */
-        public TestCaseEvent(Object source) {
-            super(source);
-        }
-
-        public TestCaseEvent(Object source, TestSuiteDefinition.TestCaseDefinition testCaseDefinition) {
-            super(source);
-            this.testCaseDefinition = testCaseDefinition;
-        }
     }
 }
