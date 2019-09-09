@@ -43,7 +43,8 @@ import java.util.stream.Collectors;
 /**
  * @author fparamonov
  */
-@Component
+
+//@Component
 public class CliRunner implements ApplicationRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CliRunner.class);

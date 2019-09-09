@@ -22,37 +22,31 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.support;
+package com.griddynamics.qa.sprimber.discovery.testsuite.annotation;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.engine.model.action.Actions;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
+import com.griddynamics.qa.sprimber.discovery.step.annotation.Mapping;
+import org.springframework.core.annotation.AliasFor;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.lang.annotation.*;
 
 /**
+ * Annotation that helps to mark the following portion of code(Java method) as a single atomic test
+ * This test can be straightforward and consist from one step or may be complex and refer to the multiple steps
+ *
  * @author fparamonov
  */
 
-@Component
-@RequiredArgsConstructor
-public class CucumberStyleDiscovery implements StepDefinitionsDiscovery {
+@Target({ElementType.METHOD, ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Mapping
+public @interface TestMapping {
 
-    private final CucumberStepConverter stepConverter;
-    private final ApplicationContext applicationContext;
+    @AliasFor("name")
+    String value() default "";
 
-    @Override
-    public List<StepDefinition> discover() {
-        return applicationContext.getBeansWithAnnotation(Actions.class).values().stream()
-                .flatMap(actionBean ->
-                        Arrays.stream(actionBean.getClass().getDeclaredMethods())
-                                .map(stepConverter::convert)
-                                .flatMap(Collection::stream))
-                .collect(Collectors.toList());
-    }
+    @AliasFor("value")
+    String name() default "";
+
+    String description() default "";
 }
