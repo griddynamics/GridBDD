@@ -22,7 +22,7 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
  */
 
-package com.griddynamics.qa.sprimber.lifecycle;
+package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFinishedEvent;
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseStartedEvent;

@@ -22,12 +22,13 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.aspect;
+package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.step.support.StepDefinitionsDiscovery;
 import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import cucumber.runtime.java.StepDefAnnotation;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -36,7 +37,6 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -50,25 +50,25 @@ import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.P
 @Slf4j
 @Aspect
 @Component
-public class StepExecutionCatcher {
+public class StepExecutionReportCatcher {
 
-    private static ApplicationEventPublisher eventPublisher;
+    private static SprimberEventPublisher eventPublisher;
     private static ErrorMapper errorMapper;
     private static List<StepDefinitionsDiscovery.StepDefinitionConverter> converters;
 
     @Autowired
-    public void setEventPublisher(ApplicationEventPublisher eventPublisher) {
-        StepExecutionCatcher.eventPublisher = eventPublisher;
+    public void setEventPublisher(SprimberEventPublisher eventPublisher) {
+        StepExecutionReportCatcher.eventPublisher = eventPublisher;
     }
 
     @Autowired
     public void setErrorMapper(ErrorMapper errorMapper) {
-        StepExecutionCatcher.errorMapper = errorMapper;
+        StepExecutionReportCatcher.errorMapper = errorMapper;
     }
 
     @Autowired
     public void setConverters(List<StepDefinitionsDiscovery.StepDefinitionConverter> stepDefinitionConverters) {
-        StepExecutionCatcher.converters = stepDefinitionConverters;
+        StepExecutionReportCatcher.converters = stepDefinitionConverters;
     }
 
     @Around("stepMethodsExecution()")
@@ -79,21 +79,21 @@ public class StepExecutionCatcher {
         StepDefinition stepDefinition = converters.stream()
                 .flatMap(converter -> converter.convert(methodSignature.getMethod()).stream())
                 .findAny().get();
-        StepStartedEvent stepStartedEvent = new StepStartedEvent(joinPoint.getTarget(), stepDefinition);
-        StepFinishedEvent stepFinishedEvent = new StepFinishedEvent(joinPoint.getTarget(), stepDefinition);
         try {
             log.info("Starting point");
-            StepExecutionCatcher.eventPublisher.publishEvent(stepStartedEvent);
+            StepExecutionReportCatcher.eventPublisher.stepStarted(joinPoint.getTarget(), stepDefinition);
             result = joinPoint.proceed();
-            stepFinishedEvent.setExecutionResult(executionResult);
-            StepExecutionCatcher.eventPublisher.publishEvent(stepFinishedEvent);
+            stepDefinition.setExecutionResult(executionResult);
             log.info("Point completed");
         } catch (Throwable throwable) {
             log.error("Some error here");
             executionResult = errorMapper.parseThrowable(throwable);
             executionResult.conditionallyPrintStacktrace();
+            stepDefinition.setExecutionResult(executionResult);
             log.trace(executionResult.getErrorMessage());
             log.error(throwable.getLocalizedMessage());
+        } finally {
+            StepExecutionReportCatcher.eventPublisher.stepFinished(joinPoint.getTarget(), stepDefinition);
         }
         return result;
     }

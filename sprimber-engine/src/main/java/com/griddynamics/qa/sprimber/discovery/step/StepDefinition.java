@@ -24,6 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.step;
 
+import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import lombok.Data;
 import org.springframework.util.DigestUtils;
 
@@ -44,6 +45,7 @@ public class StepDefinition {
     private String bindingTextPattern;
     private String name;
     private String resolvedTextPattern;
+    private ExecutionResult executionResult;
     private Method method;
     private StepType stepType;
     private StepPhase stepPhase;

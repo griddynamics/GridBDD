@@ -7,7 +7,7 @@
 
     <aspects>
         <!-- weave in just this aspect -->
-        <aspect name="com.griddynamics.qa.sprimber.aspect.StepExecutionCatcher"/>
+        <aspect name="com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher"/>
     </aspects>
 
 </aspectj>

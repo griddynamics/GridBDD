@@ -31,7 +31,7 @@ import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
 import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
 import com.griddynamics.qa.sprimber.engine.scope.FlowOrchestrator;
-import com.griddynamics.qa.sprimber.lifecycle.TestCaseSummaryPrinter;
+import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
 import gherkin.Parser;
 import gherkin.TokenMatcher;
 import gherkin.pickles.Compiler;
