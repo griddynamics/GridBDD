@@ -46,11 +46,10 @@ import java.util.stream.Collectors;
  */
 
 @Component
-public class CucumberStepConverter implements StepDefinitionConverter {
+public class CucumberStepConverter implements StepDefinitionsDiscovery.StepDefinitionConverter {
 
     private static final String TIMEOUT_ATTRIBUTE = "Timeout";
     private static final String TAGS_ATTRIBUTE = "Tags";
-    private static final String VALUE_ATTRIBUTE = "value";
     private static final String ORDER_ATTRIBUTE = "Order";
 
     private final Map<Class<? extends Annotation>, Pair<StepDefinition.StepType, StepDefinition.StepPhase>> hooks =
@@ -91,26 +90,27 @@ public class CucumberStepConverter implements StepDefinitionConverter {
         definition.setMethod(method);
         definition.setStepType(hooksAndSteps.get(annotation.annotationType()).getLeft());
         definition.setStepPhase(hooksAndSteps.get(annotation.annotationType()).getRight());
-        definition.setName(method.getName());
+        definition.setName(method.getDeclaringClass().getCanonicalName() + "#" + method.getName());
         if (hooks.keySet().contains(annotation.annotationType())) {
             processHookProperties(annotation, definition);
         }
         if (steps.keySet().contains(annotation.annotationType())) {
             processStepProperties(annotation, definition);
         }
+        definition.calculateAndSaveHash();
         return definition;
     }
 
     private void processStepProperties(Annotation annotation, StepDefinition definition) {
         definition.getParameters().put(TIMEOUT_ATTRIBUTE, AnnotationUtils.getValue(annotation, TIMEOUT_ATTRIBUTE.toLowerCase()));
-        definition.setBindingTextPattern(String.valueOf(AnnotationUtils.getValue(annotation, VALUE_ATTRIBUTE)));
+        definition.setBindingTextPattern(String.valueOf(AnnotationUtils.getValue(annotation)));
     }
 
     private void processHookProperties(Annotation annotation, StepDefinition definition) {
         definition.getParameters().put(ORDER_ATTRIBUTE, AnnotationUtils.getValue(annotation, ORDER_ATTRIBUTE.toLowerCase()));
         definition.getParameters().put(TIMEOUT_ATTRIBUTE, AnnotationUtils.getValue(annotation, TIMEOUT_ATTRIBUTE.toLowerCase()));
         if (!Arrays.asList(AnnotationUtils.getValue(annotation)).isEmpty()) {
-            definition.getParameters().put(TAGS_ATTRIBUTE, StringUtils.join((String[]) AnnotationUtils.getValue(annotation, VALUE_ATTRIBUTE), ','));
+            definition.getParameters().put(TAGS_ATTRIBUTE, StringUtils.join((String[]) AnnotationUtils.getValue(annotation), ','));
         }
     }
 }

@@ -22,37 +22,32 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.support;
+package com.griddynamics.qa.sprimber.discovery.testsuite.annotation;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.engine.model.action.Actions;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationContext;
+import org.springframework.core.annotation.AliasFor;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.lang.annotation.*;
 
 /**
+ * Convenient annotation that helps Spring to identify marked class as a bean candidate
+ * And allows to identify this class as a holder of test definitions for Sprimber
+ *
  * @author fparamonov
  */
 
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
 @Component
-@RequiredArgsConstructor
-public class CucumberStyleDiscovery implements StepDefinitionsDiscovery {
+public @interface TestController {
 
-    private final CucumberStepConverter stepConverter;
-    private final ApplicationContext applicationContext;
-
-    @Override
-    public List<StepDefinition> discover() {
-        return applicationContext.getBeansWithAnnotation(Actions.class).values().stream()
-                .flatMap(actionBean ->
-                        Arrays.stream(actionBean.getClass().getDeclaredMethods())
-                                .map(stepConverter::convert)
-                                .flatMap(Collection::stream))
-                .collect(Collectors.toList());
-    }
+    /**
+     * The value may indicate a suggestion for a logical component name,
+     * to be turned into a Spring bean in case of an autodetected component.
+     *
+     * @return the suggested component name, if any (or empty String otherwise)
+     */
+    @AliasFor(annotation = Component.class)
+    String value() default "";
 }

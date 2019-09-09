@@ -17,7 +17,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
@@ -25,34 +25,24 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery.step.support;
 
 import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.engine.model.action.Actions;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.lang.reflect.Method;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author fparamonov
  */
+public interface StepDefinitionsDiscovery {
 
-@Component
-@RequiredArgsConstructor
-public class CucumberStyleDiscovery implements StepDefinitionsDiscovery {
+    /**
+     * The implementation should make the search and find the all methods that mapped to the steps
+     *
+     * @return the collection of the step definitions
+     */
+    List<StepDefinition> discover();
 
-    private final CucumberStepConverter stepConverter;
-    private final ApplicationContext applicationContext;
+    interface StepDefinitionConverter {
 
-    @Override
-    public List<StepDefinition> discover() {
-        return applicationContext.getBeansWithAnnotation(Actions.class).values().stream()
-                .flatMap(actionBean ->
-                        Arrays.stream(actionBean.getClass().getDeclaredMethods())
-                                .map(stepConverter::convert)
-                                .flatMap(Collection::stream))
-                .collect(Collectors.toList());
+        List<StepDefinition> convert(Method method);
     }
 }

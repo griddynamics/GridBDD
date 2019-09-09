@@ -22,37 +22,14 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.support;
+package com.griddynamics.qa.sprimber.discovery.testsuite.support;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.engine.model.action.Actions;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.griddynamics.qa.sprimber.discovery.testsuite.TestSuiteDefinition;
 
 /**
  * @author fparamonov
  */
+public interface TestSuiteDiscovery {
 
-@Component
-@RequiredArgsConstructor
-public class CucumberStyleDiscovery implements StepDefinitionsDiscovery {
-
-    private final CucumberStepConverter stepConverter;
-    private final ApplicationContext applicationContext;
-
-    @Override
-    public List<StepDefinition> discover() {
-        return applicationContext.getBeansWithAnnotation(Actions.class).values().stream()
-                .flatMap(actionBean ->
-                        Arrays.stream(actionBean.getClass().getDeclaredMethods())
-                                .map(stepConverter::convert)
-                                .flatMap(Collection::stream))
-                .collect(Collectors.toList());
-    }
+    TestSuiteDefinition discover();
 }

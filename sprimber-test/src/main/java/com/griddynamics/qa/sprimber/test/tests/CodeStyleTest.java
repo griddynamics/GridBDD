@@ -22,17 +22,29 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.support;
+package com.griddynamics.qa.sprimber.test.tests;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-
-import java.lang.reflect.Method;
-import java.util.List;
+import com.griddynamics.qa.sprimber.discovery.testsuite.annotation.TestController;
+import com.griddynamics.qa.sprimber.discovery.testsuite.annotation.TestMapping;
+import com.griddynamics.qa.sprimber.test.steps.BaseEchoSteps;
 
 /**
  * @author fparamonov
  */
-public interface StepDefinitionConverter {
 
-    List<StepDefinition> convert(Method method);
+@TestController
+public class CodeStyleTest {
+
+    private final BaseEchoSteps baseEchoSteps;
+
+    public CodeStyleTest(BaseEchoSteps baseEchoSteps) {
+        this.baseEchoSteps = baseEchoSteps;
+    }
+
+    @TestMapping(value = "some test", description = "Some test that uses BDD steps")
+    public void myFirstTest() {
+        baseEchoSteps.given();
+        baseEchoSteps.when();
+        baseEchoSteps.then();
+    }
 }
