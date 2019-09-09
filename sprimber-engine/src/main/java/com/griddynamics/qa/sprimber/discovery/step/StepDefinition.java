@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery.step;
 
 import lombok.Data;
+import org.springframework.util.DigestUtils;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -49,6 +50,14 @@ public class StepDefinition {
     private CustomDetails customDetails;
     private Map<String, Object> parameters = new HashMap<>();
     private String hash;
+
+    public String calculateAndSaveHash() {
+        String uniqueName = method.getDeclaringClass().getCanonicalName() + "#" +
+                method.getName() + "#" +
+                method.getParameterCount();
+        this.hash = DigestUtils.md5DigestAsHex(uniqueName.getBytes());
+        return this.hash;
+    }
 
     /**
      * Sprimber supports the next step types based on the meaning of them.

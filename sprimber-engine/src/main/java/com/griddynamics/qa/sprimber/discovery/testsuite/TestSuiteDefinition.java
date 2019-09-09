@@ -17,26 +17,51 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id:
+$Id: 
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.support;
+package com.griddynamics.qa.sprimber.discovery.testsuite;
 
 import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
+import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author fparamonov
  */
-public interface StepDefinitionDiscovery {
 
-    /**
-     * The implementation should make the search and find the all methods that mapped to the steps
-     *
-     * @return the collection of the step definitions
-     */
-    List<StepDefinition> discover();
+@Data
+public class TestSuiteDefinition {
+
+    private ExecutionResult executionResult;
+    private List<TestCaseDefinition> testCaseDefinitions = new ArrayList<>();
+
+    @Data
+    public static class TestCaseDefinition {
+
+        private ExecutionResult executionResult;
+        private List<TestDefinition> testDefinitions = new ArrayList<>();
+    }
+
+    @Data
+    public static class TestDefinition {
+
+        private String hash;
+        private String name;
+        private String description;
+        private String runtimeId = UUID.randomUUID().toString();
+        private ExecutionResult executionResult;
+        private List<StepDefinition> stepDefinitions = new ArrayList<>();
+    }
+
+    public interface TestExecutor {
+        CompletableFuture<ExecutionResult> execute(TestDefinition testDefinition);
+    }
 }

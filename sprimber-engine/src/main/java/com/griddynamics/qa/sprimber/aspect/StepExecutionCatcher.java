@@ -25,7 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.aspect;
 
 import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.step.support.StepDefinitionConverter;
+import com.griddynamics.qa.sprimber.discovery.step.support.StepDefinitionsDiscovery;
 import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import cucumber.runtime.java.StepDefAnnotation;
@@ -54,7 +54,7 @@ public class StepExecutionCatcher {
 
     private static ApplicationEventPublisher eventPublisher;
     private static ErrorMapper errorMapper;
-    private static List<StepDefinitionConverter> converters;
+    private static List<StepDefinitionsDiscovery.StepDefinitionConverter> converters;
 
     @Autowired
     public void setEventPublisher(ApplicationEventPublisher eventPublisher) {
@@ -67,7 +67,7 @@ public class StepExecutionCatcher {
     }
 
     @Autowired
-    public void setConverters(List<StepDefinitionConverter> stepDefinitionConverters) {
+    public void setConverters(List<StepDefinitionsDiscovery.StepDefinitionConverter> stepDefinitionConverters) {
         StepExecutionCatcher.converters = stepDefinitionConverters;
     }
 

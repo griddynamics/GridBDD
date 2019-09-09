@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.lifecycle.allure;
 
 import com.griddynamics.qa.sprimber.aspect.StepFinishedEvent;
 import com.griddynamics.qa.sprimber.aspect.StepStartedEvent;
+import com.griddynamics.qa.sprimber.discovery.testsuite.support.ClassicTestExecutor;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
@@ -94,6 +95,32 @@ public class AllureSprimber {
     }
 
     @EventListener
+    public void testStarted(ClassicTestExecutor.TestStartedEvent testStartedEvent) {
+        testCaseRuntimeId.set(testStartedEvent.getTestDefinition().getRuntimeId());
+        TestResult testResult = new TestResult()
+                .withUuid(testCaseRuntimeId.get())
+                .withHistoryId(testStartedEvent.getTestDefinition().getHash())
+                .withName(testStartedEvent.getTestDefinition().getName())
+                .withDescription(testStartedEvent.getTestDefinition().getDescription());
+        lifecycle.scheduleTestCase(testResult);
+        lifecycle.startTestCase(testCaseRuntimeId.get());
+    }
+
+    @EventListener
+    public void testFinished(ClassicTestExecutor.TestFinishedEvent testFinishedEvent) {
+        ExecutionResult result = testFinishedEvent.getTestDefinition().getExecutionResult();
+        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
+        String runtimeUuid = testCaseRuntimeId.get();
+        lifecycle.updateTestCase(runtimeUuid, scenarioResult -> {
+            scenarioResult.withStatus(allureToSprimberStatusMapping.get(result.getStatus()));
+            statusDetails.ifPresent(scenarioResult::withStatusDetails);
+        });
+        lifecycle.stopTestCase(runtimeUuid);
+        taskExecutor.execute(() -> lifecycle.writeTestCase(runtimeUuid));
+    }
+
+    @Deprecated
+    @EventListener
     public void testCaseStarted(TestCaseStartedEvent startedEvent) {
         HelperInfoBuilder helperInfoBuilder = new HelperInfoBuilder(startedEvent.getTestCase());
         String historyId = getTestCaseHistoryId(startedEvent.getTestCase());
@@ -109,6 +136,7 @@ public class AllureSprimber {
         lifecycle.startTestCase(testCaseRuntimeId.get());
     }
 
+    @Deprecated
     @EventListener
     public void testCaseFinished(TestCaseFinishedEvent finishedEvent) throws ExecutionException, InterruptedException, TimeoutException {
         Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(finishedEvent.getExecutionResult().getOptionalError().orElse(null));
@@ -151,6 +179,7 @@ public class AllureSprimber {
         lifecycle.stopStep(testCaseRuntimeId.get() + stepReportName);
     }
 
+    @Deprecated
     @EventListener
     public void testHookStarted(TestHookStartedEvent startedEvent) {
         StepResult stepResult = new StepResult()
@@ -160,6 +189,7 @@ public class AllureSprimber {
         lifecycle.startStep(testCaseRuntimeId.get(), getHookId(startedEvent.getHookDefinition()), stepResult);
     }
 
+    @Deprecated
     @EventListener
     public void testHookFinished(TestHookFinishedEvent finishedEvent) {
         Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(finishedEvent.getExecutionResult().getOptionalError().orElse(null));
@@ -172,6 +202,7 @@ public class AllureSprimber {
         lifecycle.stopStep(getHookId(finishedEvent.getHookDefinition()));
     }
 
+    @Deprecated
     @EventListener
     public void testStepStarted(TestStepStartedEvent startedEvent) {
         StepResult stepResult = new StepResult()
@@ -191,6 +222,7 @@ public class AllureSprimber {
         }
     }
 
+    @Deprecated
     @EventListener
     public void testStepFinished(TestStepFinishedEvent finishedEvent) {
         Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(finishedEvent.getExecutionResult().getOptionalError().orElse(null));

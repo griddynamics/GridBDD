@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.engine.model;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -34,16 +35,16 @@ import java.util.Optional;
 public class ExecutionResult {
 
     private final Status status;
-    private final Optional<Throwable> optionalError;
+    private final Throwable throwable;
 
     public ExecutionResult(Status status) {
         this.status = status;
-        this.optionalError = Optional.empty();
+        this.throwable = null;
     }
 
     public ExecutionResult(Status status, Throwable error) {
         this.status = status;
-        this.optionalError = Optional.of(error);
+        this.throwable = error;
     }
 
     public Status getStatus() {
@@ -51,7 +52,7 @@ public class ExecutionResult {
     }
 
     public Optional<Throwable> getOptionalError() {
-        return optionalError;
+        return Optional.ofNullable(throwable);
     }
 
     /**
@@ -59,15 +60,16 @@ public class ExecutionResult {
      * in other words if the status is BROKEN
      */
     public void conditionallyPrintStacktrace() {
-        if (status.equals(Status.BROKEN)) {
-            optionalError.ifPresent(Throwable::printStackTrace);
+        if (status.equals(Status.BROKEN) && Objects.nonNull(throwable)) {
+            throwable.printStackTrace();
         }
     }
 
     public String getErrorMessage() {
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter(stringWriter);
-        optionalError.ifPresent(error -> error.printStackTrace(printWriter));
+        Optional.ofNullable(throwable)
+                .ifPresent(error -> error.printStackTrace(printWriter));
         return stringWriter.getBuffer().toString();
     }
 
