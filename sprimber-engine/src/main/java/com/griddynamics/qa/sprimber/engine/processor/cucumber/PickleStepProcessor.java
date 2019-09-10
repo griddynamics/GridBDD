@@ -24,6 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.engine.ExecutionContext;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
@@ -36,11 +38,16 @@ import io.cucumber.stepexpression.Argument;
 import io.cucumber.stepexpression.ExpressionArgumentMatcher;
 import io.cucumber.stepexpression.StepExpression;
 import io.cucumber.stepexpression.StepExpressionFactory;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -50,15 +57,33 @@ import java.util.stream.IntStream;
  */
 
 @Component
+@RequiredArgsConstructor
 public class PickleStepProcessor {
 
+    private final ExecutionContext executionContext;
     private final ActionsContainer actionsContainer;
     private final StepExpressionFactory stepExpressionFactory;
 
-    public PickleStepProcessor(ActionsContainer actionsContainer,
-                               StepExpressionFactory stepExpressionFactory) {
-        this.actionsContainer = actionsContainer;
-        this.stepExpressionFactory = stepExpressionFactory;
+    public StepDefinition buildStepDefinition(PickleStep pickleStep) {
+        List<StepDefinition> targetDefinitions = executionContext.getStepDefinitions().stream()
+                .filter(stepDefinition -> StringUtils.isNotBlank(stepDefinition.getBindingTextPattern()))
+                .filter(stepDefinition -> Objects.nonNull(getArgumentsFromPickleStep(stepDefinition, pickleStep)))
+                .collect(Collectors.toList());
+        if (targetDefinitions.size() == 0) {
+            throw new StepNotFoundException(pickleStep);
+        }
+        if (targetDefinitions.size() > 1) {
+            throw new ExtraMappingFoundException(targetDefinitions, pickleStep);
+        }
+        List<Argument> arguments = getArgumentsFromPickleStep(targetDefinitions.get(0), pickleStep);
+        List<Type> actualParameters = Arrays.asList(targetDefinitions.get(0).getMethod().getGenericParameterTypes());
+
+        StepDefinition testDefinition = targetDefinitions.get(0).toBuilder()
+                .resolvedTextPattern(pickleStep.getText())
+                .build();
+        testDefinition.getAttributes().put("stepData", handleAdditionalStepData(pickleStep));
+        testDefinition.getParameters().putAll(handleStepArguments(arguments, actualParameters));
+        return testDefinition;
     }
 
     public TestStep processPickleStep(PickleStep pickleStep) {
@@ -70,7 +95,7 @@ public class PickleStepProcessor {
             throw new StepNotFoundException(pickleStep);
         }
         if (targetDefinitions.size() > 1) {
-            throw new ExtraMappingFoundException(targetDefinitions, pickleStep);
+            throw new com.griddynamics.qa.sprimber.engine.processor.cucumber.ExtraMappingFoundException(targetDefinitions, pickleStep);
         }
         List<Argument> arguments = getArgumentsFromPickleStep(targetDefinitions.get(0), pickleStep);
         List<Type> actualParameters = Arrays.asList(targetDefinitions.get(0).getMethod().getGenericParameterTypes());
@@ -83,10 +108,24 @@ public class PickleStepProcessor {
         return testStep;
     }
 
+    private Map<String, Object> handleStepArguments(List<Argument> arguments, List<Type> methodParameters) {
+        return IntStream.range(0, methodParameters.size())
+                .mapToObj(counter -> argumentToEntry(arguments.get(counter), methodParameters.get(counter)))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
     private Object[] processArguments(List<Argument> arguments, List<Type> methodParameters) {
         return IntStream.range(0, methodParameters.size())
                 .mapToObj(counter -> argumentToObject(arguments.get(counter), methodParameters.get(counter)))
                 .toArray();
+    }
+
+    private Map.Entry<String, Object> argumentToEntry(Argument argument, Type type) {
+        Object value = argument.getValue();
+        if (value instanceof DataTable) {
+            value = ((DataTable) value).convert(type, false);
+        }
+        return new ImmutablePair<>(type.getTypeName(), value);
     }
 
     private Object argumentToObject(Argument argument, Type type) {
@@ -127,9 +166,29 @@ public class PickleStepProcessor {
                 ).orElse("");
     }
 
+    private List<Argument> getArgumentsFromPickleStep(StepDefinition definition, PickleStep pickleStep) {
+        StepExpression stepExpression = stepExpressionFactory.createExpression(definition.getBindingTextPattern());
+        ExpressionArgumentMatcher argumentMatcher = new ExpressionArgumentMatcher(stepExpression);
+        return argumentMatcher.argumentsFrom(pickleStep);
+    }
+
     private List<Argument> getArgumentsFromPickleStep(ActionDefinition definition, PickleStep pickleStep) {
         StepExpression stepExpression = stepExpressionFactory.createExpression(definition.getActionText().orElse(""));
         ExpressionArgumentMatcher argumentMatcher = new ExpressionArgumentMatcher(stepExpression);
         return argumentMatcher.argumentsFrom(pickleStep);
     }
+
+    public class ExtraMappingFoundException extends RuntimeException {
+
+        public ExtraMappingFoundException(List<StepDefinition> stepDefinitions, PickleStep pickleStep) {
+            super(String.format("Step '%s' mapped to next methods '%s'!",
+                    pickleStep.getText(),
+                    stepDefinitions.stream()
+                            .map(StepDefinition::getMethod)
+                            .map(Method::toString)
+                            .collect(Collectors.joining(","))
+            ));
+        }
+    }
+
 }

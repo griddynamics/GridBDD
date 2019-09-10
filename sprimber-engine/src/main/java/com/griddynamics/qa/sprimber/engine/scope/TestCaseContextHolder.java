@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.scope;
 
-import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.core.NamedThreadLocal;
 
@@ -48,9 +47,9 @@ public abstract class TestCaseContextHolder {
         TEST_CASE_OBJECTS_HOLDER.remove();
     }
 
-    public static void setupNewContext(TestCase testCase) {
+    public static void setupNewContext(String runtimeId) {
         TestCaseContext testCaseContext = new TestCaseContext();
-        testCaseContext.saveConversationId(testCase.getRuntimeId());
+        testCaseContext.saveConversationId(runtimeId);
         setContext(testCaseContext);
     }
 
