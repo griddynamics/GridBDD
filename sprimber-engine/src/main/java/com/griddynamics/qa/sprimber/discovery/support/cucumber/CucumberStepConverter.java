@@ -22,9 +22,10 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.support;
+package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsDiscovery;
 import cucumber.api.java.After;
 import cucumber.api.java.AfterStep;
 import cucumber.api.java.Before;
