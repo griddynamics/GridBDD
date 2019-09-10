@@ -25,7 +25,9 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.support.cucumber.CucumberStepConverter;
 import com.griddynamics.qa.sprimber.engine.ExecutionContext;
+import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
@@ -43,14 +45,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * @author fparamonov
@@ -62,7 +67,52 @@ public class PickleStepProcessor {
 
     private final ExecutionContext executionContext;
     private final ActionsContainer actionsContainer;
+    private final SprimberProperties sprimberProperties;
     private final StepExpressionFactory stepExpressionFactory;
+    private TagFilter tagFilter;
+
+    @PostConstruct
+    public void initTagFilter() {
+        tagFilter = new TagFilter(sprimberProperties.getTagFilters());
+    }
+
+    public List<StepDefinition> provideBeforeTestHooks() {
+        return findStepHooksForCurrentStage(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.TEST)
+                .filter(hookByAvailableTags())
+                .collect(Collectors.toList());
+    }
+
+    public List<StepDefinition> provideAfterTestHooks() {
+        return findStepHooksForCurrentStage(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.TEST)
+                .filter(hookByAvailableTags())
+                .collect(Collectors.toList());
+    }
+
+    public List<StepDefinition> wrapStepDefinitionWithHooks(StepDefinition stepDefinition) {
+        List<StepDefinition> wrappedDefinition =
+                findStepHooksForCurrentStage(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.STEP)
+                        .filter(hookByAvailableTags())
+                        .collect(Collectors.toList());
+        wrappedDefinition.add(stepDefinition);
+        List<StepDefinition> afterStepHooks =
+                findStepHooksForCurrentStage(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.STEP)
+                        .filter(hookByAvailableTags())
+                        .collect(Collectors.toList());
+        wrappedDefinition.addAll(afterStepHooks);
+        return wrappedDefinition;
+    }
+
+    private Stream<StepDefinition> findStepHooksForCurrentStage(StepDefinition.StepType stepType,
+                                                                StepDefinition.StepPhase stepPhase) {
+        return executionContext.getStepDefinitions().stream()
+                .filter(stepDefinition -> stepDefinition.getStepType().equals(stepType))
+                .filter(stepDefinition -> stepDefinition.getStepPhase().equals(stepPhase));
+    }
+
+    private Predicate<StepDefinition> hookByAvailableTags() {
+        return stepDefinition ->
+                tagFilter.filter((String) stepDefinition.getAttributes().get(CucumberStepConverter.TAGS_ATTRIBUTE));
+    }
 
     public StepDefinition buildStepDefinition(PickleStep pickleStep) {
         List<StepDefinition> targetDefinitions = executionContext.getStepDefinitions().stream()

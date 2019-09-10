@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.util.DigestUtils;

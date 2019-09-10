@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting.allure;
 
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;

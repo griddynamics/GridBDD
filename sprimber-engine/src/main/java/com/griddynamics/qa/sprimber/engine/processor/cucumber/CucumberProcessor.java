@@ -25,7 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
-import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
+import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.processor.ResourceProcessor;
 import gherkin.Parser;
 import gherkin.TokenMatcher;
