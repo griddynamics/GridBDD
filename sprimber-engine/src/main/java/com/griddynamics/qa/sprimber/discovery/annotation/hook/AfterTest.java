@@ -17,32 +17,38 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id:
+$Id: 
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.support;
+package com.griddynamics.qa.sprimber.discovery.annotation.hook;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.annotation.StepMapping;
+import org.springframework.core.annotation.AliasFor;
 
-import java.lang.reflect.Method;
-import java.util.List;
+import java.lang.annotation.*;
 
 /**
  * @author fparamonov
  */
-public interface StepDefinitionsDiscovery {
+
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@StepMapping(stepType = StepDefinition.StepType.AFTER, stepPhase = StepDefinition.StepPhase.TEST)
+public @interface AfterTest {
 
     /**
-     * The implementation should make the search and find the all methods that mapped to the steps
-     *
-     * @return the collection of the step definitions
+     * Alias for {@link StepMapping#textPattern}.
      */
-    List<StepDefinition> discover();
+    @AliasFor(annotation = StepMapping.class)
+    String textPattern() default "";
 
-    interface StepDefinitionConverter {
-
-        List<StepDefinition> convert(Method method);
-    }
+    /**
+     * Alias for {@link StepMapping#name}.
+     */
+    @AliasFor(annotation = StepMapping.class)
+    String name() default "";
 }

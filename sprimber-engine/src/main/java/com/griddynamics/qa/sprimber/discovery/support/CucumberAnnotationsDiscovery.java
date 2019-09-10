@@ -22,39 +22,37 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.annotation.step;
+package com.griddynamics.qa.sprimber.discovery.support;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.step.annotation.StepMapping;
-import org.springframework.core.annotation.AliasFor;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.engine.model.action.Actions;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
 
-import java.lang.annotation.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author fparamonov
  */
 
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-@StepMapping(stepType = StepDefinition.StepType.WHEN)
-public @interface WhenMapping {
+@Component
+@RequiredArgsConstructor
+public class CucumberAnnotationsDiscovery implements StepDefinitionsDiscovery {
 
-    /**
-     * Alias for {@link StepMapping#textPattern}.
-     */
-    @AliasFor(annotation = StepMapping.class)
-    String textPattern() default "";
+    private final CucumberStepConverter stepConverter;
+    private final ApplicationContext applicationContext;
 
-    /**
-     * Alias for {@link StepMapping#name}.
-     */
-    @AliasFor(annotation = StepMapping.class)
-    String name() default "";
-
-    /**
-     * Alias for {@link StepMapping#stepPhase}.
-     */
-    @AliasFor(annotation = StepMapping.class)
-    StepDefinition.StepPhase[] stepPhase() default StepDefinition.StepPhase.STEP;
+    @Override
+    public List<StepDefinition> discover() {
+        return applicationContext.getBeansWithAnnotation(Actions.class).values().stream()
+                .flatMap(actionBean ->
+                        Arrays.stream(actionBean.getClass().getDeclaredMethods())
+                                .map(stepConverter::convert)
+                                .flatMap(Collection::stream))
+                .collect(Collectors.toList());
+    }
 }

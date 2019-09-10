@@ -22,32 +22,39 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.testsuite.annotation;
+package com.griddynamics.qa.sprimber.discovery.annotation.step;
 
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.annotation.StepMapping;
 import org.springframework.core.annotation.AliasFor;
-import org.springframework.stereotype.Component;
 
 import java.lang.annotation.*;
 
 /**
- * Convenient annotation that helps Spring to identify marked class as a bean candidate
- * And allows to identify this class as a holder of test definitions for Sprimber
- *
  * @author fparamonov
  */
 
-@Target({ElementType.TYPE})
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Component
-public @interface TestController {
+@StepMapping(stepType = StepDefinition.StepType.WHEN)
+public @interface WhenMapping {
 
     /**
-     * The value may indicate a suggestion for a logical component name,
-     * to be turned into a Spring bean in case of an autodetected component.
-     *
-     * @return the suggested component name, if any (or empty String otherwise)
+     * Alias for {@link StepMapping#textPattern}.
      */
-    @AliasFor(annotation = Component.class)
-    String value() default "";
+    @AliasFor(annotation = StepMapping.class)
+    String textPattern() default "";
+
+    /**
+     * Alias for {@link StepMapping#name}.
+     */
+    @AliasFor(annotation = StepMapping.class)
+    String name() default "";
+
+    /**
+     * Alias for {@link StepMapping#stepPhase}.
+     */
+    @AliasFor(annotation = StepMapping.class)
+    StepDefinition.StepPhase[] stepPhase() default StepDefinition.StepPhase.STEP;
 }
