@@ -81,7 +81,7 @@ public class StepExecutionReportCatcher {
                 .findAny().get();
         try {
             log.info("Starting point");
-            StepExecutionReportCatcher.eventPublisher.stepStarted(joinPoint.getTarget(), stepDefinition);
+            StepExecutionReportCatcher.eventPublisher.stepStarted(this, stepDefinition);
             result = joinPoint.proceed();
             stepDefinition.setExecutionResult(executionResult);
             log.info("Point completed");
@@ -93,7 +93,7 @@ public class StepExecutionReportCatcher {
             log.trace(executionResult.getErrorMessage());
             log.error(throwable.getLocalizedMessage());
         } finally {
-            StepExecutionReportCatcher.eventPublisher.stepFinished(joinPoint.getTarget(), stepDefinition);
+            StepExecutionReportCatcher.eventPublisher.stepFinished(this, stepDefinition);
         }
         return result;
     }

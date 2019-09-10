@@ -24,6 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.model.configuration;
 
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.ArrayList;
@@ -32,25 +33,12 @@ import java.util.List;
 /**
  * @author fparamonov
  */
+
+@Data
 @ConfigurationProperties("sprimber.configuration")
 public class SprimberProperties {
 
-    private List<String> tagFilters = new ArrayList<>();
+    private Boolean aspectJEnabled = false;
     private String featurePath;
-
-    public String getFeaturePath() {
-        return featurePath;
-    }
-
-    public void setFeaturePath(String featurePath) {
-        this.featurePath = featurePath;
-    }
-
-    public List<String> getTagFilters() {
-        return tagFilters;
-    }
-
-    public void setTagFilters(List<String> tagFilters) {
-        this.tagFilters = tagFilters;
-    }
+    private List<String> tagFilters = new ArrayList<>();
 }

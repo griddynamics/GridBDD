@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import lombok.Builder;
 import lombok.Data;
 import org.springframework.util.DigestUtils;
 
@@ -50,8 +51,27 @@ public class StepDefinition {
     private StepType stepType;
     private StepPhase stepPhase;
     private CustomDetails customDetails;
+    private Map<String, Object> attributes = new HashMap<>();
     private Map<String, Object> parameters = new HashMap<>();
     private String hash;
+
+    public StepDefinition() {
+    }
+
+    @Builder(toBuilder = true)
+    public StepDefinition(String bindingTextPattern, String name, String resolvedTextPattern, ExecutionResult executionResult, Method method, StepType stepType, StepPhase stepPhase, CustomDetails customDetails, Map<String, Object> attributes, Map<String, Object> parameters, String hash) {
+        this.bindingTextPattern = bindingTextPattern;
+        this.name = name;
+        this.resolvedTextPattern = resolvedTextPattern;
+        this.executionResult = executionResult;
+        this.method = method;
+        this.stepType = stepType;
+        this.stepPhase = stepPhase;
+        this.customDetails = customDetails;
+        this.attributes = attributes;
+        this.parameters = parameters;
+        this.hash = hash;
+    }
 
     public String calculateAndSaveHash() {
         String uniqueName = method.getDeclaringClass().getCanonicalName() + "#" +
