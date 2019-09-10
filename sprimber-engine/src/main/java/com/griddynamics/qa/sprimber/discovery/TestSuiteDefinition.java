@@ -24,13 +24,10 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -59,6 +56,7 @@ public class TestSuiteDefinition {
         private String runtimeId = UUID.randomUUID().toString();
         private ExecutionResult executionResult;
         private List<StepDefinition> stepDefinitions = new ArrayList<>();
+        private Map<String, Object> attributes = new HashMap<>();
     }
 
     public interface TestExecutor {

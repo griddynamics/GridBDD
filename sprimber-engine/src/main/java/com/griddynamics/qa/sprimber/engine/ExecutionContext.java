@@ -17,41 +17,36 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id:
+$Id: 
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
- */
+*/
 
-package com.griddynamics.qa.sprimber.engine.scope;
+package com.griddynamics.qa.sprimber.engine;
 
-import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
-import org.springframework.beans.factory.support.AbstractBeanFactory;
-import org.springframework.context.event.EventListener;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import lombok.Data;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Kind of event listener that monitor test case start and finish events.
- * Based on this events test case context cleaned and removed or created
+ * This is a parent super container that can hold all necessary Sprimber objects during execution
+ * in one place with the ability to share and provide access from different places inside of the
+ * framework
  *
  * @author fparamonov
  */
 
+@Data
 @Component
-public class FlowOrchestrator {
+public class ExecutionContext {
 
-    private final AbstractBeanFactory beanFactory;
-
-    public FlowOrchestrator(AbstractBeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
-    }
-
-    @EventListener
-    public void setupTestCaseContext(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
-        TestCaseContextHolder.setupNewContext(testStartedEvent.getTestDefinition().getRuntimeId());
-    }
-
-    @EventListener
-    public void resetTestCaseContextOld(SprimberEventPublisher.TestFinishedEvent testFinishedEvent) {
-        TestCaseContextHolder.cleanContext(beanFactory);
-    }
+    /**
+     * Collection that aimed to hold all available step definitions at runtime
+     * Without binding to any suite/case/test/step
+     *
+     */
+    private List<StepDefinition> stepDefinitions = new ArrayList<>();
 }

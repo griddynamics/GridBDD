@@ -157,9 +157,9 @@ public class AllureSprimber {
                 .withStart(clock.millis());
         lifecycle.startStep(testCaseRuntimeId.get(), testCaseRuntimeId.get() + stepReportName, stepResult);
         StringBuilder dataTableCsv = new StringBuilder();
-        stepStartedEvent.getStepDefinition().getParameters().forEach((key, value) ->
+        stepStartedEvent.getStepDefinition().getAttributes().forEach((key, value) ->
                 dataTableCsv.append(key).append("\t").append(value).append("\n"));
-        lifecycle.addAttachment("Step Parameters", "text/tab-separated-values", "csv", dataTableCsv.toString().getBytes());
+        lifecycle.addAttachment("Step Attributes", "text/tab-separated-values", "csv", dataTableCsv.toString().getBytes());
     }
 
     @EventListener

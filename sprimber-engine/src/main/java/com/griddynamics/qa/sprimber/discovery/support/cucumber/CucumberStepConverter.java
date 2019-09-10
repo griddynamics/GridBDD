@@ -103,15 +103,15 @@ public class CucumberStepConverter implements StepDefinitionsDiscovery.StepDefin
     }
 
     private void processStepProperties(Annotation annotation, StepDefinition definition) {
-        definition.getParameters().put(TIMEOUT_ATTRIBUTE, AnnotationUtils.getValue(annotation, TIMEOUT_ATTRIBUTE.toLowerCase()));
+        definition.getAttributes().put(TIMEOUT_ATTRIBUTE, AnnotationUtils.getValue(annotation, TIMEOUT_ATTRIBUTE.toLowerCase()));
         definition.setBindingTextPattern(String.valueOf(AnnotationUtils.getValue(annotation)));
     }
 
     private void processHookProperties(Annotation annotation, StepDefinition definition) {
-        definition.getParameters().put(ORDER_ATTRIBUTE, AnnotationUtils.getValue(annotation, ORDER_ATTRIBUTE.toLowerCase()));
-        definition.getParameters().put(TIMEOUT_ATTRIBUTE, AnnotationUtils.getValue(annotation, TIMEOUT_ATTRIBUTE.toLowerCase()));
+        definition.getAttributes().put(ORDER_ATTRIBUTE, AnnotationUtils.getValue(annotation, ORDER_ATTRIBUTE.toLowerCase()));
+        definition.getAttributes().put(TIMEOUT_ATTRIBUTE, AnnotationUtils.getValue(annotation, TIMEOUT_ATTRIBUTE.toLowerCase()));
         if (!Arrays.asList(AnnotationUtils.getValue(annotation)).isEmpty()) {
-            definition.getParameters().put(TAGS_ATTRIBUTE, StringUtils.join((String[]) AnnotationUtils.getValue(annotation), ','));
+            definition.getAttributes().put(TAGS_ATTRIBUTE, StringUtils.join((String[]) AnnotationUtils.getValue(annotation), ','));
         }
     }
 }
