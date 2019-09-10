@@ -26,7 +26,7 @@ package com.griddynamics.qa.sprimber.autoconfigure.annotation;
 
 import com.griddynamics.qa.sprimber.autoconfigure.SprimberAutoConfiguration;
 import com.griddynamics.qa.sprimber.autoconfigure.SprimberRegistrar;
-import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
+import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Import;
 

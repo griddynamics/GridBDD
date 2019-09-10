@@ -26,7 +26,7 @@ package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
-import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
+import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.processor.cucumber.CucumberDocument;
 import com.griddynamics.qa.sprimber.engine.processor.cucumber.PickleStepProcessor;
 import gherkin.Parser;
@@ -62,10 +62,10 @@ public class CucumberFeaturesDiscovery implements TestSuiteDiscovery {
     public TestSuiteDefinition discover() {
         TestSuiteDefinition testSuiteDefinition = new TestSuiteDefinition();
         try {
-             Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()))
+            Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()))
                     .map(this::buildCucumberDocument)
                     .map(this::testCaseDiscover)
-                     .forEach(testCaseDefinition -> testSuiteDefinition.getTestCaseDefinitions().add(testCaseDefinition));
+                    .forEach(testCaseDefinition -> testSuiteDefinition.getTestCaseDefinitions().add(testCaseDefinition));
         } catch (IOException e) {
             // TODO: 2019-09-10 handle the exception from resource unavailability correctly
             e.printStackTrace();

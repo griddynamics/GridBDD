@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.executor;
 
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFinishedEvent;
@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CountDownLatch;
 
-import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.PASSED;
+import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_EXECUTOR_NAME;
 
 /**

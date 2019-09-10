@@ -54,9 +54,12 @@ public class CucumberTestBinder implements TestDefinitionBinder {
         testDefinition.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(pickle));
         testDefinition.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(pickle));
         testDefinition.setName(pickle.getName());
+        testDefinition.getStepDefinitions().addAll(pickleStepProcessor.provideBeforeTestHooks());
         pickle.getSteps().stream()
                 .map(pickleStepProcessor::buildStepDefinition)
-                .forEach(stepDefinition -> testDefinition.getStepDefinitions().add(stepDefinition));
+                .map(pickleStepProcessor::wrapStepDefinitionWithHooks)
+                .forEach(stepDefinitions -> testDefinition.getStepDefinitions().addAll(stepDefinitions));
+        testDefinition.getStepDefinitions().addAll(pickleStepProcessor.provideAfterTestHooks());
         return testDefinition;
     }
 

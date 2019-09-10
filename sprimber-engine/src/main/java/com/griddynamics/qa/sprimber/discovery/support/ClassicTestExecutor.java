@@ -26,7 +26,7 @@ package com.griddynamics.qa.sprimber.discovery.support;
 
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,7 @@ import org.springframework.util.ReflectionUtils;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 
-import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.PASSED;
+import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 
 /**
  * @author fparamonov

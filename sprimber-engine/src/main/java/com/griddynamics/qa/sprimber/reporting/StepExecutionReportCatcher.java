@@ -27,7 +27,7 @@ package com.griddynamics.qa.sprimber.reporting;
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsDiscovery;
 import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import cucumber.runtime.java.StepDefAnnotation;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +41,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.PASSED;
+import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 
 /**
  * @author fparamonov

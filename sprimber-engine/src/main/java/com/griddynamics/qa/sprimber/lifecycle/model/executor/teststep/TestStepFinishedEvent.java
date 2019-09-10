@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.lifecycle.model.executor.teststep;
 
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import org.springframework.context.ApplicationEvent;
 

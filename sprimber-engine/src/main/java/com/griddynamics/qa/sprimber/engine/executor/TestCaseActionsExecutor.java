@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.executor;
 
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
 import com.griddynamics.qa.sprimber.engine.scope.annotation.ScenarioComponent;
@@ -38,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status.PASSED;
+import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 
 /**
  * This class is actual executor for each action inside of test case such as hooks, steps etc.

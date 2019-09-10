@@ -30,7 +30,7 @@ import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsDiscovery;
 import com.griddynamics.qa.sprimber.discovery.support.classic.ClassicDiscovery;
 import com.griddynamics.qa.sprimber.discovery.support.cucumber.CucumberFeaturesDiscovery;
 import com.griddynamics.qa.sprimber.engine.ExecutionContext;
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;

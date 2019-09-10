@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook;
 
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
 import org.springframework.context.ApplicationEvent;
 
