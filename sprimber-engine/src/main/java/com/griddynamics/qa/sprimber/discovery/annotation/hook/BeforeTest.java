@@ -22,20 +22,33 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.annotation;
+package com.griddynamics.qa.sprimber.discovery.annotation.hook;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.annotation.StepMapping;
+import org.springframework.core.annotation.AliasFor;
+
+import java.lang.annotation.*;
 
 /**
- * Meta annotation that indicates a step mapping annotation.
- *
  * @author fparamonov
  */
 
-@Target({ElementType.ANNOTATION_TYPE})
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Mapping {
+@Documented
+@StepMapping(stepType = StepDefinition.StepType.BEFORE, stepPhase = StepDefinition.StepPhase.TEST)
+public @interface BeforeTest {
+
+    /**
+     * Alias for {@link StepMapping#textPattern}.
+     */
+    @AliasFor(annotation = StepMapping.class)
+    String textPattern() default "";
+
+    /**
+     * Alias for {@link StepMapping#name}.
+     */
+    @AliasFor(annotation = StepMapping.class)
+    String name() default "";
 }

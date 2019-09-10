@@ -22,10 +22,10 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.annotation.hook;
+package com.griddynamics.qa.sprimber.discovery.annotation.step;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.step.annotation.StepMapping;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.annotation.StepMapping;
 import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.*;
@@ -37,8 +37,8 @@ import java.lang.annotation.*;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@StepMapping(stepType = StepDefinition.StepType.BEFORE, stepPhase = StepDefinition.StepPhase.TEST)
-public @interface BeforeTest {
+@StepMapping(stepType = StepDefinition.StepType.GIVEN)
+public @interface GivenMapping {
 
     /**
      * Alias for {@link StepMapping#textPattern}.
@@ -51,4 +51,10 @@ public @interface BeforeTest {
      */
     @AliasFor(annotation = StepMapping.class)
     String name() default "";
+
+    /**
+     * Alias for {@link StepMapping#stepPhase}.
+     */
+    @AliasFor(annotation = StepMapping.class)
+    StepDefinition.StepPhase[] stepPhase() default StepDefinition.StepPhase.STEP;
 }

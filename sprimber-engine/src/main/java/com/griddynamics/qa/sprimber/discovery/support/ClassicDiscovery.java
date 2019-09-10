@@ -22,12 +22,12 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.testsuite.support;
+package com.griddynamics.qa.sprimber.discovery.support;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.testsuite.TestSuiteDefinition;
-import com.griddynamics.qa.sprimber.discovery.testsuite.annotation.TestController;
-import com.griddynamics.qa.sprimber.discovery.testsuite.annotation.TestMapping;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.annotation.TestMapping;
+import com.griddynamics.qa.sprimber.discovery.annotation.TestController;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;

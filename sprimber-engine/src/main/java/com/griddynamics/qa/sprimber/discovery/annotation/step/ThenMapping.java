@@ -22,37 +22,39 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.support;
+package com.griddynamics.qa.sprimber.discovery.annotation.step;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.engine.model.action.Actions;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.annotation.StepMapping;
+import org.springframework.core.annotation.AliasFor;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.lang.annotation.*;
 
 /**
  * @author fparamonov
  */
 
-@Component
-@RequiredArgsConstructor
-public class CucumberStyleDiscovery implements StepDefinitionsDiscovery {
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@StepMapping(stepType = StepDefinition.StepType.THEN)
+public @interface ThenMapping {
 
-    private final CucumberStepConverter stepConverter;
-    private final ApplicationContext applicationContext;
+    /**
+     * Alias for {@link StepMapping#textPattern}.
+     */
+    @AliasFor(annotation = StepMapping.class)
+    String textPattern() default "";
 
-    @Override
-    public List<StepDefinition> discover() {
-        return applicationContext.getBeansWithAnnotation(Actions.class).values().stream()
-                .flatMap(actionBean ->
-                        Arrays.stream(actionBean.getClass().getDeclaredMethods())
-                                .map(stepConverter::convert)
-                                .flatMap(Collection::stream))
-                .collect(Collectors.toList());
-    }
+    /**
+     * Alias for {@link StepMapping#name}.
+     */
+    @AliasFor(annotation = StepMapping.class)
+    String name() default "";
+
+    /**
+     * Alias for {@link StepMapping#stepPhase}.
+     */
+    @AliasFor(annotation = StepMapping.class)
+    StepDefinition.StepPhase[] stepPhase() default StepDefinition.StepPhase.STEP;
 }
