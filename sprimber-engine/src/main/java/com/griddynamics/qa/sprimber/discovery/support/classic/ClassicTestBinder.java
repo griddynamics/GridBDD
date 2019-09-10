@@ -22,61 +22,33 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.support;
+package com.griddynamics.qa.sprimber.discovery.support.classic;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.discovery.annotation.TestMapping;
-import com.griddynamics.qa.sprimber.discovery.annotation.TestController;
+import com.griddynamics.qa.sprimber.discovery.support.TestDefinitionBinder;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.springframework.context.ApplicationContext;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
 
 /**
  * @author fparamonov
  */
 
-@Slf4j
-@Component
 @RequiredArgsConstructor
-public class ClassicDiscovery implements TestSuiteDiscovery {
+public class ClassicTestBinder implements TestDefinitionBinder {
 
-    private final ApplicationContext applicationContext;
+    private final Method testMethod;
 
     @Override
-    public TestSuiteDefinition discover() {
-        TestSuiteDefinition testSuiteDefinition = new TestSuiteDefinition();
-        applicationContext.getBeansWithAnnotation(TestController.class).values().stream()
-                .map(this::testCaseDiscover)
-                .forEach(testCase -> testSuiteDefinition.getTestCaseDefinitions().add(testCase));
-        return testSuiteDefinition;
-    }
-
-    private TestSuiteDefinition.TestCaseDefinition testCaseDiscover(Object testController) {
-        val testCaseDefinition = new TestSuiteDefinition.TestCaseDefinition();
-        Arrays.stream(testController.getClass().getDeclaredMethods())
-                .filter(method -> method.isAnnotationPresent(TestMapping.class))
-                .forEach(testMethod ->
-                        testCaseDefinition.getTestDefinitions().add(processTestDefinition(testMethod)));
-        return testCaseDefinition;
-    }
-
-    private TestSuiteDefinition.TestDefinition processTestDefinition(Method testMethod) {
+    public TestSuiteDefinition.TestDefinition bind() {
         TestMapping testMapping = AnnotationUtils.getAnnotation(testMethod, TestMapping.class);
         String testName = buildTestName(testMethod, testMapping);
-        StepDefinition stepDefinition = new StepDefinition();
-        stepDefinition.setMethod(testMethod);
-        stepDefinition.setName(testName);
-        stepDefinition.setStepPhase(StepDefinition.StepPhase.TEST);
-        stepDefinition.setStepType(StepDefinition.StepType.GENERAL);
-        stepDefinition.calculateAndSaveHash();
+        StepDefinition stepDefinition = buildStepDefinition(testMethod, testName);
         val testDefinition = new TestSuiteDefinition.TestDefinition();
         testDefinition.setName(testName);
         testDefinition.setDescription(String.valueOf(AnnotationUtils.getValue(testMapping, "description")));
@@ -85,12 +57,22 @@ public class ClassicDiscovery implements TestSuiteDiscovery {
         return testDefinition;
     }
 
+    private StepDefinition buildStepDefinition(Method testMethod, String testName) {
+        StepDefinition stepDefinition = new StepDefinition();
+        stepDefinition.setMethod(testMethod);
+        stepDefinition.setName(testName);
+        stepDefinition.setStepPhase(StepDefinition.StepPhase.TEST);
+        stepDefinition.setStepType(StepDefinition.StepType.GENERAL);
+        stepDefinition.calculateAndSaveHash();
+        return stepDefinition;
+    }
+
     private String buildTestName(Method method, TestMapping testMapping) {
         String testName = String.valueOf(AnnotationUtils.getValue(testMapping, "name"));
         return testName.isEmpty() ? method.getName() : testName;
     }
 
-    public String buildTestHash(Method method) {
+    private String buildTestHash(Method method) {
         String uniqueName = method.getDeclaringClass().getCanonicalName() + "#" +
                 method.getName() + "#" +
                 method.getParameterCount();
