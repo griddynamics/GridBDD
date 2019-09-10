@@ -24,14 +24,14 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.executor;
 
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import org.springframework.stereotype.Component;
 
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Set;
 
-import static com.griddynamics.qa.sprimber.engine.model.ExecutionResult.Status;
+import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status;
 
 /**
  * @author fparamonov

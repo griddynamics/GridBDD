@@ -24,13 +24,10 @@ $Id:
 
 package com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase;
 
-import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Component;
 
 /**
  * @author fparamonov

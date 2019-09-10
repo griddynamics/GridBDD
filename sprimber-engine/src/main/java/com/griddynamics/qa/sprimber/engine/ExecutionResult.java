@@ -22,7 +22,7 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine.model;
+package com.griddynamics.qa.sprimber.engine;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

@@ -49,8 +49,8 @@ import java.util.stream.Collectors;
 @Component
 public class CucumberStepConverter implements StepDefinitionsDiscovery.StepDefinitionConverter {
 
+    public static final String TAGS_ATTRIBUTE = "Tags";
     private static final String TIMEOUT_ATTRIBUTE = "Timeout";
-    private static final String TAGS_ATTRIBUTE = "Tags";
     private static final String ORDER_ATTRIBUTE = "Order";
 
     private final Map<Class<? extends Annotation>, Pair<StepDefinition.StepType, StepDefinition.StepPhase>> hooks =

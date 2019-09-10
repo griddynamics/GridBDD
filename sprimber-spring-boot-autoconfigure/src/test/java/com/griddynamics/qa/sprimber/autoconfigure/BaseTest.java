@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.griddynamics.qa.sprimber.autoconfigure.annotation.EnableSprimber;
 import com.griddynamics.qa.sprimber.engine.executor.CliRunner;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
-import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
+import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
 import com.griddynamics.qa.sprimber.engine.scope.FlowOrchestrator;
 import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;

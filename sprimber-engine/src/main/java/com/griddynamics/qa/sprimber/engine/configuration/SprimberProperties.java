@@ -22,20 +22,23 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine.model.configuration;
+package com.griddynamics.qa.sprimber.engine.configuration;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author fparamonov
  */
-public class SprimberAttributes {
 
-    private String actionPackage;
+@Data
+@ConfigurationProperties("sprimber.configuration")
+public class SprimberProperties {
 
-    public String getActionPackage() {
-        return actionPackage;
-    }
-
-    public void setActionPackage(String actionPackage) {
-        this.actionPackage = actionPackage;
-    }
+    private Boolean aspectJEnabled = false;
+    private String featurePath;
+    private List<String> tagFilters = new ArrayList<>();
 }

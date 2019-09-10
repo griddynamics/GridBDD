@@ -26,7 +26,7 @@ package com.griddynamics.qa.sprimber.event;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
-import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberProperties;
+import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.event.Events.StepEvent;
 import com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher;
 import lombok.RequiredArgsConstructor;

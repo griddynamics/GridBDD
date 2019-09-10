@@ -25,7 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.autoconfigure;
 
 import com.griddynamics.qa.sprimber.autoconfigure.annotation.EnableSprimber;
-import com.griddynamics.qa.sprimber.engine.model.configuration.SprimberAttributes;
+import com.griddynamics.qa.sprimber.engine.configuration.SprimberAttributes;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;

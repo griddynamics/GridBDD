@@ -26,8 +26,10 @@ package com.griddynamics.qa.sprimber.engine.processor.cucumber;
 
 import io.cucumber.tagexpressions.Expression;
 import io.cucumber.tagexpressions.TagExpressionParser;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,5 +53,10 @@ class TagFilter {
 
     boolean filter(List<String> tags) {
         return expressions.stream().allMatch(expression -> expression.evaluate(tags));
+    }
+
+    boolean filter(String tagsAsCsv) {
+        List<String> tags = Arrays.asList(StringUtils.tokenizeToStringArray(tagsAsCsv, ","));
+        return tags.isEmpty() || filter(tags);
     }
 }
