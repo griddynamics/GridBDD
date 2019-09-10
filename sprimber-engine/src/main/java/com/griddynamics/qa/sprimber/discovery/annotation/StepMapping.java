@@ -22,33 +22,53 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.annotation.hook;
+package com.griddynamics.qa.sprimber.discovery.annotation;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.step.annotation.StepMapping;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.*;
 
 /**
+ * Annotation for mapping steps from text files onto methods in step-handling classes
+ * with flexible method signatures.
+ *
  * @author fparamonov
  */
 
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@StepMapping(stepType = StepDefinition.StepType.BEFORE, stepPhase = StepDefinition.StepPhase.GLOBAL)
-public @interface GlobalBefore {
+@Mapping
+public @interface StepMapping {
 
     /**
-     * Alias for {@link StepMapping#textPattern}.
+     * Assign the mapped patterns to the target method
+     * Depends on the usecase the pattern cab be straightforward text that provide 1-1 mapping between step
+     * and method or can be regular expression or other type of expression that supported by Sprimber
+     * or any of extension.
+     * In case of "hidden" steps this pattern is optional and can be used to add verbose levels to the reports
+     *
+     * @return text pattern
      */
-    @AliasFor(annotation = StepMapping.class)
     String textPattern() default "";
 
-    /**
-     * Alias for {@link StepMapping#name}.
-     */
-    @AliasFor(annotation = StepMapping.class)
+    @AliasFor("textPattern")
     String name() default "";
+
+    /**
+     * Assign the logical meaning of the annotated step
+     *
+     * @return the one of the supported step types
+     */
+    StepDefinition.StepType stepType();
+
+    /**
+     * The execution phase of annotated step-method. Note that multiple phases work better for "hidden" steps
+     * Actual engine implementation will treat any phases different from Step as "hidden"
+     * and add the step to the execution queue
+     *
+     * @return one or several phases where this step can be used
+     */
+    StepDefinition.StepPhase[] stepPhase() default StepDefinition.StepPhase.STEP;
 }

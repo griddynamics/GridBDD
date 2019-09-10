@@ -24,8 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.executor;
 
-import com.griddynamics.qa.sprimber.discovery.testsuite.TestSuiteDefinition;
-import com.griddynamics.qa.sprimber.discovery.testsuite.support.TestSuiteDiscovery;
+import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -22,9 +22,9 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.testsuite.support;
+package com.griddynamics.qa.sprimber.discovery.support;
 
-import com.griddynamics.qa.sprimber.discovery.testsuite.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;

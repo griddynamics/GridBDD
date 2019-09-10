@@ -24,8 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.event;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.testsuite.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;

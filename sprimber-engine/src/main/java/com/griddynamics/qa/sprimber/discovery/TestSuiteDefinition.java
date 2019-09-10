@@ -22,33 +22,46 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.step.annotation.hook;
+package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.discovery.step.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.step.annotation.StepMapping;
-import org.springframework.core.annotation.AliasFor;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.engine.model.ExecutionResult;
+import lombok.Data;
 
-import java.lang.annotation.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author fparamonov
  */
 
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-@StepMapping(stepType = StepDefinition.StepType.BEFORE, stepPhase = StepDefinition.StepPhase.TESTCASE)
-public @interface BeforeTestCase {
+@Data
+public class TestSuiteDefinition {
 
-    /**
-     * Alias for {@link StepMapping#textPattern}.
-     */
-    @AliasFor(annotation = StepMapping.class)
-    String textPattern() default "";
+    private ExecutionResult executionResult;
+    private List<TestCaseDefinition> testCaseDefinitions = new ArrayList<>();
 
-    /**
-     * Alias for {@link StepMapping#name}.
-     */
-    @AliasFor(annotation = StepMapping.class)
-    String name() default "";
+    @Data
+    public static class TestCaseDefinition {
+
+        private ExecutionResult executionResult;
+        private List<TestDefinition> testDefinitions = new ArrayList<>();
+    }
+
+    @Data
+    public static class TestDefinition {
+
+        private String hash;
+        private String name;
+        private String description;
+        private String runtimeId = UUID.randomUUID().toString();
+        private ExecutionResult executionResult;
+        private List<StepDefinition> stepDefinitions = new ArrayList<>();
+    }
+
+    public interface TestExecutor {
+        CompletableFuture<ExecutionResult> execute(TestDefinition testDefinition);
+    }
 }

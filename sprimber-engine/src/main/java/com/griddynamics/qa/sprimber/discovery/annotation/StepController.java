@@ -17,34 +17,37 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.test.tests;
+package com.griddynamics.qa.sprimber.discovery.annotation;
 
-import com.griddynamics.qa.sprimber.discovery.annotation.TestController;
-import com.griddynamics.qa.sprimber.discovery.annotation.TestMapping;
-import com.griddynamics.qa.sprimber.test.steps.BaseEchoSteps;
+import org.springframework.core.annotation.AliasFor;
+import org.springframework.stereotype.Component;
+
+import java.lang.annotation.*;
 
 /**
+ * Convenient annotation that helps Spring to identify marked class as a bean candidate
+ * And allows to identify this class as a holder of step definitions for Sprimber
+ *
  * @author fparamonov
  */
 
-@TestController
-public class CodeStyleTest {
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Component
+public @interface StepController {
 
-    private final BaseEchoSteps baseEchoSteps;
-
-    public CodeStyleTest(BaseEchoSteps baseEchoSteps) {
-        this.baseEchoSteps = baseEchoSteps;
-    }
-
-    @TestMapping(value = "some test", description = "Some test that uses BDD steps")
-    public void myFirstTest() {
-        baseEchoSteps.given();
-        baseEchoSteps.when();
-        baseEchoSteps.then();
-    }
+    /**
+     * The value may indicate a suggestion for a logical component name,
+     * to be turned into a Spring bean in case of an autodetected component.
+     *
+     * @return the suggested component name, if any (or empty String otherwise)
+     */
+    @AliasFor(annotation = Component.class)
+    String value() default "";
 }

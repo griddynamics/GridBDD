@@ -22,31 +22,33 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.testsuite.annotation;
+package com.griddynamics.qa.sprimber.discovery.annotation.hook;
 
-import com.griddynamics.qa.sprimber.discovery.step.annotation.Mapping;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.annotation.StepMapping;
 import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.*;
 
 /**
- * Annotation that helps to mark the following portion of code(Java method) as a single atomic test
- * This test can be straightforward and consist from one step or may be complex and refer to the multiple steps
- *
  * @author fparamonov
  */
 
-@Target({ElementType.METHOD, ElementType.TYPE})
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Mapping
-public @interface TestMapping {
+@StepMapping(stepType = StepDefinition.StepType.AFTER, stepPhase = StepDefinition.StepPhase.GLOBAL)
+public @interface GlobalAfter {
 
-    @AliasFor("name")
-    String value() default "";
+    /**
+     * Alias for {@link StepMapping#textPattern}.
+     */
+    @AliasFor(annotation = StepMapping.class)
+    String textPattern() default "";
 
-    @AliasFor("value")
+    /**
+     * Alias for {@link StepMapping#name}.
+     */
+    @AliasFor(annotation = StepMapping.class)
     String name() default "";
-
-    String description() default "";
 }
