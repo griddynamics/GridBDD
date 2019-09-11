@@ -27,8 +27,6 @@ package com.griddynamics.qa.sprimber.reporting;
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -39,8 +37,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class TestCaseIlluminator {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestCaseIlluminator.class);
 
     @EventListener
     public void illuminateTestCaseStart(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
@@ -71,10 +67,9 @@ public class TestCaseIlluminator {
         } else {
             log.debug("Test step finished: {}", stepFinishedEvent.getStepDefinition().getResolvedTextPattern());
         }
-
     }
 
     private boolean isStepOfTypeHook(StepDefinition stepDefinition) {
-        return stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER) || stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER);
+        return stepDefinition.getStepType().equals(StepDefinition.StepType.BEFORE) || stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER);
     }
 }

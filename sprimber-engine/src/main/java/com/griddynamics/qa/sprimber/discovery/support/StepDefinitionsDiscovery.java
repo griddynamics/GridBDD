@@ -26,6 +26,8 @@ package com.griddynamics.qa.sprimber.discovery.support;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -42,6 +44,8 @@ public interface StepDefinitionsDiscovery {
     List<StepDefinition> discover();
 
     interface StepDefinitionConverter {
+
+        boolean accept(Annotation annotation);
 
         List<StepDefinition> convert(Method method);
     }

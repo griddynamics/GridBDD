@@ -26,9 +26,7 @@ package com.griddynamics.qa.sprimber.event;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
-import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.event.Events.StepEvent;
-import com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
@@ -41,37 +39,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SprimberEventPublisher {
 
-    private final SprimberProperties sprimberProperties;
     private final ApplicationEventPublisher eventPublisher;
 
-    /**
-     * The event will be triggered manually only in case when aspect j weaver not enabled.
-     * In all other cases the steps execution should be catch by
-     * {@link com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher}
-     *
-     * @param target         - source object
-     * @param stepDefinition - target definition
-     */
     public void stepStarted(Object target, StepDefinition stepDefinition) {
-        if (sprimberProperties.getAspectJEnabled() && !(target instanceof StepExecutionReportCatcher)) {
-            return;
-        }
         StepStartedEvent stepStartedEvent = new StepStartedEvent(target, stepDefinition);
         eventPublisher.publishEvent(stepStartedEvent);
     }
 
-    /**
-     * The event will be triggered manually only in case when aspect j weaver not enabled.
-     * In all other cases the steps execution should be catch by
-     * {@link com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher}
-     *
-     * @param target         - source object
-     * @param stepDefinition - target definition
-     */
     public void stepFinished(Object target, StepDefinition stepDefinition) {
-        if (sprimberProperties.getAspectJEnabled() && !(target instanceof StepExecutionReportCatcher)) {
-            return;
-        }
         StepFinishedEvent stepFinishedEvent = new StepFinishedEvent(target, stepDefinition);
         eventPublisher.publishEvent(stepFinishedEvent);
     }

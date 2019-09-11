@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.reporting.allure;
 
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
+import com.griddynamics.qa.sprimber.reporting.StepDefinitionFormatter;
 import io.qameta.allure.AllureLifecycle;
 import io.qameta.allure.model.Status;
 import io.qameta.allure.model.StatusDetails;
@@ -57,14 +58,16 @@ public class AllureSprimber {
     private final Clock clock;
     private final AllureLifecycle lifecycle;
     private ThreadPoolTaskExecutor taskExecutor;
+    private StepDefinitionFormatter formatter;
     private ThreadLocal<String> testCaseRuntimeId = new ThreadLocal<>();
 
     public AllureSprimber(Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping,
                           Clock clock,
-                          AllureLifecycle lifecycle) {
+                          AllureLifecycle lifecycle, StepDefinitionFormatter formatter) {
         this.allureToSprimberStatusMapping = allureToSprimberStatusMapping;
         this.clock = clock;
         this.lifecycle = lifecycle;
+        this.formatter = formatter;
         taskExecutor = new ThreadPoolTaskExecutor();
         taskExecutor.setThreadNamePrefix("AllureWriter-");
         taskExecutor.initialize();
@@ -123,7 +126,7 @@ public class AllureSprimber {
     public void testStepStarted(SprimberEventPublisher.StepStartedEvent stepStartedEvent) {
         String stepReportName = stepStartedEvent.getStepDefinition().getStepType() + " " +
                 stepStartedEvent.getStepDefinition().getStepPhase() + " " +
-                stepStartedEvent.getStepDefinition().getName();
+                formatter.formatStepName(stepStartedEvent.getStepDefinition());
         StepResult stepResult = new StepResult()
                 .withName(stepReportName)
                 .withStart(clock.millis());
@@ -139,7 +142,7 @@ public class AllureSprimber {
     public void testStepFinished(SprimberEventPublisher.StepFinishedEvent stepFinishedEvent) {
         String stepReportName = stepFinishedEvent.getStepDefinition().getStepType() + " " +
                 stepFinishedEvent.getStepDefinition().getStepPhase() + " " +
-                stepFinishedEvent.getStepDefinition().getName();
+                formatter.formatStepName(stepFinishedEvent.getStepDefinition());
         ExecutionResult result = stepFinishedEvent.getStepDefinition().getExecutionResult();
         Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
         lifecycle.updateStep(testCaseRuntimeId.get() + stepReportName,
