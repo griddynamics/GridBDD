@@ -25,16 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.reporting.allure;
 
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
-import com.griddynamics.qa.sprimber.engine.model.TestCase;
-import com.griddynamics.qa.sprimber.engine.model.TestStep;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFinishedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseStartedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook.TestHookFinishedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook.TestHookStartedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.teststep.TestStepFinishedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.teststep.TestStepStartedEvent;
 import io.qameta.allure.AllureLifecycle;
 import io.qameta.allure.model.Status;
 import io.qameta.allure.model.StatusDetails;
@@ -47,17 +38,11 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
 import java.io.ByteArrayInputStream;
-import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
@@ -117,35 +102,22 @@ public class AllureSprimber {
         taskExecutor.execute(() -> lifecycle.writeTestCase(runtimeUuid));
     }
 
-    @Deprecated
-    @EventListener
-    public void testCaseStarted(TestCaseStartedEvent startedEvent) {
-        HelperInfoBuilder helperInfoBuilder = new HelperInfoBuilder(startedEvent.getTestCase());
-        String historyId = getTestCaseHistoryId(startedEvent.getTestCase());
-        testCaseRuntimeId.set(startedEvent.getTestCase().getRuntimeId());
-        TestResult testResult = new TestResult()
-                .withUuid(testCaseRuntimeId.get())
-                .withHistoryId(historyId)
-                .withName(startedEvent.getTestCase().getName())
-                .withLinks(helperInfoBuilder.getLinks())
-                .withLabels(helperInfoBuilder.getLabels())
-                .withDescription(startedEvent.getTestCase().getDescription());
-        lifecycle.scheduleTestCase(testResult);
-        lifecycle.startTestCase(testCaseRuntimeId.get());
-    }
-
-    @Deprecated
-    @EventListener
-    public void testCaseFinished(TestCaseFinishedEvent finishedEvent) throws ExecutionException, InterruptedException, TimeoutException {
-        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(finishedEvent.getExecutionResult().getOptionalError().orElse(null));
-        String runtimeUuid = testCaseRuntimeId.get();
-        lifecycle.updateTestCase(runtimeUuid, scenarioResult -> {
-            scenarioResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult().getStatus()));
-            statusDetails.ifPresent(scenarioResult::withStatusDetails);
-        });
-        lifecycle.stopTestCase(runtimeUuid);
-        taskExecutor.execute(() -> lifecycle.writeTestCase(runtimeUuid));
-    }
+//    @Deprecated
+//    @EventListener
+//    public void testCaseStarted(TestCaseStartedEvent startedEvent) {
+//        HelperInfoBuilder helperInfoBuilder = new HelperInfoBuilder(startedEvent.getTestCase());
+//        String historyId = getTestCaseHistoryId(startedEvent.getTestCase());
+//        testCaseRuntimeId.set(startedEvent.getTestCase().getRuntimeId());
+//        TestResult testResult = new TestResult()
+//                .withUuid(testCaseRuntimeId.get())
+//                .withHistoryId(historyId)
+//                .withName(startedEvent.getTestCase().getName())
+//                .withLinks(helperInfoBuilder.getLinks())
+//                .withLabels(helperInfoBuilder.getLabels())
+//                .withDescription(startedEvent.getTestCase().getDescription());
+//        lifecycle.scheduleTestCase(testResult);
+//        lifecycle.startTestCase(testCaseRuntimeId.get());
+//    }
 
     @EventListener
     public void testStepStarted(SprimberEventPublisher.StepStartedEvent stepStartedEvent) {
@@ -160,6 +132,7 @@ public class AllureSprimber {
         stepStartedEvent.getStepDefinition().getAttributes().forEach((key, value) ->
                 dataTableCsv.append(key).append("\t").append(value).append("\n"));
         lifecycle.addAttachment("Step Attributes", "text/tab-separated-values", "csv", dataTableCsv.toString().getBytes());
+        attachStepDataParameterIfPresent(String.valueOf(stepStartedEvent.getStepDefinition().getParameters().get("stepData")));
     }
 
     @EventListener
@@ -178,81 +151,12 @@ public class AllureSprimber {
         lifecycle.stopStep(testCaseRuntimeId.get() + stepReportName);
     }
 
-    @Deprecated
-    @EventListener
-    public void testHookStarted(TestHookStartedEvent startedEvent) {
-        StepResult stepResult = new StepResult()
-                .withName(String.valueOf(startedEvent.getHookDefinition().getActionType()) + " " +
-                        String.valueOf(startedEvent.getHookDefinition().getActionScope()).toLowerCase())
-                .withStart(clock.millis());
-        lifecycle.startStep(testCaseRuntimeId.get(), getHookId(startedEvent.getHookDefinition()), stepResult);
-    }
-
-    @Deprecated
-    @EventListener
-    public void testHookFinished(TestHookFinishedEvent finishedEvent) {
-        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(finishedEvent.getExecutionResult().getOptionalError().orElse(null));
-        lifecycle.updateStep(getHookId(finishedEvent.getHookDefinition()),
-                stepResult -> {
-                    stepResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult().getStatus()));
-                    statusDetails.ifPresent(stepResult::withStatusDetails);
-                }
-        );
-        lifecycle.stopStep(getHookId(finishedEvent.getHookDefinition()));
-    }
-
-    @Deprecated
-    @EventListener
-    public void testStepStarted(TestStepStartedEvent startedEvent) {
-        StepResult stepResult = new StepResult()
-                .withName(String.format("%s %s", startedEvent.getTestStep().getStepAction().getActionType(), startedEvent.getTestStep().getActualText()))
-                .withStart(clock.millis());
-        lifecycle.startStep(testCaseRuntimeId.get(), getStepId(startedEvent.getTestStep()), stepResult);
-
-        attachStepDataParameterIfPresent(startedEvent.getTestStep().getStepDataAsText());
-    }
-
     private void attachStepDataParameterIfPresent(String stepData) {
         if (isNotBlank(stepData)) {
             final String attachmentSource = lifecycle
                     .prepareAttachment("Data table", "text/tab-separated-values", "csv");
             lifecycle.writeAttachment(attachmentSource,
                     new ByteArrayInputStream(stepData.getBytes(Charset.forName("UTF-8"))));
-        }
-    }
-
-    @Deprecated
-    @EventListener
-    public void testStepFinished(TestStepFinishedEvent finishedEvent) {
-        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(finishedEvent.getExecutionResult().getOptionalError().orElse(null));
-        lifecycle.updateStep(getStepId(finishedEvent.getTestStep()),
-                stepResult -> {
-                    stepResult.withStatus(allureToSprimberStatusMapping.get(finishedEvent.getExecutionResult().getStatus()));
-                    statusDetails.ifPresent(stepResult::withStatusDetails);
-                }
-        );
-        lifecycle.stopStep(getStepId(finishedEvent.getTestStep()));
-    }
-
-    private String getStepId(TestStep testStep) {
-        return testCaseRuntimeId.get() + testStep.getStepAction().getActionType() + testStep.getActualText();
-    }
-
-    private String getHookId(ActionDefinition hookDefinition) {
-        return testCaseRuntimeId.get() + hookDefinition.getActionType();
-    }
-
-    private String getTestCaseHistoryId(TestCase testCase) {
-        try {
-            byte[] bytes = MessageDigest.getInstance("md5")
-                    .digest((testCase.getParent().getUrl() +
-                            testCase.getParent().getName() +
-                            testCase.getName() +
-                            testCase.getLocation()
-                    ).getBytes(UTF_8));
-            return new BigInteger(1, bytes).toString(16);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("Could not find md5 hashing algorithm", e);
         }
     }
 }

@@ -20,21 +20,43 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 $Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
- */
-package com.griddynamics.qa.sprimber.lifecycle.model.processor;
+*/
 
-import org.springframework.context.ApplicationEvent;
+package com.griddynamics.qa.sprimber.discovery.support.cucumber;
+
+import io.cucumber.tagexpressions.Expression;
+import io.cucumber.tagexpressions.TagExpressionParser;
+import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author fparamonov
  */
-public class ResourceProcessingStartEvent extends ApplicationEvent {
-    /**
-     * Create a new ApplicationEvent.
-     *
-     * @param source the object on which the event initially occurred (never {@code null})
-     */
-    public ResourceProcessingStartEvent(Object source) {
-        super(source);
+class TagFilter {
+
+    private List<String> targetTagFilters;
+    private List<Expression> expressions = new ArrayList<>();
+
+    TagFilter(List<String> targetTagFilters) {
+        this.targetTagFilters = targetTagFilters;
+        initExpressions();
+    }
+
+    private void initExpressions() {
+        TagExpressionParser tagExpressionParser = new TagExpressionParser();
+        expressions.addAll(targetTagFilters.stream().map(tagExpressionParser::parse).collect(Collectors.toList()));
+    }
+
+    boolean filter(List<String> tags) {
+        return expressions.stream().allMatch(expression -> expression.evaluate(tags));
+    }
+
+    boolean filter(String tagsAsCsv) {
+        List<String> tags = Arrays.asList(StringUtils.tokenizeToStringArray(tagsAsCsv, ","));
+        return tags.isEmpty() || filter(tags);
     }
 }

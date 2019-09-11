@@ -25,7 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.autoconfigure;
 
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
-import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
+import com.griddynamics.qa.sprimber.discovery.support.cucumber.JacksonDataTableTransformer;
 import com.griddynamics.qa.sprimber.engine.scope.TestCaseScope;
 import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
 import cucumber.api.Pending;

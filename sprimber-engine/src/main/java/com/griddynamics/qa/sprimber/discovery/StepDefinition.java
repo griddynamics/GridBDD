@@ -43,14 +43,13 @@ import java.util.Map;
 @Data
 public class StepDefinition {
 
-    private String bindingTextPattern;
     private String name;
+    private String bindingTextPattern;
     private String resolvedTextPattern;
-    private ExecutionResult executionResult;
     private Method method;
     private StepType stepType;
     private StepPhase stepPhase;
-    private CustomDetails customDetails;
+    private ExecutionResult executionResult;
     private Map<String, Object> attributes = new HashMap<>();
     private Map<String, Object> parameters = new HashMap<>();
     private String hash;
@@ -59,7 +58,9 @@ public class StepDefinition {
     }
 
     @Builder(toBuilder = true)
-    public StepDefinition(String bindingTextPattern, String name, String resolvedTextPattern, ExecutionResult executionResult, Method method, StepType stepType, StepPhase stepPhase, CustomDetails customDetails, Map<String, Object> attributes, Map<String, Object> parameters, String hash) {
+    public StepDefinition(String bindingTextPattern, String name, String resolvedTextPattern,
+                          ExecutionResult executionResult, Method method, StepType stepType, StepPhase stepPhase,
+                          Map<String, Object> attributes, Map<String, Object> parameters, String hash) {
         this.bindingTextPattern = bindingTextPattern;
         this.name = name;
         this.resolvedTextPattern = resolvedTextPattern;
@@ -67,7 +68,6 @@ public class StepDefinition {
         this.method = method;
         this.stepType = stepType;
         this.stepPhase = stepPhase;
-        this.customDetails = customDetails;
         this.attributes = attributes;
         this.parameters = parameters;
         this.hash = hash;
@@ -135,13 +135,4 @@ public class StepDefinition {
     public enum StepPhase {
         GLOBAL, SUITE, TESTCASE, TEST, STEP
     }
-
-    /**
-     * This is a marker interface.
-     * JBehave, Cucumber and other BDD frameworks introduced his own step definition annotations.
-     * Each of this annotation contains field with step text but other support fields possible.
-     * The goal of this class to mark custom support fields holders and collect them into one place
-     *
-     */
-    public interface CustomDetails {}
 }

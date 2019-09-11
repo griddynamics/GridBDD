@@ -27,14 +27,11 @@ package com.griddynamics.qa.sprimber.engine.executor;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.model.TestCase;
 import com.griddynamics.qa.sprimber.engine.model.TestStep;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFinishedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseStartedEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -48,7 +45,7 @@ import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER
  * @author fparamonov
  */
 
-@Component
+//@Component
 @RequiredArgsConstructor
 public class TestCaseExecutor {
 
@@ -65,12 +62,6 @@ public class TestCaseExecutor {
 
     @Async(SPRIMBER_EXECUTOR_NAME)
     public ExecutionResult execute(TestCase testCase) {
-        TestCaseStartedEvent startedEvent = new TestCaseStartedEvent(this);
-        TestCaseFinishedEvent finishedEvent = new TestCaseFinishedEvent(this);
-        startedEvent.setTestCase(testCase);
-        finishedEvent.setTestCase(testCase);
-
-        eventPublisher.publishEvent(startedEvent);
 
         ExecutionResult testCaseResult = new ExecutionResult(PASSED);
         // TODO: 10/06/2018 make countdown latch handling more attractive
@@ -108,8 +99,6 @@ public class TestCaseExecutor {
         if (!actionsExecutor.currentFailures().isEmpty()) {
             testCaseResult = actionsExecutor.currentFailures().get(0);
         }
-        finishedEvent.setExecutionResult(testCaseResult);
-        eventPublisher.publishEvent(finishedEvent);
 
         countDownLatch.countDown();
         LOGGER.debug("Remaining TC count {}", countDownLatch.getCount());
