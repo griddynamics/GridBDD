@@ -25,7 +25,6 @@
 Feature: This is a test feature for echo application
 
   @echo
-    @test_me
   @Story=positive
   Scenario: Simple scenario to check just steps
 
@@ -43,6 +42,7 @@ Feature: This is a test feature for echo application
       | testName | testSurname | testBook |
 
   @echo
+  @test_me
   @Story=positive
   Scenario: Simple scenario to check steps arguments
     Given the next author long consumed '123'

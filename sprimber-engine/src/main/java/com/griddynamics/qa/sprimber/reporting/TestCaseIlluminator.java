@@ -24,16 +24,9 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting;
 
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFinishedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseStartedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook.TestHookFinishedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook.TestHookStartedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.teststep.TestStepFinishedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.teststep.TestStepStartedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.loader.DefinitionLoadingFinishEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.loader.DefinitionLoadingStartEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.processor.ResourceProcessingFinishEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.processor.ResourceProcessingStartEvent;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -42,61 +35,46 @@ import org.springframework.stereotype.Component;
 /**
  * @author fparamonov
  */
+
+@Slf4j
 @Component
 public class TestCaseIlluminator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestCaseIlluminator.class);
 
     @EventListener
-    public void illuminateDefinitionLoadingStart(DefinitionLoadingStartEvent startEvent) {
-        LOGGER.debug("Definition loading starts from {}", startEvent.getSource().getClass());
+    public void illuminateTestCaseStart(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
+        log.debug("Test case started: {}", testStartedEvent.getTestDefinition().getName());
     }
 
     @EventListener
-    public void illuminateDefinitionLoadingFinish(DefinitionLoadingFinishEvent finishEvent) {
-        LOGGER.debug("Definition loading finished from {}", finishEvent.getSource().getClass());
+    public void illuminateTestCaseFinish(SprimberEventPublisher.TestFinishedEvent testFinishedEvent) {
+        log.debug("Test case finished: '{}' with status {}",
+                testFinishedEvent.getTestDefinition().getName(), testFinishedEvent.getTestDefinition().getExecutionResult().getStatus());
     }
 
     @EventListener
-    public void illuminateDefinitionLoadingStart(ResourceProcessingStartEvent startEvent) {
-        LOGGER.debug("Resource processing starts from {}", startEvent.getSource().getClass());
+    public void illuminateTestStepStart(SprimberEventPublisher.StepStartedEvent stepStartedEvent) {
+        if (isStepOfTypeHook(stepStartedEvent.getStepDefinition())) {
+            log.debug("Test hook of type {} and scope {} started",
+                    stepStartedEvent.getStepDefinition().getStepType(), stepStartedEvent.getStepDefinition().getStepPhase());
+        } else {
+            log.debug("Test step started: {}", stepStartedEvent.getStepDefinition().getResolvedTextPattern());
+        }
     }
 
     @EventListener
-    public void illuminateDefinitionLoadingFinish(ResourceProcessingFinishEvent finishEvent) {
-        LOGGER.debug("Resource processing finished from {}", finishEvent.getSource().getClass());
+    public void illuminateTestStepFinish(SprimberEventPublisher.StepFinishedEvent stepFinishedEvent) {
+        if (isStepOfTypeHook(stepFinishedEvent.getStepDefinition())) {
+            log.debug("Test hook of type {} and scope {} finished",
+                    stepFinishedEvent.getStepDefinition().getStepType(), stepFinishedEvent.getStepDefinition().getStepPhase());
+        } else {
+            log.debug("Test step finished: {}", stepFinishedEvent.getStepDefinition().getResolvedTextPattern());
+        }
+
     }
 
-    @EventListener
-    public void illuminateTestCaseStart(TestCaseStartedEvent startEvent) {
-        LOGGER.debug("Test case started: {}", startEvent.getTestCase().getName());
-    }
-
-    @EventListener
-    public void illuminateTestCaseFinish(TestCaseFinishedEvent finishEvent) {
-        LOGGER.debug("Test case finished: '{}' with status {}",
-                finishEvent.getTestCase().getName(), finishEvent.getExecutionResult().getStatus());
-    }
-
-    @EventListener
-    public void illuminateTestStepStart(TestStepStartedEvent startEvent) {
-        LOGGER.debug("Test step started: {}", startEvent.getTestStep().getActualText());
-    }
-
-    @EventListener
-    public void illuminateTestStepFinish(TestStepFinishedEvent finishEvent) {
-        LOGGER.debug("Test step finished: {}", finishEvent.getTestStep().getActualText());
-    }
-
-    @EventListener
-    public void illuminateTestHookStart(TestHookStartedEvent startEvent) {
-        LOGGER.debug("Test hook of type {} and scope {} started",
-                startEvent.getHookDefinition().getActionType(), startEvent.getHookDefinition().getActionScope());
-    }
-
-    @EventListener
-    public void illuminateTestHookFinish(TestHookFinishedEvent finishEvent) {
-        LOGGER.debug("Test hook of type {} and scope {} finished",
-                finishEvent.getHookDefinition().getActionType(), finishEvent.getHookDefinition().getActionScope());
+    private boolean isStepOfTypeHook(StepDefinition stepDefinition) {
+        return stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER) || stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER);
     }
 }

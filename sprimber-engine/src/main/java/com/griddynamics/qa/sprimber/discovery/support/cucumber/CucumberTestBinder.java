@@ -26,7 +26,6 @@ package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.discovery.support.TestDefinitionBinder;
-import com.griddynamics.qa.sprimber.engine.processor.cucumber.PickleStepProcessor;
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleLocation;
 import gherkin.pickles.PickleTag;
@@ -46,7 +45,7 @@ public class CucumberTestBinder implements TestDefinitionBinder {
     public static final String BDD_TAGS_ATTRIBUTE_NAME = "bddTags";
     public static final String LOCATION_ATTRIBUTE_NAME = "location";
     private final Pickle pickle;
-    private final PickleStepProcessor pickleStepProcessor;
+    private final PickleStepManager pickleStepManager;
 
     @Override
     public TestSuiteDefinition.TestDefinition bind() {
@@ -54,12 +53,12 @@ public class CucumberTestBinder implements TestDefinitionBinder {
         testDefinition.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(pickle));
         testDefinition.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(pickle));
         testDefinition.setName(pickle.getName());
-        testDefinition.getStepDefinitions().addAll(pickleStepProcessor.provideBeforeTestHooks());
+        testDefinition.getStepDefinitions().addAll(pickleStepManager.provideBeforeTestHooks());
         pickle.getSteps().stream()
-                .map(pickleStepProcessor::buildStepDefinition)
-                .map(pickleStepProcessor::wrapStepDefinitionWithHooks)
+                .map(pickleStepManager::buildStepDefinition)
+                .map(pickleStepManager::wrapStepDefinitionWithHooks)
                 .forEach(stepDefinitions -> testDefinition.getStepDefinitions().addAll(stepDefinitions));
-        testDefinition.getStepDefinitions().addAll(pickleStepProcessor.provideAfterTestHooks());
+        testDefinition.getStepDefinitions().addAll(pickleStepManager.provideAfterTestHooks());
         return testDefinition;
     }
 

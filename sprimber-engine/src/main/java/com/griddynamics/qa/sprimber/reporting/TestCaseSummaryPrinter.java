@@ -24,17 +24,15 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting;
 
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseFinishedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testcase.TestCaseStartedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook.TestHookFinishedEvent;
-import com.griddynamics.qa.sprimber.lifecycle.model.executor.teststep.TestStepFinishedEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.NamedThreadLocal;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -45,46 +43,45 @@ import java.util.Optional;
  * @author fparamonov
  */
 
+@Slf4j
 public class TestCaseSummaryPrinter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestCaseSummaryPrinter.class);
     private static final String EMPTY_STRING = "";
     private ThreadLocal<StringBuilder> reportBuilder = new NamedThreadLocal<>("Testcase report builder");
 
     @EventListener
-    public void illuminateTestCaseStart(TestCaseStartedEvent startEvent) {
+    public void illuminateTestStart(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n\n");
-        stringBuilder.append(String.format("Test Case Completed: %s", startEvent.getTestCase().getName()));
+        stringBuilder.append(String.format("Test Case Completed: %s", testStartedEvent.getTestDefinition().getName()));
         reportBuilder.set(stringBuilder);
     }
 
     @EventListener
-    public void illuminateTestCaseFinish(TestCaseFinishedEvent finishEvent) {
+    public void illuminateTestFinish(SprimberEventPublisher.TestFinishedEvent testFinishedEvent) {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n\n");
-        LOGGER.info(stringBuilder.toString());
+        log.info(stringBuilder.toString());
         reportBuilder.remove();
     }
 
     @EventListener
-    public void illuminateTestStepFinish(TestStepFinishedEvent finishEvent) {
+    public void illuminateTestStepFinish(SprimberEventPublisher.StepFinishedEvent stepFinishedEvent) {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
-        stringBuilder.append(String.format("   %s", finishEvent.getTestStep().getStepAction().getActionType()));
-        stringBuilder.append(String.format(" %s", finishEvent.getTestStep().getActualText()));
-        stringBuilder.append(String.format(" %s", Arrays.toString(finishEvent.getTestStep().getStepArguments())));
-        stringBuilder.append(String.format(" (%s) ", finishEvent.getExecutionResult().getStatus()));
-        stringBuilder.append(String.format(" (%s) ", getExceptionMessageIfAny(finishEvent.getExecutionResult())));
-    }
-
-    @EventListener
-    public void illuminateTestHookFinish(TestHookFinishedEvent finishEvent) {
-        StringBuilder stringBuilder = reportBuilder.get();
-        stringBuilder.append("\n");
-        stringBuilder.append(String.format(" %s of scope", finishEvent.getHookDefinition().getActionType()));
-        stringBuilder.append(String.format(" %s from:", finishEvent.getHookDefinition().getActionScope()));
-        stringBuilder.append(String.format(" %s", finishEvent.getHookDefinition().getMethod()));
+        if (stepFinishedEvent.getStepDefinition().getStepType().equals(StepDefinition.StepType.BEFORE) ||
+                stepFinishedEvent.getStepDefinition().getStepType().equals(StepDefinition.StepType.AFTER)) {
+            stringBuilder.append(String.format(" %s of scope", stepFinishedEvent.getStepDefinition().getStepType()));
+            stringBuilder.append(String.format(" %s from:", stepFinishedEvent.getStepDefinition().getStepPhase()));
+            stringBuilder.append(String.format(" %s", stepFinishedEvent.getStepDefinition().getMethod()));
+            stringBuilder.append(String.format(" (%s) ", stepFinishedEvent.getStepDefinition().getExecutionResult().getStatus()));
+        } else {
+            stringBuilder.append(String.format("   %s", stepFinishedEvent.getStepDefinition().getStepType()));
+            stringBuilder.append(String.format(" %s", stepFinishedEvent.getStepDefinition().getResolvedTextPattern()));
+            stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{stepFinishedEvent.getStepDefinition().getParameters().values()})));
+            stringBuilder.append(String.format(" (%s) ", stepFinishedEvent.getStepDefinition().getExecutionResult().getStatus()));
+            stringBuilder.append(String.format(" (%s) ", getExceptionMessageIfAny(stepFinishedEvent.getStepDefinition().getExecutionResult())));
+        }
     }
 
     private String getExceptionMessageIfAny(ExecutionResult executionResult) {
