@@ -80,7 +80,7 @@ public class CucumberStepConverter implements StepDefinitionsDiscovery.StepDefin
 
     @Override
     public boolean accept(Annotation annotation) {
-        return hooksAndSteps.keySet().contains(annotation);
+        return hooksAndSteps.keySet().contains(annotation.annotationType());
     }
 
     @Override
