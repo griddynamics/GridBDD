@@ -25,8 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.engine.executor;
 
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
-import com.griddynamics.qa.sprimber.discovery.support.classic.ClassicDiscovery;
-import com.griddynamics.qa.sprimber.discovery.support.cucumber.CucumberFeaturesDiscovery;
+import com.griddynamics.qa.sprimber.engine.ExecutionContext;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,8 +33,6 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -47,22 +44,16 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class CliExecutor implements ApplicationRunner {
 
-    private final TestSuiteDefinition.TestExecutor classicTestExecutor;
-    private final TestSuiteDefinition.TestExecutor bddTestExecutor;
-    private final ClassicDiscovery classicDiscovery;
-    private final CucumberFeaturesDiscovery cucumberFeaturesDiscovery;
+    private final ExecutionContext executionContext;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        List<TestSuiteDefinition> classicTestSuites = Collections.singletonList(classicDiscovery.discover());
-        List<TestSuiteDefinition> bddTestSuites = Collections.singletonList(cucumberFeaturesDiscovery.discover());
-        classicTestSuites.forEach(testSuiteDefinition -> executeTestSuite(testSuiteDefinition, classicTestExecutor));
-        bddTestSuites.forEach(testSuiteDefinition -> executeTestSuite(testSuiteDefinition, bddTestExecutor));
+        executionContext.getTestSuiteDefinitions().forEach(this::executeTestSuite);
     }
 
-    public CompletableFuture<ExecutionResult> executeTestSuite(TestSuiteDefinition testSuiteDefinition,
-                                                               TestSuiteDefinition.TestExecutor testExecutor) {
-        testSuiteDefinition.getTestCaseDefinitions().forEach(testCaseDefinition -> executeTestCase(testCaseDefinition, testExecutor));
+    public CompletableFuture<ExecutionResult> executeTestSuite(TestSuiteDefinition testSuiteDefinition) {
+        testSuiteDefinition.getTestCaseDefinitions()
+                .forEach(testCaseDefinition -> executeTestCase(testCaseDefinition, testSuiteDefinition.getTestExecutor()));
         return CompletableFuture.completedFuture(new ExecutionResult(ExecutionResult.Status.PASSED));
     }
 

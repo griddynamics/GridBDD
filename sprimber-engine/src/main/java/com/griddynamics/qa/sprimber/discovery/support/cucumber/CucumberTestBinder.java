@@ -24,6 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.discovery.support.TestDefinitionBinder;
 import gherkin.pickles.Pickle;
@@ -44,11 +45,14 @@ public class CucumberTestBinder implements TestDefinitionBinder {
 
     public static final String BDD_TAGS_ATTRIBUTE_NAME = "bddTags";
     public static final String LOCATION_ATTRIBUTE_NAME = "location";
+
     private final Pickle pickle;
     private final PickleStepManager pickleStepManager;
+    private final List<StepDefinition> runtimeStepDefinitions;
 
     @Override
     public TestSuiteDefinition.TestDefinition bind() {
+        pickleStepManager.setupRuntimeStepDefinitions(runtimeStepDefinitions);
         val testDefinition = new TestSuiteDefinition.TestDefinition();
         testDefinition.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(pickle));
         testDefinition.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(pickle));

@@ -25,7 +25,9 @@ $Id:
 package com.griddynamics.qa.sprimber.engine;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsDiscovery;
+import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.stereotype.Component;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContext> {
 
+    private final List<TestSuiteDiscovery> testSuiteDiscoveries;
     private final List<StepDefinitionsDiscovery> stepDefinitionsDiscoveries;
 
     @Override
@@ -54,11 +57,23 @@ public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContex
     @Override
     protected ExecutionContext createInstance() throws Exception {
         ExecutionContext executionContext = new ExecutionContext();
-        List<StepDefinition> stepDefinitions = stepDefinitionsDiscoveries.stream()
+        List<StepDefinition> stepDefinitions = exploreStepDefinitions();
+        executionContext.getStepDefinitions().addAll(stepDefinitions);
+        executionContext.getTestSuiteDefinitions().addAll(exploreSuiteDefinitions(stepDefinitions));
+        return executionContext;
+    }
+
+    private List<TestSuiteDefinition> exploreSuiteDefinitions(List<StepDefinition> stepDefinitions) {
+        return testSuiteDiscoveries.stream()
+                .map(discovery -> discovery.setAvailableStepDefinitionsSet(stepDefinitions))
+                .map(TestSuiteDiscovery::discover)
+                .collect(Collectors.toList());
+    }
+
+    private List<StepDefinition> exploreStepDefinitions() {
+        return stepDefinitionsDiscoveries.stream()
                 .map(StepDefinitionsDiscovery::discover)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
-        executionContext.getStepDefinitions().addAll(stepDefinitions);
-        return executionContext;
     }
 }

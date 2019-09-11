@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.engine;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -47,4 +48,9 @@ public class ExecutionContext {
      *
      */
     private List<StepDefinition> stepDefinitions = new ArrayList<>();
+
+    /**
+     * Convenient place to hold all test suite definitions that available at runtime
+     */
+    private List<TestSuiteDefinition> testSuiteDefinitions = new ArrayList<>();
 }

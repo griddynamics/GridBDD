@@ -25,7 +25,6 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.engine.ExecutionContext;
 import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import gherkin.pickles.PickleCell;
 import gherkin.pickles.PickleRow;
@@ -61,14 +60,18 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class PickleStepManager {
 
-    private final ExecutionContext executionContext;
     private final SprimberProperties sprimberProperties;
     private final StepExpressionFactory stepExpressionFactory;
     private TagFilter tagFilter;
+    private List<StepDefinition> runtimeStepDefinitions;
 
     @PostConstruct
     public void initTagFilter() {
         tagFilter = new TagFilter(sprimberProperties.getTagFilters());
+    }
+
+    public void setupRuntimeStepDefinitions(List<StepDefinition> stepDefinitions) {
+        runtimeStepDefinitions = stepDefinitions;
     }
 
     List<StepDefinition> provideBeforeTestHooks() {
@@ -99,7 +102,7 @@ public class PickleStepManager {
 
     private Stream<StepDefinition> findStepHooksForCurrentStage(StepDefinition.StepType stepType,
                                                                 StepDefinition.StepPhase stepPhase) {
-        return executionContext.getStepDefinitions().stream()
+        return runtimeStepDefinitions.stream()
                 .filter(stepDefinition -> stepDefinition.getStepType().equals(stepType))
                 .filter(stepDefinition -> stepDefinition.getStepPhase().equals(stepPhase));
     }
@@ -110,7 +113,7 @@ public class PickleStepManager {
     }
 
     StepDefinition buildStepDefinition(PickleStep pickleStep) {
-        List<StepDefinition> targetDefinitions = executionContext.getStepDefinitions().stream()
+        List<StepDefinition> targetDefinitions = runtimeStepDefinitions.stream()
                 .filter(stepDefinition -> StringUtils.isNotBlank(stepDefinition.getBindingTextPattern()))
                 .filter(stepDefinition -> Objects.nonNull(getArgumentsFromPickleStep(stepDefinition, pickleStep)))
                 .collect(Collectors.toList());
