@@ -27,21 +27,26 @@ package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
-import com.griddynamics.qa.sprimber.engine.processor.cucumber.CucumberDocument;
-import com.griddynamics.qa.sprimber.engine.processor.cucumber.PickleStepProcessor;
 import gherkin.Parser;
 import gherkin.TokenMatcher;
 import gherkin.ast.GherkinDocument;
 import gherkin.pickles.Compiler;
+import gherkin.pickles.Pickle;
+import gherkin.pickles.PickleTag;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author fparamonov
@@ -55,8 +60,14 @@ public class CucumberFeaturesDiscovery implements TestSuiteDiscovery {
     private final Parser<GherkinDocument> gherkinParser;
     private final TokenMatcher tokenMatcher;
     private final Compiler compiler;
-    private final PickleStepProcessor pickleStepProcessor;
+    private final PickleStepManager pickleStepManager;
     private final ApplicationContext applicationContext;
+    private TagFilter tagFilter;
+
+    @PostConstruct
+    public void initTagFilter() {
+        tagFilter = new TagFilter(sprimberProperties.getTagFilters());
+    }
 
     @Override
     public TestSuiteDefinition discover() {
@@ -75,12 +86,23 @@ public class CucumberFeaturesDiscovery implements TestSuiteDiscovery {
 
     private TestSuiteDefinition.TestCaseDefinition testCaseDiscover(CucumberDocument cucumberDocument) {
         val testCaseDefinition = new TestSuiteDefinition.TestCaseDefinition();
-        compiler.compile(cucumberDocument.getDocument())
+        compiler.compile(cucumberDocument.getDocument()).stream()
+                .filter(pickleTagFilter())
                 .forEach(pickle -> {
-                    CucumberTestBinder cucumberTestBinder = new CucumberTestBinder(pickle, pickleStepProcessor);
+                    CucumberTestBinder cucumberTestBinder = new CucumberTestBinder(pickle, pickleStepManager);
                     testCaseDefinition.getTestDefinitions().add(cucumberTestBinder.bind());
                 });
         return testCaseDefinition;
+    }
+
+    private Predicate<Pickle> pickleTagFilter() {
+        return pickle -> tagFilter.filter(getTagsFromPickle(pickle));
+    }
+
+    private List<String> getTagsFromPickle(Pickle pickle) {
+        return pickle.getTags().stream()
+                .map(PickleTag::getName)
+                .collect(Collectors.toList());
     }
 
     private CucumberDocument buildCucumberDocument(Resource resource) {
@@ -92,6 +114,28 @@ public class CucumberFeaturesDiscovery implements TestSuiteDiscovery {
             return cucumberDocument;
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    class CucumberDocument {
+
+        private GherkinDocument document;
+        private URL url;
+
+        GherkinDocument getDocument() {
+            return document;
+        }
+
+        void setDocument(GherkinDocument document) {
+            this.document = document;
+        }
+
+        URL getUrl() {
+            return url;
+        }
+
+        void setUrl(URL url) {
+            this.url = url;
         }
     }
 }

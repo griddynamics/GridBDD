@@ -17,37 +17,42 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.lifecycle.model.executor.testhook;
+package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
-import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
-import org.springframework.context.ApplicationEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.cucumber.datatable.TableCellByTypeTransformer;
+import io.cucumber.datatable.TableEntryByTypeTransformer;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
+ * This is a default implementation for any case data table transformer that currently missed in official Cucumber release
+ *
  * @author fparamonov
  */
-public class TestHookStartedEvent extends ApplicationEvent {
 
-    private ActionDefinition hookDefinition;
+@Component
+public class JacksonDataTableTransformer implements TableEntryByTypeTransformer, TableCellByTypeTransformer {
 
-    /**
-     * Create a new ApplicationEvent.
-     *
-     * @param source the object on which the event initially occurred (never {@code null})
-     */
-    public TestHookStartedEvent(Object source) {
-        super(source);
+    private final ObjectMapper objectMapper;
+
+    public JacksonDataTableTransformer(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
-    public ActionDefinition getHookDefinition() {
-        return hookDefinition;
+    @Override
+    public <T> T transform(String value, Class<T> cellType) throws Throwable {
+        return objectMapper.convertValue(value, cellType);
     }
 
-    public void setHookDefinition(ActionDefinition hookDefinition) {
-        this.hookDefinition = hookDefinition;
+    @Override
+    public <T> T transform(Map<String, String> entry, Class<T> type, TableCellByTypeTransformer cellTransformer) throws Throwable {
+        return objectMapper.convertValue(entry, type);
     }
 }

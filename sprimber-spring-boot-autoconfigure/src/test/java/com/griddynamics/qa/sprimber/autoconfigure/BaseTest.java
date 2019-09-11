@@ -26,10 +26,10 @@ package com.griddynamics.qa.sprimber.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.griddynamics.qa.sprimber.autoconfigure.annotation.EnableSprimber;
-import com.griddynamics.qa.sprimber.engine.executor.CliRunner;
+import com.griddynamics.qa.sprimber.engine.executor.CliExecutor;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
 import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
-import com.griddynamics.qa.sprimber.engine.processor.cucumber.JacksonDataTableTransformer;
+import com.griddynamics.qa.sprimber.discovery.support.cucumber.JacksonDataTableTransformer;
 import com.griddynamics.qa.sprimber.engine.scope.FlowOrchestrator;
 import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
 import gherkin.Parser;
@@ -67,7 +67,7 @@ public class BaseTest {
                 .withPropertyValues("sprimber.configuration.summary.printer.enable=true")
                 .run(
                         context -> {
-                            assertThat(context).hasSingleBean(CliRunner.class);
+                            assertThat(context).hasSingleBean(CliExecutor.class);
                             assertThat(context).hasSingleBean(Parser.class);
                             assertThat(context).hasSingleBean(TokenMatcher.class);
                             assertThat(context).hasSingleBean(Compiler.class);

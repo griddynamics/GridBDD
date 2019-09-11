@@ -22,15 +22,11 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine.processor.cucumber;
+package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.support.cucumber.CucumberStepConverter;
 import com.griddynamics.qa.sprimber.engine.ExecutionContext;
 import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
-import com.griddynamics.qa.sprimber.engine.model.TestStep;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionDefinition;
-import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
 import gherkin.pickles.PickleCell;
 import gherkin.pickles.PickleRow;
 import gherkin.pickles.PickleStep;
@@ -63,10 +59,9 @@ import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
-public class PickleStepProcessor {
+public class PickleStepManager {
 
     private final ExecutionContext executionContext;
-    private final ActionsContainer actionsContainer;
     private final SprimberProperties sprimberProperties;
     private final StepExpressionFactory stepExpressionFactory;
     private TagFilter tagFilter;
@@ -76,27 +71,27 @@ public class PickleStepProcessor {
         tagFilter = new TagFilter(sprimberProperties.getTagFilters());
     }
 
-    public List<StepDefinition> provideBeforeTestHooks() {
+    List<StepDefinition> provideBeforeTestHooks() {
         return findStepHooksForCurrentStage(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.TEST)
-                .filter(hookByAvailableTags())
+                .filter(hooksByAvailableTags())
                 .collect(Collectors.toList());
     }
 
-    public List<StepDefinition> provideAfterTestHooks() {
+    List<StepDefinition> provideAfterTestHooks() {
         return findStepHooksForCurrentStage(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.TEST)
-                .filter(hookByAvailableTags())
+                .filter(hooksByAvailableTags())
                 .collect(Collectors.toList());
     }
 
-    public List<StepDefinition> wrapStepDefinitionWithHooks(StepDefinition stepDefinition) {
+    List<StepDefinition> wrapStepDefinitionWithHooks(StepDefinition stepDefinition) {
         List<StepDefinition> wrappedDefinition =
                 findStepHooksForCurrentStage(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.STEP)
-                        .filter(hookByAvailableTags())
+                        .filter(hooksByAvailableTags())
                         .collect(Collectors.toList());
         wrappedDefinition.add(stepDefinition);
         List<StepDefinition> afterStepHooks =
                 findStepHooksForCurrentStage(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.STEP)
-                        .filter(hookByAvailableTags())
+                        .filter(hooksByAvailableTags())
                         .collect(Collectors.toList());
         wrappedDefinition.addAll(afterStepHooks);
         return wrappedDefinition;
@@ -109,12 +104,12 @@ public class PickleStepProcessor {
                 .filter(stepDefinition -> stepDefinition.getStepPhase().equals(stepPhase));
     }
 
-    private Predicate<StepDefinition> hookByAvailableTags() {
+    private Predicate<StepDefinition> hooksByAvailableTags() {
         return stepDefinition ->
                 tagFilter.filter((String) stepDefinition.getAttributes().get(CucumberStepConverter.TAGS_ATTRIBUTE));
     }
 
-    public StepDefinition buildStepDefinition(PickleStep pickleStep) {
+    StepDefinition buildStepDefinition(PickleStep pickleStep) {
         List<StepDefinition> targetDefinitions = executionContext.getStepDefinitions().stream()
                 .filter(stepDefinition -> StringUtils.isNotBlank(stepDefinition.getBindingTextPattern()))
                 .filter(stepDefinition -> Objects.nonNull(getArgumentsFromPickleStep(stepDefinition, pickleStep)))
@@ -136,38 +131,10 @@ public class PickleStepProcessor {
         return testDefinition;
     }
 
-    public TestStep processPickleStep(PickleStep pickleStep) {
-        List<ActionDefinition> targetDefinitions = actionsContainer.getDefinitions().stream()
-                .filter(definition -> definition.getActionText().isPresent())
-                .filter(definition -> Objects.nonNull(getArgumentsFromPickleStep(definition, pickleStep)))
-                .collect(Collectors.toList());
-        if (targetDefinitions.size() == 0) {
-            throw new StepNotFoundException(pickleStep);
-        }
-        if (targetDefinitions.size() > 1) {
-            throw new com.griddynamics.qa.sprimber.engine.processor.cucumber.ExtraMappingFoundException(targetDefinitions, pickleStep);
-        }
-        List<Argument> arguments = getArgumentsFromPickleStep(targetDefinitions.get(0), pickleStep);
-        List<Type> actualParameters = Arrays.asList(targetDefinitions.get(0).getMethod().getGenericParameterTypes());
-
-        TestStep testStep = new TestStep();
-        testStep.setActualText(pickleStep.getText());
-        testStep.setStepDataAsText(handleAdditionalStepData(pickleStep));
-        testStep.setStepAction(targetDefinitions.get(0));
-        testStep.setStepArguments(processArguments(arguments, actualParameters));
-        return testStep;
-    }
-
     private Map<String, Object> handleStepArguments(List<Argument> arguments, List<Type> methodParameters) {
         return IntStream.range(0, methodParameters.size())
                 .mapToObj(counter -> argumentToEntry(arguments.get(counter), methodParameters.get(counter)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    private Object[] processArguments(List<Argument> arguments, List<Type> methodParameters) {
-        return IntStream.range(0, methodParameters.size())
-                .mapToObj(counter -> argumentToObject(arguments.get(counter), methodParameters.get(counter)))
-                .toArray();
     }
 
     private Map.Entry<String, Object> argumentToEntry(Argument argument, Type type) {
@@ -176,14 +143,6 @@ public class PickleStepProcessor {
             value = ((DataTable) value).convert(type, false);
         }
         return new ImmutablePair<>(type.getTypeName(), value);
-    }
-
-    private Object argumentToObject(Argument argument, Type type) {
-        Object value = argument.getValue();
-        if (value instanceof DataTable) {
-            value = ((DataTable) value).convert(type, false);
-        }
-        return value;
     }
 
     /**
@@ -222,15 +181,9 @@ public class PickleStepProcessor {
         return argumentMatcher.argumentsFrom(pickleStep);
     }
 
-    private List<Argument> getArgumentsFromPickleStep(ActionDefinition definition, PickleStep pickleStep) {
-        StepExpression stepExpression = stepExpressionFactory.createExpression(definition.getActionText().orElse(""));
-        ExpressionArgumentMatcher argumentMatcher = new ExpressionArgumentMatcher(stepExpression);
-        return argumentMatcher.argumentsFrom(pickleStep);
-    }
+    class ExtraMappingFoundException extends RuntimeException {
 
-    public class ExtraMappingFoundException extends RuntimeException {
-
-        public ExtraMappingFoundException(List<StepDefinition> stepDefinitions, PickleStep pickleStep) {
+        ExtraMappingFoundException(List<StepDefinition> stepDefinitions, PickleStep pickleStep) {
             super(String.format("Step '%s' mapped to next methods '%s'!",
                     pickleStep.getText(),
                     stepDefinitions.stream()
@@ -238,6 +191,13 @@ public class PickleStepProcessor {
                             .map(Method::toString)
                             .collect(Collectors.joining(","))
             ));
+        }
+    }
+
+    class StepNotFoundException extends RuntimeException {
+
+        StepNotFoundException(PickleStep pickleStep) {
+            super(String.format("Step '%s' not found!", pickleStep.getText()));
         }
     }
 
