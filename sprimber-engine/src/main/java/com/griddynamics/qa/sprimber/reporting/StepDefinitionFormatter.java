@@ -22,22 +22,32 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine.configuration;
+package com.griddynamics.qa.sprimber.reporting;
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 /**
  * @author fparamonov
  */
 
-@Data
-@ConfigurationProperties("sprimber.configuration")
-public class SprimberProperties {
+@Component
+public class StepDefinitionFormatter {
 
-    private String featurePath;
-    private List<String> tagFilters = new ArrayList<>();
+    public String formatStepName(StepDefinition stepDefinition) {
+        if (isGeneralStep(stepDefinition) || isHookStep(stepDefinition)) {
+            return StringUtils.isBlank(stepDefinition.getName()) ? stepDefinition.getMethod().getName() : stepDefinition.getName();
+        } else {
+            return StringUtils.isBlank(stepDefinition.getResolvedTextPattern()) ? stepDefinition.getName() : stepDefinition.getResolvedTextPattern();
+        }
+    }
+
+    public boolean isHookStep(StepDefinition stepDefinition) {
+        return stepDefinition.getStepType().equals(StepDefinition.StepType.BEFORE) || stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER);
+    }
+
+    public boolean isGeneralStep(StepDefinition stepDefinition) {
+        return stepDefinition.getStepType().equals(StepDefinition.StepType.GENERAL);
+    }
 }
