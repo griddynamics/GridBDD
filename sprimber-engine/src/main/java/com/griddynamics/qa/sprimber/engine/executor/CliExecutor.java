@@ -24,12 +24,9 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.executor;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
-import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsDiscovery;
 import com.griddynamics.qa.sprimber.discovery.support.classic.ClassicDiscovery;
 import com.griddynamics.qa.sprimber.discovery.support.cucumber.CucumberFeaturesDiscovery;
-import com.griddynamics.qa.sprimber.engine.ExecutionContext;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,11 +34,9 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 /**
  * @author fparamonov
@@ -52,20 +47,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CliExecutor implements ApplicationRunner {
 
-    private final ExecutionContext executionContext;
     private final TestSuiteDefinition.TestExecutor classicTestExecutor;
     private final TestSuiteDefinition.TestExecutor bddTestExecutor;
     private final ClassicDiscovery classicDiscovery;
     private final CucumberFeaturesDiscovery cucumberFeaturesDiscovery;
-    private final List<StepDefinitionsDiscovery> stepDefinitionsDiscoveries;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        List<StepDefinition> stepDefinitions = stepDefinitionsDiscoveries.stream()
-                .map(StepDefinitionsDiscovery::discover)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
-        executionContext.getStepDefinitions().addAll(stepDefinitions);
         List<TestSuiteDefinition> classicTestSuites = Collections.singletonList(classicDiscovery.discover());
         List<TestSuiteDefinition> bddTestSuites = Collections.singletonList(cucumberFeaturesDiscovery.discover());
         classicTestSuites.forEach(testSuiteDefinition -> executeTestSuite(testSuiteDefinition, classicTestExecutor));
