@@ -26,7 +26,6 @@ package com.griddynamics.qa.sprimber.engine;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import lombok.Data;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +39,6 @@ import java.util.List;
  */
 
 @Data
-@Component
 public class ExecutionContext {
 
     /**

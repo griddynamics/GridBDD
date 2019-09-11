@@ -22,41 +22,43 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.support.cucumber;
+package com.griddynamics.qa.sprimber.engine;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsDiscovery;
-import com.griddynamics.qa.sprimber.engine.model.action.Actions;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationContext;
+import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
+ * This class used to instantiate {@link ExecutionContext} with custom pre-initialised runtime objects
+ *
  * @author fparamonov
  */
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
-public class CucumberAnnotationsDiscovery implements StepDefinitionsDiscovery {
+public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContext> {
 
-    private final CucumberStepConverter stepConverter;
-    private final ApplicationContext applicationContext;
+    private final List<StepDefinitionsDiscovery> stepDefinitionsDiscoveries;
 
     @Override
-    public List<StepDefinition> discover() {
-        log.debug("Discovering Cucumber style step definitions in classes with @Actions");
-        return applicationContext.getBeansWithAnnotation(Actions.class).values().stream()
-                .flatMap(actionBean ->
-                        Arrays.stream(actionBean.getClass().getDeclaredMethods())
-                                .map(stepConverter::convert)
-                                .flatMap(Collection::stream))
+    public Class<?> getObjectType() {
+        return ExecutionContext.class;
+    }
+
+    @Override
+    protected ExecutionContext createInstance() throws Exception {
+        ExecutionContext executionContext = new ExecutionContext();
+        List<StepDefinition> stepDefinitions = stepDefinitionsDiscoveries.stream()
+                .map(StepDefinitionsDiscovery::discover)
+                .flatMap(Collection::stream)
                 .collect(Collectors.toList());
+        executionContext.getStepDefinitions().addAll(stepDefinitions);
+        return executionContext;
     }
 }
