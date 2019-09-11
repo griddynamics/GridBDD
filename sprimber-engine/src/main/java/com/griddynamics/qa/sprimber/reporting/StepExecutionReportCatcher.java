@@ -39,6 +39,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
@@ -77,8 +78,10 @@ public class StepExecutionReportCatcher {
         ExecutionResult executionResult = new ExecutionResult(PASSED);
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
         StepDefinition stepDefinition = converters.stream()
+                .filter(converter -> Arrays.stream(methodSignature.getMethod().getDeclaredAnnotations())
+                        .anyMatch(converter::accept))
                 .flatMap(converter -> converter.convert(methodSignature.getMethod()).stream())
-                .findAny().get();
+                .findFirst().get();
         try {
             log.info("Starting point");
             StepExecutionReportCatcher.eventPublisher.stepStarted(this, stepDefinition);
@@ -129,10 +132,12 @@ public class StepExecutionReportCatcher {
     }
 
     @Pointcut("within(@com.griddynamics.qa.sprimber.discovery.annotation.TestController *)")
-    public void withinTestControlelr() {}
+    public void withinTestControlelr() {
+    }
 
     @Pointcut("withincode(@com.griddynamics.qa.sprimber.discovery.annotation.TestMapping * *(..))")
-    public void withinTestMappingMethods() {}
+    public void withinTestMappingMethods() {
+    }
 
     @Pointcut("withinTestMappingMethods() && (cucumberStepCall() || cucumberHookCall())")
     public void stepMethodsExecution() {
