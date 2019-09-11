@@ -24,7 +24,9 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.support.BddTestExecutor;
 import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import gherkin.Parser;
@@ -56,13 +58,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CucumberFeaturesDiscovery implements TestSuiteDiscovery {
 
+    private final Compiler compiler;
+    private final TokenMatcher tokenMatcher;
+    private final BddTestExecutor bddTestExecutor;
+    private final PickleStepManager pickleStepManager;
     private final SprimberProperties sprimberProperties;
     private final Parser<GherkinDocument> gherkinParser;
-    private final TokenMatcher tokenMatcher;
-    private final Compiler compiler;
-    private final PickleStepManager pickleStepManager;
     private final ApplicationContext applicationContext;
     private TagFilter tagFilter;
+    private List<StepDefinition> runtimeStepDefinitions;
 
     @PostConstruct
     public void initTagFilter() {
@@ -70,8 +74,15 @@ public class CucumberFeaturesDiscovery implements TestSuiteDiscovery {
     }
 
     @Override
+    public TestSuiteDiscovery setAvailableStepDefinitionsSet(List<StepDefinition> stepDefinitions) {
+        this.runtimeStepDefinitions = stepDefinitions;
+        return this;
+    }
+
+    @Override
     public TestSuiteDefinition discover() {
         TestSuiteDefinition testSuiteDefinition = new TestSuiteDefinition();
+        testSuiteDefinition.setTestExecutor(bddTestExecutor);
         try {
             Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()))
                     .map(this::buildCucumberDocument)
@@ -89,7 +100,8 @@ public class CucumberFeaturesDiscovery implements TestSuiteDiscovery {
         compiler.compile(cucumberDocument.getDocument()).stream()
                 .filter(pickleTagFilter())
                 .forEach(pickle -> {
-                    CucumberTestBinder cucumberTestBinder = new CucumberTestBinder(pickle, pickleStepManager);
+                    CucumberTestBinder cucumberTestBinder =
+                            new CucumberTestBinder(pickle, pickleStepManager, runtimeStepDefinitions);
                     testCaseDefinition.getTestDefinitions().add(cucumberTestBinder.bind());
                 });
         return testCaseDefinition;

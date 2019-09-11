@@ -37,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 @Data
 public class TestSuiteDefinition {
 
+    private TestExecutor testExecutor;
     private ExecutionResult executionResult;
     private List<TestCaseDefinition> testCaseDefinitions = new ArrayList<>();
 
@@ -59,6 +60,11 @@ public class TestSuiteDefinition {
         private Map<String, Object> attributes = new HashMap<>();
     }
 
+    /**
+     * Main difference happens in exact test execution, since the suite and testcase execution pretty straightforward
+     * for most cases(plain code, bdd). To provide this custom logic for each test execution implement this interface
+     * Each {@link TestSuiteDefinition} should be aware about how to execute the tests under
+     */
     public interface TestExecutor {
         CompletableFuture<ExecutionResult> execute(TestDefinition testDefinition);
     }
