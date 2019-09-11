@@ -24,9 +24,9 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.NamedThreadLocal;
@@ -44,9 +44,11 @@ import java.util.Optional;
  */
 
 @Slf4j
+@RequiredArgsConstructor
 public class TestCaseSummaryPrinter {
 
     private static final String EMPTY_STRING = "";
+    private final StepDefinitionFormatter stepDefinitionFormatter;
     private ThreadLocal<StringBuilder> reportBuilder = new NamedThreadLocal<>("Testcase report builder");
 
     @EventListener
@@ -69,15 +71,14 @@ public class TestCaseSummaryPrinter {
     public void illuminateTestStepFinish(SprimberEventPublisher.StepFinishedEvent stepFinishedEvent) {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
-        if (stepFinishedEvent.getStepDefinition().getStepType().equals(StepDefinition.StepType.BEFORE) ||
-                stepFinishedEvent.getStepDefinition().getStepType().equals(StepDefinition.StepType.AFTER)) {
+        if (stepDefinitionFormatter.isHookStep(stepFinishedEvent.getStepDefinition())) {
             stringBuilder.append(String.format(" %s of scope", stepFinishedEvent.getStepDefinition().getStepType()));
             stringBuilder.append(String.format(" %s from:", stepFinishedEvent.getStepDefinition().getStepPhase()));
             stringBuilder.append(String.format(" %s", stepFinishedEvent.getStepDefinition().getMethod()));
             stringBuilder.append(String.format(" (%s) ", stepFinishedEvent.getStepDefinition().getExecutionResult().getStatus()));
         } else {
             stringBuilder.append(String.format("   %s", stepFinishedEvent.getStepDefinition().getStepType()));
-            stringBuilder.append(String.format(" %s", stepFinishedEvent.getStepDefinition().getResolvedTextPattern()));
+            stringBuilder.append(String.format(" %s", stepDefinitionFormatter.formatStepName(stepFinishedEvent.getStepDefinition())));
             stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{stepFinishedEvent.getStepDefinition().getParameters().values()})));
             stringBuilder.append(String.format(" (%s) ", stepFinishedEvent.getStepDefinition().getExecutionResult().getStatus()));
             stringBuilder.append(String.format(" (%s) ", getExceptionMessageIfAny(stepFinishedEvent.getStepDefinition().getExecutionResult())));

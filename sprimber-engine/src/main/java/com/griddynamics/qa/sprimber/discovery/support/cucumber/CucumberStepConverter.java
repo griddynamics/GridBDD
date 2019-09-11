@@ -38,6 +38,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -75,6 +76,11 @@ public class CucumberStepConverter implements StepDefinitionsDiscovery.StepDefin
     public CucumberStepConverter() {
         hooksAndSteps.putAll(hooks);
         hooksAndSteps.putAll(steps);
+    }
+
+    @Override
+    public boolean accept(Annotation annotation) {
+        return hooksAndSteps.keySet().contains(annotation);
     }
 
     @Override

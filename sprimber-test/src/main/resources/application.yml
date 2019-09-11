@@ -9,7 +9,6 @@ spring:
 sprimber:
   configuration:
     featurePath: feature/**/*.feature
-    aspectJEnabled: true
     summary:
       printer:
         enable: true

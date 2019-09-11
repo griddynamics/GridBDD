@@ -26,8 +26,8 @@ package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsDiscovery;
-import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import cucumber.runtime.java.StepDefAnnotation;
 import lombok.extern.slf4j.Slf4j;
@@ -107,17 +107,34 @@ public class StepExecutionReportCatcher {
     }
 
     /**
+     * This pointcut designed to catch all Cucumber step definition annotation that has parent
+     * meta annotation <code>{@link StepDefAnnotation}</code>
+     */
+    @Pointcut("call(@(@cucumber.runtime.java.StepDefAnnotation *) public void *(..))")
+    public void cucumberStepCall() {
+    }
+
+    /**
      * This pointcut designed to catch the Cucumber hook annotations
      */
     @Pointcut("execution(@cucumber.api.java.* public void *(..))")
     public void cucumberHookExecution() {
     }
 
-    @Pointcut("within(@com.griddynamics.qa.sprimber.engine.model.action.Actions *)")
-    public void withinTest() {
+    /**
+     * This pointcut designed to catch the Cucumber hook annotations
+     */
+    @Pointcut("call(@cucumber.api.java.* public void *(..))")
+    public void cucumberHookCall() {
     }
 
-    @Pointcut("withinTest() && (cucumberStepExecution() || cucumberHookExecution())")
+    @Pointcut("within(@com.griddynamics.qa.sprimber.discovery.annotation.TestController *)")
+    public void withinTestControlelr() {}
+
+    @Pointcut("withincode(@com.griddynamics.qa.sprimber.discovery.annotation.TestMapping * *(..))")
+    public void withinTestMappingMethods() {}
+
+    @Pointcut("withinTestMappingMethods() && (cucumberStepCall() || cucumberHookCall())")
     public void stepMethodsExecution() {
     }
 }

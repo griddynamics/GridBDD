@@ -27,6 +27,7 @@ package com.griddynamics.qa.sprimber.autoconfigure;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.discovery.support.cucumber.JacksonDataTableTransformer;
 import com.griddynamics.qa.sprimber.engine.scope.TestCaseScope;
+import com.griddynamics.qa.sprimber.reporting.StepDefinitionFormatter;
 import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
 import cucumber.api.Pending;
 import gherkin.AstBuilder;
@@ -103,8 +104,8 @@ public class SprimberBeans {
 
     @Bean
     @ConditionalOnProperty(value = "sprimber.configuration.summary.printer.enable", havingValue = "true")
-    public TestCaseSummaryPrinter summaryPrinter() {
-        return new TestCaseSummaryPrinter();
+    public TestCaseSummaryPrinter summaryPrinter(StepDefinitionFormatter stepDefinitionFormatter) {
+        return new TestCaseSummaryPrinter(stepDefinitionFormatter);
     }
 
     @Bean
