@@ -24,12 +24,17 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.support;
 
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+
+import java.util.List;
 
 /**
  * @author fparamonov
  */
 public interface TestSuiteDiscovery {
+
+    TestSuiteDiscovery setAvailableStepDefinitionsSet(List<StepDefinition> stepDefinitions);
 
     TestSuiteDefinition discover();
 }

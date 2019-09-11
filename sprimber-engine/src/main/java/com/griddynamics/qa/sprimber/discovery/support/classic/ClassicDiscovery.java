@@ -24,9 +24,11 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.support.classic;
 
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.discovery.annotation.TestController;
 import com.griddynamics.qa.sprimber.discovery.annotation.TestMapping;
+import com.griddynamics.qa.sprimber.discovery.support.ClassicTestExecutor;
 import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author fparamonov
@@ -46,10 +49,18 @@ import java.util.Arrays;
 public class ClassicDiscovery implements TestSuiteDiscovery {
 
     private final ApplicationContext applicationContext;
+    private final ClassicTestExecutor classicTestExecutor;
+
+    @Override
+    public TestSuiteDiscovery setAvailableStepDefinitionsSet(List<StepDefinition> stepDefinitions) {
+        // not implemented since the list of available step definitions doesn't required yet.
+        return this;
+    }
 
     @Override
     public TestSuiteDefinition discover() {
         TestSuiteDefinition testSuiteDefinition = new TestSuiteDefinition();
+        testSuiteDefinition.setTestExecutor(classicTestExecutor);
         applicationContext.getBeansWithAnnotation(TestController.class).values().stream()
                 .map(this::testCaseDiscover)
                 .forEach(testCase -> testSuiteDefinition.getTestCaseDefinitions().add(testCase));
