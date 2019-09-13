@@ -25,8 +25,8 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery.support;
 
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
-import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +36,7 @@ import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 
@@ -48,12 +49,17 @@ import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 @RequiredArgsConstructor
 public class ClassicTestExecutor implements TestSuiteDefinition.TestExecutor {
 
+    private final Executor sprimberTestExecutor;
     private final ApplicationContext applicationContext;
     private final SprimberEventPublisher eventPublisher;
     private final ErrorMapper errorMapper;
 
     @Override
     public CompletableFuture<ExecutionResult> execute(TestSuiteDefinition.TestDefinition testDefinition) {
+        return CompletableFuture.supplyAsync(() -> executeTest(testDefinition), sprimberTestExecutor);
+    }
+
+    private ExecutionResult executeTest(TestSuiteDefinition.TestDefinition testDefinition) {
         try {
             eventPublisher.testStarted(this, testDefinition);
             Method testMethod = testDefinition.getStepDefinitions().get(0).getMethod();
@@ -62,13 +68,13 @@ public class ClassicTestExecutor implements TestSuiteDefinition.TestExecutor {
             ExecutionResult result = new ExecutionResult(PASSED);
             testDefinition.setExecutionResult(result);
             eventPublisher.testFinished(this, testDefinition);
-            return CompletableFuture.completedFuture(result);
+            return result;
         } catch (Throwable throwable) {
             ExecutionResult result = errorMapper.parseThrowable(throwable);
             result.conditionallyPrintStacktrace();
             log.trace(result.getErrorMessage());
             log.error(throwable.getLocalizedMessage());
-            return CompletableFuture.completedFuture(result);
+            return result;
         }
     }
 }

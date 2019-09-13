@@ -26,13 +26,15 @@ package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
-import com.griddynamics.qa.sprimber.discovery.support.TestDefinitionBinder;
+import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleLocation;
 import gherkin.pickles.PickleTag;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,7 +43,7 @@ import java.util.stream.Collectors;
  */
 
 @RequiredArgsConstructor
-public class CucumberTestBinder implements TestDefinitionBinder {
+public class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBinder {
 
     public static final String BDD_TAGS_ATTRIBUTE_NAME = "bddTags";
     public static final String LOCATION_ATTRIBUTE_NAME = "location";
@@ -63,6 +65,7 @@ public class CucumberTestBinder implements TestDefinitionBinder {
                 .map(pickleStepManager::wrapStepDefinitionWithHooks)
                 .forEach(stepDefinitions -> testDefinition.getStepDefinitions().addAll(stepDefinitions));
         testDefinition.getStepDefinitions().addAll(pickleStepManager.provideAfterTestHooks());
+        testDefinition.setFallbackStrategy(new StandardFallbackStrategy());
         return testDefinition;
     }
 
@@ -75,5 +78,43 @@ public class CucumberTestBinder implements TestDefinitionBinder {
         return pickle.getTags().stream()
                 .map(PickleTag::getName)
                 .collect(Collectors.toList());
+    }
+
+    class StandardFallbackStrategy implements TestSuiteDefinition.FallbackStrategy {
+
+        private int afterStepCounter = 0;
+        private List<StepDefinition.StepType> types;
+        private List<StepDefinition.StepPhase> phases;
+
+        StandardFallbackStrategy() {
+            this.types = Collections.singletonList(StepDefinition.StepType.AFTER);
+            this.phases = Arrays.asList(StepDefinition.StepPhase.STEP, StepDefinition.StepPhase.TEST);
+        }
+
+        @Override
+        public List<StepDefinition.StepType> allowedTypes() {
+            return this.types;
+        }
+
+        @Override
+        public List<StepDefinition.StepPhase> allowedPhases() {
+            return this.phases;
+        }
+
+        @Override
+        public void updateScope(StepDefinition stepDefinition) {
+            if (afterStepCounter > 0 && !stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER)) {
+                afterStepCounter = -1;
+            }
+            if (afterStepCounter == 0 && !stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER)) {
+                afterStepCounter++;
+            }
+            if (afterStepCounter > 0 && stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER)) {
+                afterStepCounter++;
+            }
+            if (afterStepCounter < 0) {
+                this.phases = Collections.singletonList(StepDefinition.StepPhase.TEST);
+            }
+        }
     }
 }

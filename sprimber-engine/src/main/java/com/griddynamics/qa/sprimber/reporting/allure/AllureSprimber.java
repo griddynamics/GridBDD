@@ -33,6 +33,7 @@ import io.qameta.allure.model.StatusDetails;
 import io.qameta.allure.model.StepResult;
 import io.qameta.allure.model.TestResult;
 import io.qameta.allure.util.ResultsUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -49,6 +50,8 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 /**
  * @author fparamonov
  */
+
+@Slf4j
 @Component
 public class AllureSprimber {
 

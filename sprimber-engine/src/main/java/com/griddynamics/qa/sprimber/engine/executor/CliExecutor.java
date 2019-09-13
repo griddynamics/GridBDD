@@ -24,16 +24,13 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine.executor;
 
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.engine.ExecutionContext;
-import com.griddynamics.qa.sprimber.engine.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.SuiteExecutor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author fparamonov
@@ -45,22 +42,10 @@ import java.util.concurrent.CompletableFuture;
 public class CliExecutor implements ApplicationRunner {
 
     private final ExecutionContext executionContext;
+    private final SuiteExecutor suiteExecutor;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        executionContext.getTestSuiteDefinitions().forEach(this::executeTestSuite);
-    }
-
-    public CompletableFuture<ExecutionResult> executeTestSuite(TestSuiteDefinition testSuiteDefinition) {
-        testSuiteDefinition.getTestCaseDefinitions()
-                .forEach(testCaseDefinition -> executeTestCase(testCaseDefinition, testSuiteDefinition.getTestExecutor()));
-        return CompletableFuture.completedFuture(new ExecutionResult(ExecutionResult.Status.PASSED));
-    }
-
-    public CompletableFuture<ExecutionResult> executeTestCase(TestSuiteDefinition.TestCaseDefinition testCaseDefinition,
-                                                              TestSuiteDefinition.TestExecutor testExecutor) {
-        testCaseDefinition.getTestDefinitions()
-                .forEach(testExecutor::execute);
-        return CompletableFuture.completedFuture(new ExecutionResult(ExecutionResult.Status.PASSED));
+        executionContext.getTestSuiteDefinitions().forEach(suiteExecutor::executeTestSuite);
     }
 }
