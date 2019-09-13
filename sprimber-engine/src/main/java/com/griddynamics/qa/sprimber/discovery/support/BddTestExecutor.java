@@ -36,9 +36,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
+import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.SKIPPED;
 
 /**
  * @author fparamonov
@@ -49,40 +55,77 @@ import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 @RequiredArgsConstructor
 public class BddTestExecutor implements TestSuiteDefinition.TestExecutor {
 
+    private final Executor sprimberTestExecutor;
     private final ErrorMapper errorMapper;
     private final ApplicationContext applicationContext;
     private final SprimberEventPublisher eventPublisher;
 
     @Override
     public CompletableFuture<ExecutionResult> execute(TestSuiteDefinition.TestDefinition testDefinition) {
-        eventPublisher.testStarted(this, testDefinition);
-        ExecutionResult result = new ExecutionResult(PASSED);
-        // TODO: 2019-09-10 add handling for step results after the execution
-        testDefinition.getStepDefinitions().forEach(this::executeStepDefinition);
-
-        testDefinition.setExecutionResult(result);
-        eventPublisher.testFinished(this, testDefinition);
-        return CompletableFuture.completedFuture(result);
+        return CompletableFuture.supplyAsync(() -> executeTest(testDefinition), sprimberTestExecutor);
     }
 
-    public void executeStepDefinition(StepDefinition stepDefinition) {
-        ExecutionResult result = new ExecutionResult(PASSED);
+    private ExecutionResult executeTest(TestSuiteDefinition.TestDefinition testDefinition) {
+        eventPublisher.testStarted(this, testDefinition);
+        testDefinition.setExecutionResult(new ExecutionResult(PASSED));
+        List<CompletableFuture<ExecutionResult>> stepResults = testDefinition.getStepDefinitions().stream()
+                .map(stepDefinition -> initStepDefinitionStage(stepDefinition)
+                        .handle((stepDef, throwable) -> {
+                            eventPublisher.stepStarted(this, stepDefinition);
+                            if (testDefinition.isFallbackActive()) {
+                                if (!(testDefinition.getFallbackStrategy().allowedTypes().contains(stepDef.getStepType()) &&
+                                        testDefinition.getFallbackStrategy().allowedPhases().contains(stepDef.getStepPhase()))) {
+                                    stepDef.setSkipped(true);
+                                }
+                            }
+                            return stepDef;
+                        })
+                        .thenApply(this::executeStepDefinition)
+                        .exceptionally(throwable -> handleStepException(testDefinition, stepDefinition, throwable))
+                        .handle((executionResult, throwable) -> {
+                            eventPublisher.stepFinished(this, stepDefinition);
+                            if (testDefinition.isFallbackActive()) {
+                                testDefinition.getFallbackStrategy().updateScope(stepDefinition);
+                            }
+                            return executionResult;
+                        })
+                )
+                .collect(Collectors.toList());
+        CompletableFuture<Void> done = CompletableFuture.allOf(stepResults.toArray(new CompletableFuture[0]));
+        Map<ExecutionResult.Status, Long> statistic = done.thenApply(v -> stepResults.stream()
+                .map(CompletionStage::toCompletableFuture)
+                .map(CompletableFuture::join)
+                .collect(Collectors.groupingBy(ExecutionResult::getStatus, Collectors.counting()))).join();
+        testDefinition.getExecutionResult().getStatistic().putAll(statistic);
+        eventPublisher.testFinished(this, testDefinition);
+        return testDefinition.getExecutionResult();
+    }
+
+    private ExecutionResult handleStepException(TestSuiteDefinition.TestDefinition testDefinition, StepDefinition stepDefinition, Throwable throwable) {
+        ExecutionResult result = errorMapper.parseThrowable(throwable);
+        stepDefinition.setExecutionResult(result);
+        result.conditionallyPrintStacktrace();
+        testDefinition.setExecutionResult(result);
+        testDefinition.activeFallback();
+        log.trace(result.getErrorMessage());
+        log.error(throwable.getLocalizedMessage());
+        return result;
+    }
+
+    private ExecutionResult executeStepDefinition(StepDefinition stepDefinition) {
+        if (stepDefinition.isSkipped()) {
+            stepDefinition.setExecutionResult(new ExecutionResult(SKIPPED));
+            return new ExecutionResult(SKIPPED);
+        }
         Method testMethod = stepDefinition.getMethod();
         Object target = applicationContext.getBean(testMethod.getDeclaringClass());
-        // TODO: 2019-09-10 handle the named arguments well
         Object[] args = stepDefinition.getParameters().isEmpty() ? new Object[0] : stepDefinition.getParameters().values().toArray();
-        try {
-            ReflectionUtils.invokeMethod(testMethod, target, args);
-            stepDefinition.setExecutionResult(result);
-            eventPublisher.stepStarted(target, stepDefinition);
-        } catch (Throwable throwable) {
-            result = errorMapper.parseThrowable(throwable);
-            stepDefinition.setExecutionResult(result);
-            result.conditionallyPrintStacktrace();
-            log.trace(result.getErrorMessage());
-            log.error(throwable.getLocalizedMessage());
-        } finally {
-            eventPublisher.stepFinished(target, stepDefinition);
-        }
+        ReflectionUtils.invokeMethod(testMethod, target, args);
+        return new ExecutionResult(PASSED);
+    }
+
+    private CompletableFuture<StepDefinition> initStepDefinitionStage(StepDefinition stepDefinition) {
+        stepDefinition.setExecutionResult(new ExecutionResult(PASSED));
+        return CompletableFuture.completedFuture(stepDefinition);
     }
 }

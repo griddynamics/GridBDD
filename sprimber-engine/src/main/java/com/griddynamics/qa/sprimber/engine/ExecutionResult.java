@@ -26,6 +26,8 @@ package com.griddynamics.qa.sprimber.engine;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -36,6 +38,7 @@ public class ExecutionResult {
 
     private final Status status;
     private final Throwable throwable;
+    private final Map<Status, Long> statistic = new HashMap<>();
 
     public ExecutionResult(Status status) {
         this.status = status;
@@ -53,6 +56,10 @@ public class ExecutionResult {
 
     public Optional<Throwable> getOptionalError() {
         return Optional.ofNullable(throwable);
+    }
+
+    public Map<Status, Long> getStatistic() {
+        return statistic;
     }
 
     /**

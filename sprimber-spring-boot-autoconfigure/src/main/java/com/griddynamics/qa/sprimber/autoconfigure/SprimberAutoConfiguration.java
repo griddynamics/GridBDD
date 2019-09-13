@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -46,13 +45,33 @@ import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER
 @Import(SprimberBeans.class)
 public class SprimberAutoConfiguration {
 
+    @Deprecated
     @Bean(SPRIMBER_EXECUTOR_NAME)
-    @ConditionalOnMissingBean
     public Executor asyncExecutor() {
         ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
         taskExecutor.setCorePoolSize(3);
         taskExecutor.setMaxPoolSize(3);
         taskExecutor.setThreadNamePrefix("TCExecutor-");
+        taskExecutor.initialize();
+        return taskExecutor;
+    }
+
+    @Bean
+    public Executor sprimberTestExecutor() {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(3);
+        taskExecutor.setMaxPoolSize(3);
+        taskExecutor.setThreadNamePrefix("TestExecutor-");
+        taskExecutor.initialize();
+        return taskExecutor;
+    }
+
+    @Bean
+    public Executor sprimberTestCaseExecutor() {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(3);
+        taskExecutor.setMaxPoolSize(3);
+        taskExecutor.setThreadNamePrefix("TestCaseExecutor-");
         taskExecutor.initialize();
         return taskExecutor;
     }

@@ -42,7 +42,6 @@ Feature: This is a test feature for echo application
       | testName | testSurname | testBook |
 
   @echo
-  @test_me
   @Story=positive
   Scenario: Simple scenario to check steps arguments
     Given the next author long consumed '123'
@@ -52,9 +51,11 @@ Feature: This is a test feature for echo application
   Scenario: Scenario to check failed steps
     When some when action with param 'hi'
     Then every time failed action
+    And test then action
 
   @echo
   @Story=negative
   Scenario: Scenario to check broken steps
     When some when action with param 'hi'
     Then every time action with exception
+    And test then action
