@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
 
 import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status;
 
@@ -52,6 +53,9 @@ public class ErrorMapper {
     }
 
     public ExecutionResult parseThrowable(Throwable throwable) {
+        if (throwable.getClass().equals(CompletionException.class)) {
+            throwable = throwable.getCause();
+        }
 
         if (isPendingException(throwable)) {
             return new ExecutionResult(Status.PENDING, throwable);

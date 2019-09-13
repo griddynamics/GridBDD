@@ -37,4 +37,16 @@ public interface TestSuiteDiscovery {
     TestSuiteDiscovery setAvailableStepDefinitionsSet(List<StepDefinition> stepDefinitions);
 
     TestSuiteDefinition discover();
+
+    /**
+     * This interface allow to extract the specific logic for test parsing.
+     * For example the classic test consist of one method rather than BDD test
+     * consist of comp[lex logic to bind the text to corresponding Java methods
+     *
+     * @author fparamonov
+     */
+    interface TestDefinitionBinder {
+
+        TestSuiteDefinition.TestDefinition bind();
+    }
 }

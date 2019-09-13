@@ -51,13 +51,28 @@ public class TestSuiteDefinition {
     @Data
     public static class TestDefinition {
 
+        private boolean isFallbackActive;
         private String hash;
         private String name;
         private String description;
         private String runtimeId = UUID.randomUUID().toString();
         private ExecutionResult executionResult;
+        private FallbackStrategy fallbackStrategy;
         private List<StepDefinition> stepDefinitions = new ArrayList<>();
         private Map<String, Object> attributes = new HashMap<>();
+
+        public void activeFallback() {
+            this.isFallbackActive = true;
+        }
+    }
+
+    public interface FallbackStrategy {
+
+        List<StepDefinition.StepType> allowedTypes();
+
+        List<StepDefinition.StepPhase> allowedPhases();
+
+        void updateScope(StepDefinition stepDefinition);
     }
 
     /**

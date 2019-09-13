@@ -27,7 +27,7 @@ package com.griddynamics.qa.sprimber.discovery.support.classic;
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
 import com.griddynamics.qa.sprimber.discovery.annotation.TestMapping;
-import com.griddynamics.qa.sprimber.discovery.support.TestDefinitionBinder;
+import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -40,7 +40,7 @@ import java.lang.reflect.Method;
  */
 
 @RequiredArgsConstructor
-public class ClassicTestBinder implements TestDefinitionBinder {
+public class ClassicTestBinder implements TestSuiteDiscovery.TestDefinitionBinder {
 
     private final Method testMethod;
 

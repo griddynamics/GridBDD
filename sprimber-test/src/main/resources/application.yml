@@ -13,4 +13,4 @@ sprimber:
       printer:
         enable: true
     tagFilters:
-      - "@test_me"
+      - "@scope or @echo"

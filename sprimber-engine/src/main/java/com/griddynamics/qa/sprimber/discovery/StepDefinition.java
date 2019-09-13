@@ -43,6 +43,7 @@ import java.util.Map;
 @Data
 public class StepDefinition {
 
+    private boolean isSkipped;
     private String name;
     private String bindingTextPattern;
     private String resolvedTextPattern;
