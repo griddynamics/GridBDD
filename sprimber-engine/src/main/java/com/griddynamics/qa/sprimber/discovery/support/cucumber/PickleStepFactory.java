@@ -45,10 +45,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -88,7 +85,8 @@ public class PickleStepFactory extends AbstractBddStepFactory<PickleStep> {
         TestSuite.Step step = new TestSuite.Step();
         step.setStepDefinition(targetDefinitions.get(0));
         step.setName(stepCandidate.getText());
-        step.getStepDefinition().getAttributes().put("stepData", handleAdditionalStepData(stepCandidate));
+        handleAdditionalStepData(stepCandidate)
+                .ifPresent(stepData -> step.getStepDefinition().getAttributes().put("stepData", stepData));
         step.getParameters().putAll(handleStepArguments(arguments, actualParameters));
         return step;
     }
@@ -119,7 +117,7 @@ public class PickleStepFactory extends AbstractBddStepFactory<PickleStep> {
      * @return - data table as string or empty
      */
     // TODO: 1/17/19 to add support for pickle string
-    private String handleAdditionalStepData(PickleStep pickleStep) {
+    private Optional<String> handleAdditionalStepData(PickleStep pickleStep) {
         return pickleStep.getArgument().stream()
                 .filter(argument -> argument instanceof PickleTable)
                 .findFirst()
@@ -139,7 +137,7 @@ public class PickleStepFactory extends AbstractBddStepFactory<PickleStep> {
                             }
                             return dataTableCsv.toString();
                         }
-                ).orElse("");
+                );
     }
 
     private List<Argument> getArgumentsFromPickleStep(StepDefinition definition, PickleStep pickleStep) {
