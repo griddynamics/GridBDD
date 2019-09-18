@@ -24,8 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.engine.ExecutionResult;
-import lombok.Builder;
 import lombok.Data;
 import org.springframework.util.DigestUtils;
 
@@ -34,7 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The step definition present the referenced Java method along with the binding text pattern
+ * The step definition presents the referenced Java method along with the binding text pattern
  * In Sprimber there is no actual difference between hooks and steps, hooks treated as "hidden" steps
  *
  * @author fparamonov
@@ -43,43 +41,21 @@ import java.util.Map;
 @Data
 public class StepDefinition {
 
-    private boolean isSkipped;
     private String name;
     private String bindingTextPattern;
-    private String resolvedTextPattern;
     private Method method;
     private StepType stepType;
     private StepPhase stepPhase;
-    private ExecutionResult executionResult;
     private Map<String, Object> attributes = new HashMap<>();
-    private Map<String, Object> parameters = new HashMap<>();
-    private String hash;
 
     public StepDefinition() {
     }
 
-    @Builder(toBuilder = true)
-    public StepDefinition(String bindingTextPattern, String name, String resolvedTextPattern,
-                          ExecutionResult executionResult, Method method, StepType stepType, StepPhase stepPhase,
-                          Map<String, Object> attributes, Map<String, Object> parameters, String hash) {
-        this.bindingTextPattern = bindingTextPattern;
-        this.name = name;
-        this.resolvedTextPattern = resolvedTextPattern;
-        this.executionResult = executionResult;
-        this.method = method;
-        this.stepType = stepType;
-        this.stepPhase = stepPhase;
-        this.attributes = attributes;
-        this.parameters = parameters;
-        this.hash = hash;
-    }
-
-    public String calculateAndSaveHash() {
+    public String getHash() {
         String uniqueName = method.getDeclaringClass().getCanonicalName() + "#" +
                 method.getName() + "#" +
                 method.getParameterCount();
-        this.hash = DigestUtils.md5DigestAsHex(uniqueName.getBytes());
-        return this.hash;
+        return DigestUtils.md5DigestAsHex(uniqueName.getBytes());
     }
 
     /**

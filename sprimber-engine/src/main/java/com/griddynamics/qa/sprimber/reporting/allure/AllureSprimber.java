@@ -85,19 +85,19 @@ public class AllureSprimber {
 
     @EventListener
     public void testStarted(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
-        testCaseRuntimeId.set(testStartedEvent.getTestDefinition().getRuntimeId());
+        testCaseRuntimeId.set(testStartedEvent.getTest().getRuntimeId());
         TestResult testResult = new TestResult()
                 .withUuid(testCaseRuntimeId.get())
-                .withHistoryId(testStartedEvent.getTestDefinition().getHash())
-                .withName(testStartedEvent.getTestDefinition().getName())
-                .withDescription(testStartedEvent.getTestDefinition().getDescription());
+                .withHistoryId(testStartedEvent.getTest().getHistoryId())
+                .withName(testStartedEvent.getTest().getName())
+                .withDescription(testStartedEvent.getTest().getDescription());
         lifecycle.scheduleTestCase(testResult);
         lifecycle.startTestCase(testCaseRuntimeId.get());
     }
 
     @EventListener
     public void testFinished(SprimberEventPublisher.TestFinishedEvent testFinishedEvent) {
-        ExecutionResult result = testFinishedEvent.getTestDefinition().getExecutionResult();
+        ExecutionResult result = testFinishedEvent.getTest().getExecutionResult();
         Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
         String runtimeUuid = testCaseRuntimeId.get();
         lifecycle.updateTestCase(runtimeUuid, scenarioResult -> {
@@ -127,26 +127,26 @@ public class AllureSprimber {
 
     @EventListener
     public void testStepStarted(SprimberEventPublisher.StepStartedEvent stepStartedEvent) {
-        String stepReportName = stepStartedEvent.getStepDefinition().getStepType() + " " +
-                stepStartedEvent.getStepDefinition().getStepPhase() + " " +
-                formatter.formatStepName(stepStartedEvent.getStepDefinition());
+        String stepReportName = stepStartedEvent.getStep().getStepDefinition().getStepType() + " " +
+                stepStartedEvent.getStep().getStepDefinition().getStepPhase() + " " +
+                formatter.formatStepName(stepStartedEvent.getStep());
         StepResult stepResult = new StepResult()
                 .withName(stepReportName)
                 .withStart(clock.millis());
         lifecycle.startStep(testCaseRuntimeId.get(), testCaseRuntimeId.get() + stepReportName, stepResult);
         StringBuilder dataTableCsv = new StringBuilder();
-        stepStartedEvent.getStepDefinition().getAttributes().forEach((key, value) ->
+        stepStartedEvent.getStep().getStepDefinition().getAttributes().forEach((key, value) ->
                 dataTableCsv.append(key).append("\t").append(value).append("\n"));
         lifecycle.addAttachment("Step Attributes", "text/tab-separated-values", "csv", dataTableCsv.toString().getBytes());
-        attachStepDataParameterIfPresent(String.valueOf(stepStartedEvent.getStepDefinition().getParameters().get("stepData")));
+        attachStepDataParameterIfPresent(String.valueOf(stepStartedEvent.getStep().getParameters().get("stepData")));
     }
 
     @EventListener
     public void testStepFinished(SprimberEventPublisher.StepFinishedEvent stepFinishedEvent) {
-        String stepReportName = stepFinishedEvent.getStepDefinition().getStepType() + " " +
-                stepFinishedEvent.getStepDefinition().getStepPhase() + " " +
-                formatter.formatStepName(stepFinishedEvent.getStepDefinition());
-        ExecutionResult result = stepFinishedEvent.getStepDefinition().getExecutionResult();
+        String stepReportName = stepFinishedEvent.getStep().getStepDefinition().getStepType() + " " +
+                stepFinishedEvent.getStep().getStepDefinition().getStepPhase() + " " +
+                formatter.formatStepName(stepFinishedEvent.getStep());
+        ExecutionResult result = stepFinishedEvent.getStep().getExecutionResult();
         Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
         lifecycle.updateStep(testCaseRuntimeId.get() + stepReportName,
                 stepResult -> {

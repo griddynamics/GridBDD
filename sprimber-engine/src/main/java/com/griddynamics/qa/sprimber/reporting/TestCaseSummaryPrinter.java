@@ -55,7 +55,7 @@ public class TestCaseSummaryPrinter {
     public void illuminateTestStart(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n\n");
-        stringBuilder.append(String.format("Test Case Completed: %s", testStartedEvent.getTestDefinition().getName()));
+        stringBuilder.append(String.format("Test Case Completed: %s", testStartedEvent.getTest().getName()));
         reportBuilder.set(stringBuilder);
     }
 
@@ -71,17 +71,17 @@ public class TestCaseSummaryPrinter {
     public void illuminateTestStepFinish(SprimberEventPublisher.StepFinishedEvent stepFinishedEvent) {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
-        if (stepDefinitionFormatter.isHookStep(stepFinishedEvent.getStepDefinition())) {
-            stringBuilder.append(String.format(" %s of scope", stepFinishedEvent.getStepDefinition().getStepType()));
-            stringBuilder.append(String.format(" %s from:", stepFinishedEvent.getStepDefinition().getStepPhase()));
-            stringBuilder.append(String.format(" %s", stepFinishedEvent.getStepDefinition().getMethod()));
-            stringBuilder.append(String.format(" (%s) ", stepFinishedEvent.getStepDefinition().getExecutionResult().getStatus()));
+        if (stepFinishedEvent.getStep().isHookStep()) {
+            stringBuilder.append(String.format(" %s of scope", stepFinishedEvent.getStep().getStepDefinition().getStepType()));
+            stringBuilder.append(String.format(" %s from:", stepFinishedEvent.getStep().getStepDefinition().getStepPhase()));
+            stringBuilder.append(String.format(" %s", stepFinishedEvent.getStep().getStepDefinition().getMethod()));
+            stringBuilder.append(String.format(" (%s) ", stepFinishedEvent.getStep().getExecutionResult().getStatus()));
         } else {
-            stringBuilder.append(String.format("   %s", stepFinishedEvent.getStepDefinition().getStepType()));
-            stringBuilder.append(String.format(" %s", stepDefinitionFormatter.formatStepName(stepFinishedEvent.getStepDefinition())));
-            stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{stepFinishedEvent.getStepDefinition().getParameters().values()})));
-            stringBuilder.append(String.format(" (%s) ", stepFinishedEvent.getStepDefinition().getExecutionResult().getStatus()));
-            stringBuilder.append(String.format(" (%s) ", getExceptionMessageIfAny(stepFinishedEvent.getStepDefinition().getExecutionResult())));
+            stringBuilder.append(String.format("   %s", stepFinishedEvent.getStep().getStepDefinition().getStepType()));
+            stringBuilder.append(String.format(" %s", stepDefinitionFormatter.formatStepName(stepFinishedEvent.getStep())));
+            stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{stepFinishedEvent.getStep().getParameters().values()})));
+            stringBuilder.append(String.format(" (%s) ", stepFinishedEvent.getStep().getExecutionResult().getStatus()));
+            stringBuilder.append(String.format(" (%s) ", getExceptionMessageIfAny(stepFinishedEvent.getStep().getExecutionResult())));
         }
     }
 

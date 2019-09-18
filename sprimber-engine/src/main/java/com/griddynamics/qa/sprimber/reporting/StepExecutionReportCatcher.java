@@ -25,7 +25,8 @@ $Id:
 package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsDiscovery;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
+import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsAbstractFactory;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
@@ -39,7 +40,6 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
@@ -55,7 +55,7 @@ public class StepExecutionReportCatcher {
 
     private static SprimberEventPublisher eventPublisher;
     private static ErrorMapper errorMapper;
-    private static List<StepDefinitionsDiscovery.StepDefinitionConverter> converters;
+    private static List<StepDefinitionsAbstractFactory.StepDefinitionResolver> converters;
 
     @Autowired
     public void setEventPublisher(SprimberEventPublisher eventPublisher) {
@@ -68,8 +68,8 @@ public class StepExecutionReportCatcher {
     }
 
     @Autowired
-    public void setConverters(List<StepDefinitionsDiscovery.StepDefinitionConverter> stepDefinitionConverters) {
-        StepExecutionReportCatcher.converters = stepDefinitionConverters;
+    public void setConverters(List<StepDefinitionsAbstractFactory.StepDefinitionResolver> stepDefinitionResolvers) {
+        StepExecutionReportCatcher.converters = stepDefinitionResolvers;
     }
 
     @Around("stepMethodsExecution()")
@@ -78,25 +78,27 @@ public class StepExecutionReportCatcher {
         ExecutionResult executionResult = new ExecutionResult(PASSED);
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
         StepDefinition stepDefinition = converters.stream()
-                .filter(converter -> Arrays.stream(methodSignature.getMethod().getDeclaredAnnotations())
-                        .anyMatch(converter::accept))
-                .flatMap(converter -> converter.convert(methodSignature.getMethod()).stream())
+                .filter(converter -> converter.accept(methodSignature.getMethod()))
+                .flatMap(converter -> converter.resolve(methodSignature.getMethod()).stream())
                 .findFirst().get();
+        TestSuite.Step step = new TestSuite.Step();
+        step.setStepDefinition(stepDefinition);
+        step.setName(methodSignature.getMethod().getName());
         try {
             log.info("Starting point");
-            StepExecutionReportCatcher.eventPublisher.stepStarted(this, stepDefinition);
+            StepExecutionReportCatcher.eventPublisher.stepStarted(this, step);
             result = joinPoint.proceed();
-            stepDefinition.setExecutionResult(executionResult);
+            step.setExecutionResult(executionResult);
             log.info("Point completed");
         } catch (Throwable throwable) {
             log.error("Some error here");
             executionResult = errorMapper.parseThrowable(throwable);
             executionResult.conditionallyPrintStacktrace();
-            stepDefinition.setExecutionResult(executionResult);
+            step.setExecutionResult(executionResult);
             log.trace(executionResult.getErrorMessage());
             log.error(throwable.getLocalizedMessage());
         } finally {
-            StepExecutionReportCatcher.eventPublisher.stepFinished(this, stepDefinition);
+            StepExecutionReportCatcher.eventPublisher.stepFinished(this, step);
         }
         return result;
     }

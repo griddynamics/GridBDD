@@ -22,19 +22,19 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.support.cucumber;
+package com.griddynamics.qa.sprimber.discovery.support;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsDiscovery;
+import com.griddynamics.qa.sprimber.discovery.annotation.StepController;
+import com.griddynamics.qa.sprimber.discovery.annotation.TestController;
 import com.griddynamics.qa.sprimber.engine.model.action.Actions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -44,19 +44,24 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class CucumberAnnotationsDiscovery implements StepDefinitionsDiscovery {
+public class SpringStepDefinitionsFactory extends StepDefinitionsAbstractFactory {
 
-    private final CucumberStepConverter stepConverter;
     private final ApplicationContext applicationContext;
+    private final List<StepDefinitionResolver> resolvers;
+    private final List<Class<? extends Annotation>> classDiscoveryAnnotations =
+            new ArrayList<>(Arrays.asList(Actions.class, TestController.class, StepController.class));
 
     @Override
-    public List<StepDefinition> discover() {
-        log.debug("Discovering Cucumber style step definitions in classes with @Actions");
-        return applicationContext.getBeansWithAnnotation(Actions.class).values().stream()
-                .flatMap(actionBean ->
-                        Arrays.stream(actionBean.getClass().getDeclaredMethods())
-                                .map(stepConverter::convert)
-                                .flatMap(Collection::stream))
+    List<Method> getMethodCandidates() {
+        Map<String, Object> targetBeans = new HashMap<>();
+        classDiscoveryAnnotations.forEach(aClass -> targetBeans.putAll(applicationContext.getBeansWithAnnotation(aClass)));
+        return targetBeans.values().stream()
+                .flatMap(bean -> Arrays.stream(bean.getClass().getDeclaredMethods()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    List<StepDefinitionResolver> resolvers() {
+        return resolvers;
     }
 }

@@ -22,36 +22,26 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine;
+package com.griddynamics.qa.sprimber.discovery.support;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuite;
-import lombok.Data;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
- * This is a parent super container that can hold all necessary Sprimber objects during execution
- * in one place with the ability to share and provide access from different places inside of the
- * framework
- *
  * @author fparamonov
  */
+public abstract class AbstractStepFactory<SC> implements StepFactory<SC> {
 
-@Data
-public class ExecutionContext {
+    private final Map<String, StepDefinition> stepDefinitions = new HashMap<>();
 
-    /**
-     * Collection that aimed to hold all available step definitions at runtime
-     * Without binding to any suite/case/test/step
-     */
-    private Map<String, StepDefinition> stepDefinitions = new HashMap<>();
+    @Override
+    public void setStepDefinitions(Map<String, StepDefinition> stepDefinitions) {
+        this.stepDefinitions.putAll(stepDefinitions);
+    }
 
-    /**
-     * Convenient place to hold all test suite definitions that available at runtime
-     */
-    private List<TestSuite> testSuites = new ArrayList<>();
+    protected Map<String, StepDefinition> getStepDefinitions() {
+        return this.stepDefinitions;
+    }
 }

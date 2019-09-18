@@ -26,27 +26,43 @@ package com.griddynamics.qa.sprimber.discovery.support;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author fparamonov
  */
-public interface StepDefinitionsDiscovery {
+public abstract class StepDefinitionsAbstractFactory implements StepDefinitionsFactory {
 
     /**
-     * The implementation should make the search and find the all methods that mapped to the steps
+     * Method will apply all available step definition resolvers into all applicable methods
+     * and build the aggregate map of step definitions
      *
-     * @return the collection of the step definitions
+     * @return the collection of the step definitions keyed by step definition hash
      */
-    List<StepDefinition> discover();
-
-    interface StepDefinitionConverter {
-
-        boolean accept(Annotation annotation);
-
-        List<StepDefinition> convert(Method method);
+    public Map<String, StepDefinition> getStepDefinitions() {
+        return getMethodCandidates().stream()
+                .flatMap(method -> resolvers().stream()
+                        .filter(resolver -> resolver.accept(method))
+                        .map(resolver -> resolver.resolve(method))
+                        .flatMap(Collection::stream))
+                .collect(Collectors.toMap(StepDefinition::getHash, v -> v));
     }
+
+    /**
+     * The implementation should make the search and find the all methods that can mapped to the step definitions
+     *
+     * @return collection of method candidates
+     */
+    abstract List<Method> getMethodCandidates();
+
+    /**
+     * The implementation should provide all available step definition resolvers
+     *
+     * @return the collection that contains step definition resolvers
+     */
+    abstract List<StepDefinitionResolver> resolvers();
 }

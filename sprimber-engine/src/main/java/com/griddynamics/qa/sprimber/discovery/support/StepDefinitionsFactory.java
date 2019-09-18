@@ -22,36 +22,33 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine;
+package com.griddynamics.qa.sprimber.discovery.support;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuite;
-import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
 /**
- * This is a parent super container that can hold all necessary Sprimber objects during execution
- * in one place with the ability to share and provide access from different places inside of the
- * framework
- *
  * @author fparamonov
  */
-
-@Data
-public class ExecutionContext {
+public interface StepDefinitionsFactory {
 
     /**
-     * Collection that aimed to hold all available step definitions at runtime
-     * Without binding to any suite/case/test/step
+     * Implementation should perform the search and find the required step definitions
+     *
+     * @return the collection of the step definitions keyed by step definition hash
      */
-    private Map<String, StepDefinition> stepDefinitions = new HashMap<>();
+    Map<String, StepDefinition> getStepDefinitions();
 
-    /**
-     * Convenient place to hold all test suite definitions that available at runtime
-     */
-    private List<TestSuite> testSuites = new ArrayList<>();
+    interface StepDefinitionResolver {
+
+        boolean accept(Annotation annotation);
+
+        boolean accept(Method method);
+
+        List<StepDefinition> resolve(Method method);
+    }
 }

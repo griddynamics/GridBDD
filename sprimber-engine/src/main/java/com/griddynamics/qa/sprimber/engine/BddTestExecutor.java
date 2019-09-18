@@ -22,10 +22,10 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.support;
+package com.griddynamics.qa.sprimber.engine;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
@@ -39,7 +39,6 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
@@ -53,7 +52,7 @@ import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.SKIPPED
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class BddTestExecutor implements TestSuiteDefinition.TestExecutor {
+public class BddTestExecutor implements TestSuite.TestExecutor {
 
     private final Executor sprimberTestExecutor;
     private final ErrorMapper errorMapper;
@@ -61,31 +60,31 @@ public class BddTestExecutor implements TestSuiteDefinition.TestExecutor {
     private final SprimberEventPublisher eventPublisher;
 
     @Override
-    public CompletableFuture<ExecutionResult> execute(TestSuiteDefinition.TestDefinition testDefinition) {
-        return CompletableFuture.supplyAsync(() -> executeTest(testDefinition), sprimberTestExecutor);
+    public CompletableFuture<ExecutionResult> execute(TestSuite.Test test) {
+        return CompletableFuture.supplyAsync(() -> executeTest(test), sprimberTestExecutor);
     }
 
-    private ExecutionResult executeTest(TestSuiteDefinition.TestDefinition testDefinition) {
-        eventPublisher.testStarted(this, testDefinition);
-        testDefinition.setExecutionResult(new ExecutionResult(PASSED));
-        List<CompletableFuture<ExecutionResult>> stepResults = testDefinition.getStepDefinitions().stream()
-                .map(stepDefinition -> initStepDefinitionStage(stepDefinition)
+    private ExecutionResult executeTest(TestSuite.Test test) {
+        eventPublisher.testStarted(this, test);
+        test.setExecutionResult(new ExecutionResult(PASSED));
+        List<CompletableFuture<ExecutionResult>> stepResults = test.getSteps().stream()
+                .map(step -> initStepDefinitionStage(step)
                         .handle((stepDef, throwable) -> {
-                            eventPublisher.stepStarted(this, stepDefinition);
-                            if (testDefinition.isFallbackActive()) {
-                                if (!(testDefinition.getFallbackStrategy().allowedTypes().contains(stepDef.getStepType()) &&
-                                        testDefinition.getFallbackStrategy().allowedPhases().contains(stepDef.getStepPhase()))) {
-                                    stepDef.setSkipped(true);
+                            eventPublisher.stepStarted(this, step);
+                            if (test.isFallbackActive()) {
+                                if (!(test.getFallbackStrategy().allowedTypes().contains(step.getStepDefinition().getStepType()) &&
+                                        test.getFallbackStrategy().allowedPhases().contains(step.getStepDefinition().getStepPhase()))) {
+                                    step.setSkipped(true);
                                 }
                             }
-                            return stepDef;
+                            return step;
                         })
                         .thenApply(this::executeStepDefinition)
-                        .exceptionally(throwable -> handleStepException(testDefinition, stepDefinition, throwable))
+                        .exceptionally(throwable -> handleStepException(test, step, throwable))
                         .handle((executionResult, throwable) -> {
-                            eventPublisher.stepFinished(this, stepDefinition);
-                            if (testDefinition.isFallbackActive()) {
-                                testDefinition.getFallbackStrategy().updateScope(stepDefinition);
+                            eventPublisher.stepFinished(this, step);
+                            if (test.isFallbackActive()) {
+                                test.getFallbackStrategy().updateScope(step);
                             }
                             return executionResult;
                         })
@@ -93,39 +92,39 @@ public class BddTestExecutor implements TestSuiteDefinition.TestExecutor {
                 .collect(Collectors.toList());
         CompletableFuture<Void> done = CompletableFuture.allOf(stepResults.toArray(new CompletableFuture[0]));
         Map<ExecutionResult.Status, Long> statistic = done.thenApply(v -> stepResults.stream()
-                .map(CompletionStage::toCompletableFuture)
                 .map(CompletableFuture::join)
                 .collect(Collectors.groupingBy(ExecutionResult::getStatus, Collectors.counting()))).join();
-        testDefinition.getExecutionResult().getStatistic().putAll(statistic);
-        eventPublisher.testFinished(this, testDefinition);
-        return testDefinition.getExecutionResult();
+        test.getExecutionResult().getStatistic().putAll(statistic);
+        eventPublisher.testFinished(this, test);
+        return test.getExecutionResult();
     }
 
-    private ExecutionResult handleStepException(TestSuiteDefinition.TestDefinition testDefinition, StepDefinition stepDefinition, Throwable throwable) {
+    private ExecutionResult handleStepException(TestSuite.Test test, TestSuite.Step step, Throwable throwable) {
         ExecutionResult result = errorMapper.parseThrowable(throwable);
-        stepDefinition.setExecutionResult(result);
+        step.setExecutionResult(result);
         result.conditionallyPrintStacktrace();
-        testDefinition.setExecutionResult(result);
-        testDefinition.activeFallback();
+        test.setExecutionResult(result);
+        test.activeFallback();
         log.trace(result.getErrorMessage());
         log.error(throwable.getLocalizedMessage());
         return result;
     }
 
-    private ExecutionResult executeStepDefinition(StepDefinition stepDefinition) {
-        if (stepDefinition.isSkipped()) {
-            stepDefinition.setExecutionResult(new ExecutionResult(SKIPPED));
+    private ExecutionResult executeStepDefinition(TestSuite.Step step) {
+        if (step.isSkipped()) {
+            step.setExecutionResult(new ExecutionResult(SKIPPED));
             return new ExecutionResult(SKIPPED);
         }
-        Method testMethod = stepDefinition.getMethod();
+        Method testMethod = step.getStepDefinition().getMethod();
         Object target = applicationContext.getBean(testMethod.getDeclaringClass());
-        Object[] args = stepDefinition.getParameters().isEmpty() ? new Object[0] : stepDefinition.getParameters().values().toArray();
+        Object[] args = step.getParameters().isEmpty() ?
+                new Object[0] : step.getParameters().values().toArray();
         ReflectionUtils.invokeMethod(testMethod, target, args);
         return new ExecutionResult(PASSED);
     }
 
-    private CompletableFuture<StepDefinition> initStepDefinitionStage(StepDefinition stepDefinition) {
-        stepDefinition.setExecutionResult(new ExecutionResult(PASSED));
-        return CompletableFuture.completedFuture(stepDefinition);
+    private CompletableFuture<TestSuite.Step> initStepDefinitionStage(TestSuite.Step step) {
+        step.setExecutionResult(new ExecutionResult(PASSED));
+        return CompletableFuture.completedFuture(step);
     }
 }

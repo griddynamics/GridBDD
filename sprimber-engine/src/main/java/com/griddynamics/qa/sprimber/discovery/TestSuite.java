@@ -35,34 +35,53 @@ import java.util.concurrent.CompletableFuture;
  */
 
 @Data
-public class TestSuiteDefinition {
+public class TestSuite {
 
     private TestExecutor testExecutor;
     private ExecutionResult executionResult;
-    private List<TestCaseDefinition> testCaseDefinitions = new ArrayList<>();
+    private List<TestCase> testCases = new ArrayList<>();
 
     @Data
-    public static class TestCaseDefinition {
+    public static class TestCase {
 
         private ExecutionResult executionResult;
-        private List<TestDefinition> testDefinitions = new ArrayList<>();
+        private List<Test> tests = new ArrayList<>();
     }
 
     @Data
-    public static class TestDefinition {
+    public static class Test {
 
         private boolean isFallbackActive;
-        private String hash;
         private String name;
         private String description;
         private String runtimeId = UUID.randomUUID().toString();
+        private String historyId;
         private ExecutionResult executionResult;
         private FallbackStrategy fallbackStrategy;
-        private List<StepDefinition> stepDefinitions = new ArrayList<>();
+        private List<Step> steps = new ArrayList<>();
         private Map<String, Object> attributes = new HashMap<>();
 
         public void activeFallback() {
             this.isFallbackActive = true;
+        }
+    }
+
+    @Data
+    public static class Step {
+
+        private boolean isSkipped;
+        private String name;
+        private String resolvedTextPattern;
+        private StepDefinition stepDefinition;
+        private ExecutionResult executionResult;
+        private Map<String, Object> parameters = new HashMap<>();
+
+        public boolean isHookStep() {
+            return this.stepDefinition.getStepType().equals(StepDefinition.StepType.BEFORE) || this.stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER);
+        }
+
+        public boolean isGeneralStep() {
+            return this.stepDefinition.getStepType().equals(StepDefinition.StepType.GENERAL);
         }
     }
 
@@ -72,15 +91,15 @@ public class TestSuiteDefinition {
 
         List<StepDefinition.StepPhase> allowedPhases();
 
-        void updateScope(StepDefinition stepDefinition);
+        void updateScope(Step executedStep);
     }
 
     /**
      * Main difference happens in exact test execution, since the suite and testcase execution pretty straightforward
      * for most cases(plain code, bdd). To provide this custom logic for each test execution implement this interface
-     * Each {@link TestSuiteDefinition} should be aware about how to execute the tests under
+     * Each {@link TestSuite} should be aware about how to execute the tests under
      */
     public interface TestExecutor {
-        CompletableFuture<ExecutionResult> execute(TestDefinition testDefinition);
+        CompletableFuture<ExecutionResult> execute(Test test);
     }
 }
