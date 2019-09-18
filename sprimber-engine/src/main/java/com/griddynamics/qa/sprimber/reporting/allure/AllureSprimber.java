@@ -24,14 +24,12 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting.allure;
 
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import com.griddynamics.qa.sprimber.reporting.StepDefinitionFormatter;
 import io.qameta.allure.AllureLifecycle;
-import io.qameta.allure.model.Status;
-import io.qameta.allure.model.StatusDetails;
-import io.qameta.allure.model.StepResult;
-import io.qameta.allure.model.TestResult;
+import io.qameta.allure.model.*;
 import io.qameta.allure.util.ResultsUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -42,8 +40,10 @@ import javax.annotation.PreDestroy;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.time.Clock;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -132,13 +132,15 @@ public class AllureSprimber {
                 formatter.formatStepName(stepStartedEvent.getStep());
         StepResult stepResult = new StepResult()
                 .withName(stepReportName)
+                .withParameters(convertStepParameters(stepStartedEvent.getStep()))
                 .withStart(clock.millis());
         lifecycle.startStep(testCaseRuntimeId.get(), testCaseRuntimeId.get() + stepReportName, stepResult);
         StringBuilder dataTableCsv = new StringBuilder();
-        stepStartedEvent.getStep().getStepDefinition().getAttributes().forEach((key, value) ->
-                dataTableCsv.append(key).append("\t").append(value).append("\n"));
+        stepStartedEvent.getStep().getStepDefinition().getAttributes().entrySet().stream()
+                .filter(entry -> !entry.getKey().equals("stepData"))
+                .forEach(entry -> dataTableCsv.append(entry.getKey()).append("\t").append(entry.getValue()).append("\n"));
         lifecycle.addAttachment("Step Attributes", "text/tab-separated-values", "csv", dataTableCsv.toString().getBytes());
-        attachStepDataParameterIfPresent(String.valueOf(stepStartedEvent.getStep().getParameters().get("stepData")));
+        attachStepDataParameterIfPresent(String.valueOf(stepStartedEvent.getStep().getStepDefinition().getAttributes().getOrDefault("stepData", "")));
     }
 
     @EventListener
@@ -155,6 +157,19 @@ public class AllureSprimber {
                 }
         );
         lifecycle.stopStep(testCaseRuntimeId.get() + stepReportName);
+    }
+
+    private List<Parameter> convertStepParameters(TestSuite.Step step) {
+        return step.getParameters().entrySet().stream()
+                .map(this::getParameter)
+                .collect(Collectors.toList());
+    }
+
+    private Parameter getParameter(Map.Entry<String, Object> entry) {
+        Parameter parameter = new Parameter();
+        parameter.setName(entry.getKey());
+        parameter.setValue(String.valueOf(entry.getValue()));
+        return parameter;
     }
 
     private void attachStepDataParameterIfPresent(String stepData) {
