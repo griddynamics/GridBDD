@@ -25,7 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.event;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;
@@ -41,7 +41,7 @@ public class Events {
     @Setter
     public static abstract class StepEvent extends ApplicationEvent {
 
-        private StepDefinition stepDefinition;
+        private TestSuite.Step step;
 
         /**
          * Create a new ApplicationEvent.
@@ -52,9 +52,9 @@ public class Events {
             super(source);
         }
 
-        public StepEvent(Object source, StepDefinition stepDefinition) {
+        public StepEvent(Object source, TestSuite.Step step) {
             super(source);
-            this.stepDefinition = stepDefinition;
+            this.step = step;
         }
     }
 
@@ -62,7 +62,7 @@ public class Events {
     @Setter
     public static abstract class TestEvent extends ApplicationEvent {
 
-        private TestSuiteDefinition.TestDefinition testDefinition;
+        private TestSuite.Test test;
 
         /**
          * Create a new ApplicationEvent.
@@ -73,9 +73,9 @@ public class Events {
             super(source);
         }
 
-        public TestEvent(Object source, TestSuiteDefinition.TestDefinition testDefinition) {
+        public TestEvent(Object source, TestSuite.Test test) {
             super(source);
-            this.testDefinition = testDefinition;
+            this.test = test;
         }
     }
 
@@ -83,7 +83,7 @@ public class Events {
     @Setter
     public static abstract class TestCaseEvent extends ApplicationEvent {
 
-        private TestSuiteDefinition.TestCaseDefinition testCaseDefinition;
+        private TestSuite.TestCase testCase;
 
         /**
          * Create a new ApplicationEvent.
@@ -94,9 +94,9 @@ public class Events {
             super(source);
         }
 
-        public TestCaseEvent(Object source, TestSuiteDefinition.TestCaseDefinition testCaseDefinition) {
+        public TestCaseEvent(Object source, TestSuite.TestCase testCase) {
             super(source);
-            this.testCaseDefinition = testCaseDefinition;
+            this.testCase = testCase;
         }
     }
 
@@ -104,7 +104,7 @@ public class Events {
     @Setter
     public static abstract class TestSuiteEvent extends ApplicationEvent {
 
-        private TestSuiteDefinition testSuiteDefinition;
+        private TestSuite testSuite;
 
         /**
          * Create a new ApplicationEvent.
@@ -115,9 +115,9 @@ public class Events {
             super(source);
         }
 
-        public TestSuiteEvent(Object source, TestSuiteDefinition testSuiteDefinition) {
+        public TestSuiteEvent(Object source, TestSuite testSuite) {
             super(source);
-            this.testSuiteDefinition = testSuiteDefinition;
+            this.testSuite = testSuite;
         }
     }
 }

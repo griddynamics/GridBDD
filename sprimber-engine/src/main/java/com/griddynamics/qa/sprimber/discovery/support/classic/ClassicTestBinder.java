@@ -24,14 +24,13 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.support.classic;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import com.griddynamics.qa.sprimber.discovery.annotation.TestMapping;
 import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.util.DigestUtils;
+import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 
@@ -39,43 +38,26 @@ import java.lang.reflect.Method;
  * @author fparamonov
  */
 
+@Component
 @RequiredArgsConstructor
-public class ClassicTestBinder implements TestSuiteDiscovery.TestDefinitionBinder {
+public class ClassicTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Method> {
 
-    private final Method testMethod;
+    private final ClassicStepFactory classicStepFactory;
 
     @Override
-    public TestSuiteDefinition.TestDefinition bind() {
-        TestMapping testMapping = AnnotationUtils.getAnnotation(testMethod, TestMapping.class);
-        String testName = buildTestName(testMethod, testMapping);
-        StepDefinition stepDefinition = buildStepDefinition(testMethod, testName);
-        val testDefinition = new TestSuiteDefinition.TestDefinition();
-        testDefinition.setName(testName);
-        testDefinition.setDescription(String.valueOf(AnnotationUtils.getValue(testMapping, "description")));
-        testDefinition.setHash(buildTestHash(testMethod));
-        testDefinition.getStepDefinitions().add(stepDefinition);
-        return testDefinition;
-    }
-
-    private StepDefinition buildStepDefinition(Method testMethod, String testName) {
-        StepDefinition stepDefinition = new StepDefinition();
-        stepDefinition.setMethod(testMethod);
-        stepDefinition.setName(testName);
-        stepDefinition.setStepPhase(StepDefinition.StepPhase.TEST);
-        stepDefinition.setStepType(StepDefinition.StepType.GENERAL);
-        stepDefinition.calculateAndSaveHash();
-        return stepDefinition;
+    public TestSuite.Test bind(Method testCandidate) {
+        TestMapping testMapping = AnnotationUtils.getAnnotation(testCandidate, TestMapping.class);
+        String testName = buildTestName(testCandidate, testMapping);
+        val test = new TestSuite.Test();
+        test.setName(testName);
+        test.setHistoryId(testName + testCandidate.getName());
+        test.setDescription(String.valueOf(AnnotationUtils.getValue(testMapping, "description")));
+        test.getSteps().add(classicStepFactory.provideStep(testCandidate));
+        return test;
     }
 
     private String buildTestName(Method method, TestMapping testMapping) {
         String testName = String.valueOf(AnnotationUtils.getValue(testMapping, "name"));
         return testName.isEmpty() ? method.getName() : testName;
-    }
-
-    private String buildTestHash(Method method) {
-        String uniqueName = method.getDeclaringClass().getCanonicalName() + "#" +
-                method.getName() + "#" +
-                method.getParameterCount();
-        return DigestUtils.md5DigestAsHex(uniqueName.getBytes());
     }
 }

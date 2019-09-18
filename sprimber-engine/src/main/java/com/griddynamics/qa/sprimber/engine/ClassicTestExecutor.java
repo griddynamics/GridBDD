@@ -22,9 +22,9 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery.support;
+package com.griddynamics.qa.sprimber.engine;
 
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
@@ -47,7 +47,7 @@ import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ClassicTestExecutor implements TestSuiteDefinition.TestExecutor {
+public class ClassicTestExecutor implements TestSuite.TestExecutor {
 
     private final Executor sprimberTestExecutor;
     private final ApplicationContext applicationContext;
@@ -55,19 +55,19 @@ public class ClassicTestExecutor implements TestSuiteDefinition.TestExecutor {
     private final ErrorMapper errorMapper;
 
     @Override
-    public CompletableFuture<ExecutionResult> execute(TestSuiteDefinition.TestDefinition testDefinition) {
-        return CompletableFuture.supplyAsync(() -> executeTest(testDefinition), sprimberTestExecutor);
+    public CompletableFuture<ExecutionResult> execute(TestSuite.Test test) {
+        return CompletableFuture.supplyAsync(() -> executeTest(test), sprimberTestExecutor);
     }
 
-    private ExecutionResult executeTest(TestSuiteDefinition.TestDefinition testDefinition) {
+    private ExecutionResult executeTest(TestSuite.Test test) {
         try {
-            eventPublisher.testStarted(this, testDefinition);
-            Method testMethod = testDefinition.getStepDefinitions().get(0).getMethod();
+            eventPublisher.testStarted(this, test);
+            Method testMethod = test.getSteps().get(0).getStepDefinition().getMethod();
             Object target = applicationContext.getBean(testMethod.getDeclaringClass());
             ReflectionUtils.invokeMethod(testMethod, target);
             ExecutionResult result = new ExecutionResult(PASSED);
-            testDefinition.setExecutionResult(result);
-            eventPublisher.testFinished(this, testDefinition);
+            test.setExecutionResult(result);
+            eventPublisher.testFinished(this, test);
             return result;
         } catch (Throwable throwable) {
             ExecutionResult result = errorMapper.parseThrowable(throwable);

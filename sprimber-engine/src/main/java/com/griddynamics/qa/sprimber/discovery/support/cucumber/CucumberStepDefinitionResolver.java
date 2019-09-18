@@ -25,7 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsDiscovery;
+import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsAbstractResolver;
 import cucumber.api.java.After;
 import cucumber.api.java.AfterStep;
 import cucumber.api.java.Before;
@@ -38,17 +38,17 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author fparamonov
  */
 
 @Component
-public class CucumberStepConverter implements StepDefinitionsDiscovery.StepDefinitionConverter {
+public class CucumberStepDefinitionResolver extends StepDefinitionsAbstractResolver {
 
     public static final String TAGS_ATTRIBUTE = "Tags";
     private static final String TIMEOUT_ATTRIBUTE = "Timeout";
@@ -70,50 +70,29 @@ public class CucumberStepConverter implements StepDefinitionsDiscovery.StepDefin
                 put(And.class, new ImmutablePair<>(StepDefinition.StepType.GENERAL, StepDefinition.StepPhase.STEP));
                 put(But.class, new ImmutablePair<>(StepDefinition.StepType.GENERAL, StepDefinition.StepPhase.STEP));
             }};
-    private final Map<Class<? extends Annotation>, Pair<StepDefinition.StepType, StepDefinition.StepPhase>> hooksAndSteps =
-            new HashMap<>();
 
-    public CucumberStepConverter() {
-        hooksAndSteps.putAll(hooks);
-        hooksAndSteps.putAll(steps);
+    public CucumberStepDefinitionResolver() {
+        mapping.putAll(hooks);
+        mapping.putAll(steps);
     }
 
     @Override
-    public boolean accept(Annotation annotation) {
-        return hooksAndSteps.keySet().contains(annotation.annotationType());
-    }
-
-    @Override
-    public List<StepDefinition> convert(Method method) {
-        return hooksAndSteps.keySet().stream()
-                .map(annotationClass -> AnnotationUtils.getAnnotation(method, annotationClass))
-                .filter(Objects::nonNull)
-                .map(annotation -> buildDefinitionFromAnnotation(method, annotation))
-                .collect(Collectors.toList());
-    }
-
-    private StepDefinition buildDefinitionFromAnnotation(Method method, Annotation annotation) {
-        StepDefinition definition = new StepDefinition();
-        definition.setMethod(method);
-        definition.setStepType(hooksAndSteps.get(annotation.annotationType()).getLeft());
-        definition.setStepPhase(hooksAndSteps.get(annotation.annotationType()).getRight());
-        definition.setName(method.getDeclaringClass().getCanonicalName() + "#" + method.getName());
+    protected StepDefinition applyCustomTransformation(StepDefinition stepDefinition, Method method, Annotation annotation) {
         if (hooks.keySet().contains(annotation.annotationType())) {
-            processHookProperties(annotation, definition);
+            processHookAttributes(annotation, stepDefinition);
         }
         if (steps.keySet().contains(annotation.annotationType())) {
-            processStepProperties(annotation, definition);
+            processStepAttributes(annotation, stepDefinition);
         }
-        definition.calculateAndSaveHash();
-        return definition;
+        return stepDefinition;
     }
 
-    private void processStepProperties(Annotation annotation, StepDefinition definition) {
+    private void processStepAttributes(Annotation annotation, StepDefinition definition) {
         definition.getAttributes().put(TIMEOUT_ATTRIBUTE, AnnotationUtils.getValue(annotation, TIMEOUT_ATTRIBUTE.toLowerCase()));
         definition.setBindingTextPattern(String.valueOf(AnnotationUtils.getValue(annotation)));
     }
 
-    private void processHookProperties(Annotation annotation, StepDefinition definition) {
+    private void processHookAttributes(Annotation annotation, StepDefinition definition) {
         definition.getAttributes().put(ORDER_ATTRIBUTE, AnnotationUtils.getValue(annotation, ORDER_ATTRIBUTE.toLowerCase()));
         definition.getAttributes().put(TIMEOUT_ATTRIBUTE, AnnotationUtils.getValue(annotation, TIMEOUT_ATTRIBUTE.toLowerCase()));
         if (!Arrays.asList(AnnotationUtils.getValue(annotation)).isEmpty()) {

@@ -24,9 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
-import com.griddynamics.qa.sprimber.discovery.support.BddTestExecutor;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
+import com.griddynamics.qa.sprimber.engine.BddTestExecutor;
 import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import gherkin.Parser;
@@ -56,54 +55,44 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class CucumberFeaturesDiscovery implements TestSuiteDiscovery {
+public class CucumberSuiteDiscovery implements TestSuiteDiscovery {
 
     private final Compiler compiler;
     private final TokenMatcher tokenMatcher;
     private final BddTestExecutor bddTestExecutor;
-    private final PickleStepManager pickleStepManager;
+    private final CucumberTestBinder cucumberTestBinder;
     private final SprimberProperties sprimberProperties;
     private final Parser<GherkinDocument> gherkinParser;
     private final ApplicationContext applicationContext;
     private TagFilter tagFilter;
-    private List<StepDefinition> runtimeStepDefinitions;
 
+    // TODO: 2019-09-17 Move it to cucumber specific auto configuration
     @PostConstruct
     public void initTagFilter() {
         tagFilter = new TagFilter(sprimberProperties.getTagFilters());
     }
 
     @Override
-    public TestSuiteDiscovery setAvailableStepDefinitionsSet(List<StepDefinition> stepDefinitions) {
-        this.runtimeStepDefinitions = stepDefinitions;
-        return this;
-    }
-
-    @Override
-    public TestSuiteDefinition discover() {
-        TestSuiteDefinition testSuiteDefinition = new TestSuiteDefinition();
-        testSuiteDefinition.setTestExecutor(bddTestExecutor);
+    public TestSuite discover() {
+        TestSuite testSuite = new TestSuite();
+        testSuite.setTestExecutor(bddTestExecutor);
         try {
             Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()))
                     .map(this::buildCucumberDocument)
                     .map(this::testCaseDiscover)
-                    .forEach(testCaseDefinition -> testSuiteDefinition.getTestCaseDefinitions().add(testCaseDefinition));
+                    .forEach(testCaseDefinition -> testSuite.getTestCases().add(testCaseDefinition));
         } catch (IOException e) {
             // TODO: 2019-09-10 handle the exception from resource unavailability correctly
             e.printStackTrace();
         }
-        return testSuiteDefinition;
+        return testSuite;
     }
 
-    private TestSuiteDefinition.TestCaseDefinition testCaseDiscover(CucumberDocument cucumberDocument) {
-        val testCaseDefinition = new TestSuiteDefinition.TestCaseDefinition();
+    private TestSuite.TestCase testCaseDiscover(CucumberDocument cucumberDocument) {
+        val testCaseDefinition = new TestSuite.TestCase();
         compiler.compile(cucumberDocument.getDocument()).stream()
                 .filter(pickleTagFilter())
-                .forEach(pickle -> {
-                    CucumberTestBinder cucumberTestBinder =
-                            new CucumberTestBinder(pickle, pickleStepManager, runtimeStepDefinitions);
-                    testCaseDefinition.getTestDefinitions().add(cucumberTestBinder.bind());
-                });
+                .forEach(pickle -> testCaseDefinition.getTests().add(cucumberTestBinder.bind(pickle)));
         return testCaseDefinition;
     }
 

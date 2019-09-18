@@ -24,19 +24,14 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.support;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
-
-import java.util.List;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 
 /**
  * @author fparamonov
  */
 public interface TestSuiteDiscovery {
 
-    TestSuiteDiscovery setAvailableStepDefinitionsSet(List<StepDefinition> stepDefinitions);
-
-    TestSuiteDefinition discover();
+    TestSuite discover();
 
     /**
      * This interface allow to extract the specific logic for test parsing.
@@ -45,8 +40,8 @@ public interface TestSuiteDiscovery {
      *
      * @author fparamonov
      */
-    interface TestDefinitionBinder {
+    interface TestDefinitionBinder<TC> {
 
-        TestSuiteDefinition.TestDefinition bind();
+        TestSuite.Test bind(TC testCandidate);
     }
 }

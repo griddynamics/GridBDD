@@ -25,15 +25,18 @@ $Id:
 package com.griddynamics.qa.sprimber.engine;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
-import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsDiscovery;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
+import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsFactory;
+import com.griddynamics.qa.sprimber.discovery.support.StepFactory;
 import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -47,7 +50,7 @@ import java.util.stream.Collectors;
 public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContext> {
 
     private final List<TestSuiteDiscovery> testSuiteDiscoveries;
-    private final List<StepDefinitionsDiscovery> stepDefinitionsDiscoveries;
+    private final List<StepDefinitionsFactory> stepDefinitionsDiscoveries;
 
     @Override
     public Class<?> getObjectType() {
@@ -57,23 +60,23 @@ public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContex
     @Override
     protected ExecutionContext createInstance() throws Exception {
         ExecutionContext executionContext = new ExecutionContext();
-        List<StepDefinition> stepDefinitions = exploreStepDefinitions();
-        executionContext.getStepDefinitions().addAll(stepDefinitions);
-        executionContext.getTestSuiteDefinitions().addAll(exploreSuiteDefinitions(stepDefinitions));
+        Map<String, StepDefinition> stepDefinitions = exploreStepDefinitions();
+        executionContext.getStepDefinitions().putAll(stepDefinitions);
+        ((ListableBeanFactory) getBeanFactory()).getBeansOfType(StepFactory.class)
+                .values().forEach(stepFactory -> stepFactory.setStepDefinitions(stepDefinitions));
+        executionContext.getTestSuites().addAll(exploreSuiteDefinitions());
         return executionContext;
     }
 
-    private List<TestSuiteDefinition> exploreSuiteDefinitions(List<StepDefinition> stepDefinitions) {
+    private List<TestSuite> exploreSuiteDefinitions() {
         return testSuiteDiscoveries.stream()
-                .map(discovery -> discovery.setAvailableStepDefinitionsSet(stepDefinitions))
                 .map(TestSuiteDiscovery::discover)
                 .collect(Collectors.toList());
     }
 
-    private List<StepDefinition> exploreStepDefinitions() {
+    private Map<String, StepDefinition> exploreStepDefinitions() {
         return stepDefinitionsDiscoveries.stream()
-                .map(StepDefinitionsDiscovery::discover)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+                .map(StepDefinitionsFactory::getStepDefinitions)
+                .collect(HashMap::new, (m, e) -> e.forEach(m::put), Map::putAll);
     }
 }

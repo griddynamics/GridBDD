@@ -46,6 +46,6 @@ public class CliExecutor implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        executionContext.getTestSuiteDefinitions().forEach(suiteExecutor::executeTestSuite);
+        executionContext.getTestSuites().forEach(suiteExecutor::executeTestSuite);
     }
 }

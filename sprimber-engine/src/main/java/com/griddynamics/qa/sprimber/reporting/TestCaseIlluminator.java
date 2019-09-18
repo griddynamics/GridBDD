@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -40,36 +39,32 @@ public class TestCaseIlluminator {
 
     @EventListener
     public void illuminateTestCaseStart(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
-        log.debug("Test case started: {}", testStartedEvent.getTestDefinition().getName());
+        log.debug("Test case started: {}", testStartedEvent.getTest().getName());
     }
 
     @EventListener
     public void illuminateTestCaseFinish(SprimberEventPublisher.TestFinishedEvent testFinishedEvent) {
         log.debug("Test case finished: '{}' with status {}",
-                testFinishedEvent.getTestDefinition().getName(), testFinishedEvent.getTestDefinition().getExecutionResult().getStatus());
+                testFinishedEvent.getTest().getName(), testFinishedEvent.getTest().getExecutionResult().getStatus());
     }
 
     @EventListener
     public void illuminateTestStepStart(SprimberEventPublisher.StepStartedEvent stepStartedEvent) {
-        if (isStepOfTypeHook(stepStartedEvent.getStepDefinition())) {
+        if (stepStartedEvent.getStep().isHookStep()) {
             log.debug("Test hook of type {} and scope {} started",
-                    stepStartedEvent.getStepDefinition().getStepType(), stepStartedEvent.getStepDefinition().getStepPhase());
+                    stepStartedEvent.getStep().getStepDefinition().getStepType(), stepStartedEvent.getStep().getStepDefinition().getStepPhase());
         } else {
-            log.debug("Test step started: {}", stepStartedEvent.getStepDefinition().getResolvedTextPattern());
+            log.debug("Test step started: {}", stepStartedEvent.getStep().getResolvedTextPattern());
         }
     }
 
     @EventListener
     public void illuminateTestStepFinish(SprimberEventPublisher.StepFinishedEvent stepFinishedEvent) {
-        if (isStepOfTypeHook(stepFinishedEvent.getStepDefinition())) {
+        if (stepFinishedEvent.getStep().isHookStep()) {
             log.debug("Test hook of type {} and scope {} finished",
-                    stepFinishedEvent.getStepDefinition().getStepType(), stepFinishedEvent.getStepDefinition().getStepPhase());
+                    stepFinishedEvent.getStep().getStepDefinition().getStepType(), stepFinishedEvent.getStep().getStepDefinition().getStepPhase());
         } else {
-            log.debug("Test step finished: {}", stepFinishedEvent.getStepDefinition().getResolvedTextPattern());
+            log.debug("Test step finished: {}", stepFinishedEvent.getStep().getResolvedTextPattern());
         }
-    }
-
-    private boolean isStepOfTypeHook(StepDefinition stepDefinition) {
-        return stepDefinition.getStepType().equals(StepDefinition.StepType.BEFORE) || stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER);
     }
 }
