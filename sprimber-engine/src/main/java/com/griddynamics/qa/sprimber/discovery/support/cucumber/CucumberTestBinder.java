@@ -25,13 +25,14 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleLocation;
 import gherkin.pickles.PickleTag;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,30 +43,29 @@ import java.util.stream.Collectors;
  * @author fparamonov
  */
 
+@Component
 @RequiredArgsConstructor
-public class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBinder {
+public class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Pickle> {
 
     public static final String BDD_TAGS_ATTRIBUTE_NAME = "bddTags";
     public static final String LOCATION_ATTRIBUTE_NAME = "location";
 
-    private final Pickle pickle;
-    private final PickleStepManager pickleStepManager;
-    private final List<StepDefinition> runtimeStepDefinitions;
+    private final PickleStepFactory pickleStepFactory;
+    private final StandardFallbackStrategy fallbackStrategy = new StandardFallbackStrategy();
 
     @Override
-    public TestSuiteDefinition.TestDefinition bind() {
-        pickleStepManager.setupRuntimeStepDefinitions(runtimeStepDefinitions);
-        val testDefinition = new TestSuiteDefinition.TestDefinition();
-        testDefinition.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(pickle));
-        testDefinition.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(pickle));
-        testDefinition.setName(pickle.getName());
-        testDefinition.getStepDefinitions().addAll(pickleStepManager.provideBeforeTestHooks());
-        pickle.getSteps().stream()
-                .map(pickleStepManager::buildStepDefinition)
-                .map(pickleStepManager::wrapStepDefinitionWithHooks)
-                .forEach(stepDefinitions -> testDefinition.getStepDefinitions().addAll(stepDefinitions));
-        testDefinition.getStepDefinitions().addAll(pickleStepManager.provideAfterTestHooks());
-        testDefinition.setFallbackStrategy(new StandardFallbackStrategy());
+    public TestSuite.Test bind(Pickle testCandidate) {
+        val testDefinition = new TestSuite.Test();
+        testDefinition.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(testCandidate));
+        testDefinition.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(testCandidate));
+        testDefinition.setName(testCandidate.getName());
+        testDefinition.getSteps().addAll(pickleStepFactory.provideBeforeTestHooks());
+        testCandidate.getSteps().stream()
+                .map(pickleStepFactory::provideStep)
+                .map(pickleStepFactory::wrapStepWithStepHooks)
+                .forEach(stepDefinitions -> testDefinition.getSteps().addAll(stepDefinitions));
+        testDefinition.getSteps().addAll(pickleStepFactory.provideAfterTestHooks());
+        testDefinition.setFallbackStrategy(fallbackStrategy);
         return testDefinition;
     }
 
@@ -80,7 +80,7 @@ public class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBind
                 .collect(Collectors.toList());
     }
 
-    class StandardFallbackStrategy implements TestSuiteDefinition.FallbackStrategy {
+    class StandardFallbackStrategy implements TestSuite.FallbackStrategy {
 
         private int afterStepCounter = 0;
         private List<StepDefinition.StepType> types;
@@ -102,14 +102,14 @@ public class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBind
         }
 
         @Override
-        public void updateScope(StepDefinition stepDefinition) {
-            if (afterStepCounter > 0 && !stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER)) {
+        public void updateScope(TestSuite.Step executedStep) {
+            if (afterStepCounter > 0 && !executedStep.getStepDefinition().getStepType().equals(StepDefinition.StepType.AFTER)) {
                 afterStepCounter = -1;
             }
-            if (afterStepCounter == 0 && !stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER)) {
+            if (afterStepCounter == 0 && !executedStep.getStepDefinition().getStepType().equals(StepDefinition.StepType.AFTER)) {
                 afterStepCounter++;
             }
-            if (afterStepCounter > 0 && stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER)) {
+            if (afterStepCounter > 0 && executedStep.getStepDefinition().getStepType().equals(StepDefinition.StepType.AFTER)) {
                 afterStepCounter++;
             }
             if (afterStepCounter < 0) {

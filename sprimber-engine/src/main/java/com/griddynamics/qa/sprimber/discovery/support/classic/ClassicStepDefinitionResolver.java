@@ -22,36 +22,30 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine;
+package com.griddynamics.qa.sprimber.discovery.support.classic;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuite;
-import lombok.Data;
+import com.griddynamics.qa.sprimber.discovery.annotation.TestMapping;
+import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsAbstractResolver;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 
 /**
- * This is a parent super container that can hold all necessary Sprimber objects during execution
- * in one place with the ability to share and provide access from different places inside of the
- * framework
- *
  * @author fparamonov
  */
 
-@Data
-public class ExecutionContext {
+@Component
+public class ClassicStepDefinitionResolver extends StepDefinitionsAbstractResolver {
 
-    /**
-     * Collection that aimed to hold all available step definitions at runtime
-     * Without binding to any suite/case/test/step
-     */
-    private Map<String, StepDefinition> stepDefinitions = new HashMap<>();
+    public ClassicStepDefinitionResolver() {
+        mapping.put(TestMapping.class, new ImmutablePair<>(StepDefinition.StepType.GENERAL, StepDefinition.StepPhase.STEP));
+    }
 
-    /**
-     * Convenient place to hold all test suite definitions that available at runtime
-     */
-    private List<TestSuite> testSuites = new ArrayList<>();
+    @Override
+    protected StepDefinition applyCustomTransformation(StepDefinition stepDefinition, Method method, Annotation annotation) {
+        return stepDefinition;
+    }
 }

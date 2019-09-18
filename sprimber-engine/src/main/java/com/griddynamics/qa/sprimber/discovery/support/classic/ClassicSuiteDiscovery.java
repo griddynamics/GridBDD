@@ -24,11 +24,10 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.support.classic;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import com.griddynamics.qa.sprimber.discovery.annotation.TestController;
 import com.griddynamics.qa.sprimber.discovery.annotation.TestMapping;
-import com.griddynamics.qa.sprimber.discovery.support.ClassicTestExecutor;
+import com.griddynamics.qa.sprimber.engine.ClassicTestExecutor;
 import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +36,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * @author fparamonov
@@ -46,35 +44,27 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ClassicDiscovery implements TestSuiteDiscovery {
+public class ClassicSuiteDiscovery implements TestSuiteDiscovery {
 
+    private final ClassicTestBinder classicTestBinder;
     private final ApplicationContext applicationContext;
     private final ClassicTestExecutor classicTestExecutor;
 
     @Override
-    public TestSuiteDiscovery setAvailableStepDefinitionsSet(List<StepDefinition> stepDefinitions) {
-        // not implemented since the list of available step definitions doesn't required yet.
-        return this;
-    }
-
-    @Override
-    public TestSuiteDefinition discover() {
-        TestSuiteDefinition testSuiteDefinition = new TestSuiteDefinition();
-        testSuiteDefinition.setTestExecutor(classicTestExecutor);
+    public TestSuite discover() {
+        TestSuite testSuite = new TestSuite();
+        testSuite.setTestExecutor(classicTestExecutor);
         applicationContext.getBeansWithAnnotation(TestController.class).values().stream()
                 .map(this::testCaseDiscover)
-                .forEach(testCase -> testSuiteDefinition.getTestCaseDefinitions().add(testCase));
-        return testSuiteDefinition;
+                .forEach(testCase -> testSuite.getTestCases().add(testCase));
+        return testSuite;
     }
 
-    private TestSuiteDefinition.TestCaseDefinition testCaseDiscover(Object testController) {
-        val testCaseDefinition = new TestSuiteDefinition.TestCaseDefinition();
+    private TestSuite.TestCase testCaseDiscover(Object testController) {
+        val testCaseDefinition = new TestSuite.TestCase();
         Arrays.stream(testController.getClass().getDeclaredMethods())
                 .filter(method -> method.isAnnotationPresent(TestMapping.class))
-                .forEach(testMethod -> {
-                    ClassicTestBinder classicTestBinder = new ClassicTestBinder(testMethod);
-                    testCaseDefinition.getTestDefinitions().add(classicTestBinder.bind());
-                });
+                .forEach(testMethod -> testCaseDefinition.getTests().add(classicTestBinder.bind(testMethod)));
         return testCaseDefinition;
     }
 }

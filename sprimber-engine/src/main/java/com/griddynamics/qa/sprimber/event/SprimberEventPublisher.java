@@ -25,7 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.event;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import com.griddynamics.qa.sprimber.event.Events.StepEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -41,43 +41,43 @@ public class SprimberEventPublisher {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    public void stepStarted(Object target, StepDefinition stepDefinition) {
-        StepStartedEvent stepStartedEvent = new StepStartedEvent(target, stepDefinition);
+    public void stepStarted(Object target, TestSuite.Step step) {
+        StepStartedEvent stepStartedEvent = new StepStartedEvent(target, step);
         eventPublisher.publishEvent(stepStartedEvent);
     }
 
-    public void stepFinished(Object target, StepDefinition stepDefinition) {
-        StepFinishedEvent stepFinishedEvent = new StepFinishedEvent(target, stepDefinition);
+    public void stepFinished(Object target, TestSuite.Step step) {
+        StepFinishedEvent stepFinishedEvent = new StepFinishedEvent(target, step);
         eventPublisher.publishEvent(stepFinishedEvent);
     }
 
-    public void testStarted(Object target, TestSuiteDefinition.TestDefinition testDefinition) {
-        TestStartedEvent testStartedEvent = new TestStartedEvent(target, testDefinition);
+    public void testStarted(Object target, TestSuite.Test test) {
+        TestStartedEvent testStartedEvent = new TestStartedEvent(target, test);
         eventPublisher.publishEvent(testStartedEvent);
     }
 
-    public void testFinished(Object target, TestSuiteDefinition.TestDefinition testDefinition) {
-        TestFinishedEvent testFinishedEvent = new TestFinishedEvent(target, testDefinition);
+    public void testFinished(Object target, TestSuite.Test test) {
+        TestFinishedEvent testFinishedEvent = new TestFinishedEvent(target, test);
         eventPublisher.publishEvent(testFinishedEvent);
     }
 
-    public void testCaseStarted(Object target, TestSuiteDefinition.TestCaseDefinition testCaseDefinition) {
-        TestCaseStartedEvent testCaseStartedEvent = new TestCaseStartedEvent(target, testCaseDefinition);
+    public void testCaseStarted(Object target, TestSuite.TestCase testCase) {
+        TestCaseStartedEvent testCaseStartedEvent = new TestCaseStartedEvent(target, testCase);
         eventPublisher.publishEvent(testCaseStartedEvent);
     }
 
-    public void testCaseFinished(Object target, TestSuiteDefinition.TestCaseDefinition testCaseDefinition) {
-        TestCaseFinishedEvent testCaseFinishedEvent = new TestCaseFinishedEvent(target, testCaseDefinition);
+    public void testCaseFinished(Object target, TestSuite.TestCase testCase) {
+        TestCaseFinishedEvent testCaseFinishedEvent = new TestCaseFinishedEvent(target, testCase);
         eventPublisher.publishEvent(testCaseFinishedEvent);
     }
 
-    public void testSuiteStarted(Object target, TestSuiteDefinition testSuiteDefinition) {
-        TestSuiteStartedEvent testSuiteStartedEvent = new TestSuiteStartedEvent(target, testSuiteDefinition);
+    public void testSuiteStarted(Object target, TestSuite testSuite) {
+        TestSuiteStartedEvent testSuiteStartedEvent = new TestSuiteStartedEvent(target, testSuite);
         eventPublisher.publishEvent(testSuiteStartedEvent);
     }
 
-    public void testSuiteFinished(Object target, TestSuiteDefinition testSuiteDefinition) {
-        TestSuiteFinishedEvent testSuiteFinishedEvent = new TestSuiteFinishedEvent(target, testSuiteDefinition);
+    public void testSuiteFinished(Object target, TestSuite testSuite) {
+        TestSuiteFinishedEvent testSuiteFinishedEvent = new TestSuiteFinishedEvent(target, testSuite);
         eventPublisher.publishEvent(testSuiteFinishedEvent);
     }
 
@@ -87,8 +87,8 @@ public class SprimberEventPublisher {
             super(source);
         }
 
-        public StepStartedEvent(Object source, StepDefinition stepDefinition) {
-            super(source, stepDefinition);
+        public StepStartedEvent(Object source, TestSuite.Step step) {
+            super(source, step);
         }
     }
 
@@ -98,8 +98,8 @@ public class SprimberEventPublisher {
             super(source);
         }
 
-        public StepFinishedEvent(Object source, StepDefinition stepDefinition) {
-            super(source, stepDefinition);
+        public StepFinishedEvent(Object source, TestSuite.Step step) {
+            super(source, step);
         }
     }
 
@@ -108,8 +108,8 @@ public class SprimberEventPublisher {
             super(source);
         }
 
-        public TestStartedEvent(Object source, TestSuiteDefinition.TestDefinition testDefinition) {
-            super(source, testDefinition);
+        public TestStartedEvent(Object source, TestSuite.Test test) {
+            super(source, test);
         }
     }
 
@@ -118,8 +118,8 @@ public class SprimberEventPublisher {
             super(source);
         }
 
-        public TestFinishedEvent(Object source, TestSuiteDefinition.TestDefinition testDefinition) {
-            super(source, testDefinition);
+        public TestFinishedEvent(Object source, TestSuite.Test test) {
+            super(source, test);
         }
     }
 
@@ -128,8 +128,8 @@ public class SprimberEventPublisher {
             super(source);
         }
 
-        public TestCaseStartedEvent(Object source, TestSuiteDefinition.TestCaseDefinition testCaseDefinition) {
-            super(source, testCaseDefinition);
+        public TestCaseStartedEvent(Object source, TestSuite.TestCase testCase) {
+            super(source, testCase);
         }
     }
 
@@ -139,8 +139,8 @@ public class SprimberEventPublisher {
             super(source);
         }
 
-        public TestCaseFinishedEvent(Object source, TestSuiteDefinition.TestCaseDefinition testCaseDefinition) {
-            super(source, testCaseDefinition);
+        public TestCaseFinishedEvent(Object source, TestSuite.TestCase testCase) {
+            super(source, testCase);
         }
     }
 
@@ -149,8 +149,8 @@ public class SprimberEventPublisher {
             super(source);
         }
 
-        public TestSuiteStartedEvent(Object source, TestSuiteDefinition testSuiteDefinition) {
-            super(source, testSuiteDefinition);
+        public TestSuiteStartedEvent(Object source, TestSuite testSuite) {
+            super(source, testSuite);
         }
     }
 
@@ -159,8 +159,8 @@ public class SprimberEventPublisher {
             super(source);
         }
 
-        public TestSuiteFinishedEvent(Object source, TestSuiteDefinition testSuiteDefinition) {
-            super(source, testSuiteDefinition);
+        public TestSuiteFinishedEvent(Object source, TestSuite testSuite) {
+            super(source, testSuite);
         }
     }
 }

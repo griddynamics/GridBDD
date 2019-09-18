@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -35,19 +36,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class StepDefinitionFormatter {
 
-    public String formatStepName(StepDefinition stepDefinition) {
-        if (isGeneralStep(stepDefinition) || isHookStep(stepDefinition)) {
-            return StringUtils.isBlank(stepDefinition.getName()) ? stepDefinition.getMethod().getName() : stepDefinition.getName();
+    public String formatStepName(TestSuite.Step step) {
+        if (step.isGeneralStep() || step.isHookStep()) {
+            return StringUtils.isBlank(step.getName()) ? step.getStepDefinition().getMethod().getName() : step.getName();
         } else {
-            return StringUtils.isBlank(stepDefinition.getResolvedTextPattern()) ? stepDefinition.getName() : stepDefinition.getResolvedTextPattern();
+            return StringUtils.isBlank(step.getResolvedTextPattern()) ? step.getName() : step.getResolvedTextPattern();
         }
     }
 
     public boolean isHookStep(StepDefinition stepDefinition) {
         return stepDefinition.getStepType().equals(StepDefinition.StepType.BEFORE) || stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER);
-    }
-
-    public boolean isGeneralStep(StepDefinition stepDefinition) {
-        return stepDefinition.getStepType().equals(StepDefinition.StepType.GENERAL);
     }
 }

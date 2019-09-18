@@ -47,7 +47,7 @@ public class FlowOrchestrator {
 
     @EventListener
     public void setupTestCaseContext(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
-        TestCaseContextHolder.setupNewContext(testStartedEvent.getTestDefinition().getRuntimeId());
+        TestCaseContextHolder.setupNewContext(testStartedEvent.getTest().getRuntimeId());
     }
 
     @EventListener

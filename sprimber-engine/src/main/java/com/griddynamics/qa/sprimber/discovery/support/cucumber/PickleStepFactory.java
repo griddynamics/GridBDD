@@ -25,6 +25,8 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
+import com.griddynamics.qa.sprimber.discovery.support.AbstractBddStepFactory;
 import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import gherkin.pickles.PickleCell;
 import gherkin.pickles.PickleRow;
@@ -50,7 +52,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * @author fparamonov
@@ -58,80 +59,43 @@ import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
-public class PickleStepManager {
+public class PickleStepFactory extends AbstractBddStepFactory<PickleStep> {
 
     private final SprimberProperties sprimberProperties;
     private final StepExpressionFactory stepExpressionFactory;
     private TagFilter tagFilter;
-    private List<StepDefinition> runtimeStepDefinitions;
 
     @PostConstruct
     public void initTagFilter() {
         tagFilter = new TagFilter(sprimberProperties.getTagFilters());
     }
 
-    public void setupRuntimeStepDefinitions(List<StepDefinition> stepDefinitions) {
-        runtimeStepDefinitions = stepDefinitions;
-    }
-
-    List<StepDefinition> provideBeforeTestHooks() {
-        return findStepHooksForCurrentStage(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.TEST)
-                .filter(hooksByAvailableTags())
-                .collect(Collectors.toList());
-    }
-
-    List<StepDefinition> provideAfterTestHooks() {
-        return findStepHooksForCurrentStage(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.TEST)
-                .filter(hooksByAvailableTags())
-                .collect(Collectors.toList());
-    }
-
-    List<StepDefinition> wrapStepDefinitionWithHooks(StepDefinition stepDefinition) {
-        List<StepDefinition> wrappedDefinition =
-                findStepHooksForCurrentStage(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.STEP)
-                        .filter(hooksByAvailableTags())
-                        .collect(Collectors.toList());
-        wrappedDefinition.add(stepDefinition);
-        List<StepDefinition> afterStepHooks =
-                findStepHooksForCurrentStage(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.STEP)
-                        .filter(hooksByAvailableTags())
-                        .collect(Collectors.toList());
-        wrappedDefinition.addAll(afterStepHooks);
-        return wrappedDefinition;
-    }
-
-    private Stream<StepDefinition> findStepHooksForCurrentStage(StepDefinition.StepType stepType,
-                                                                StepDefinition.StepPhase stepPhase) {
-        return runtimeStepDefinitions.stream()
-                .filter(stepDefinition -> stepDefinition.getStepType().equals(stepType))
-                .filter(stepDefinition -> stepDefinition.getStepPhase().equals(stepPhase));
-    }
-
-    private Predicate<StepDefinition> hooksByAvailableTags() {
-        return stepDefinition ->
-                tagFilter.filter((String) stepDefinition.getAttributes().get(CucumberStepConverter.TAGS_ATTRIBUTE));
-    }
-
-    StepDefinition buildStepDefinition(PickleStep pickleStep) {
-        List<StepDefinition> targetDefinitions = runtimeStepDefinitions.stream()
+    @Override
+    public TestSuite.Step provideStep(PickleStep stepCandidate) {
+        List<StepDefinition> targetDefinitions = getStepDefinitions().values().stream()
                 .filter(stepDefinition -> StringUtils.isNotBlank(stepDefinition.getBindingTextPattern()))
-                .filter(stepDefinition -> Objects.nonNull(getArgumentsFromPickleStep(stepDefinition, pickleStep)))
+                .filter(stepDefinition -> Objects.nonNull(getArgumentsFromPickleStep(stepDefinition, stepCandidate)))
                 .collect(Collectors.toList());
         if (targetDefinitions.size() == 0) {
-            throw new StepNotFoundException(pickleStep);
+            throw new StepNotFoundException(stepCandidate);
         }
         if (targetDefinitions.size() > 1) {
-            throw new ExtraMappingFoundException(targetDefinitions, pickleStep);
+            throw new ExtraMappingFoundException(targetDefinitions, stepCandidate);
         }
-        List<Argument> arguments = getArgumentsFromPickleStep(targetDefinitions.get(0), pickleStep);
+        List<Argument> arguments = getArgumentsFromPickleStep(targetDefinitions.get(0), stepCandidate);
         List<Type> actualParameters = Arrays.asList(targetDefinitions.get(0).getMethod().getGenericParameterTypes());
 
-        StepDefinition testDefinition = targetDefinitions.get(0).toBuilder()
-                .resolvedTextPattern(pickleStep.getText())
-                .build();
-        testDefinition.getAttributes().put("stepData", handleAdditionalStepData(pickleStep));
-        testDefinition.getParameters().putAll(handleStepArguments(arguments, actualParameters));
-        return testDefinition;
+        TestSuite.Step step = new TestSuite.Step();
+        step.setStepDefinition(targetDefinitions.get(0));
+        step.setName(stepCandidate.getText());
+        step.getStepDefinition().getAttributes().put("stepData", handleAdditionalStepData(stepCandidate));
+        step.getParameters().putAll(handleStepArguments(arguments, actualParameters));
+        return step;
+    }
+
+    protected Predicate<StepDefinition> hooksByAvailableTags() {
+        return stepDefinition ->
+                tagFilter.filter((String) stepDefinition.getAttributes().get(CucumberStepDefinitionResolver.TAGS_ATTRIBUTE));
     }
 
     private Map<String, Object> handleStepArguments(List<Argument> arguments, List<Type> methodParameters) {

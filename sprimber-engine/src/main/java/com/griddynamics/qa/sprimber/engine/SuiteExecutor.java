@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine;
 
-import com.griddynamics.qa.sprimber.discovery.TestSuiteDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -48,19 +48,19 @@ public class SuiteExecutor {
 
     private final Executor sprimberTestCaseExecutor;
 
-    public CompletableFuture<ExecutionResult> executeTestSuite(TestSuiteDefinition testSuiteDefinition) {
+    public CompletableFuture<ExecutionResult> executeTestSuite(TestSuite testSuite) {
 
-        List<CompletableFuture<TestSuiteDefinition.TestCaseDefinition>> testCases = testSuiteDefinition.getTestCaseDefinitions().stream()
+        List<CompletableFuture<TestSuite.TestCase>> testCases = testSuite.getTestCases().stream()
                 .map(testCaseDefinition ->
                         CompletableFuture
-                                .supplyAsync(() -> executeTestCase(testCaseDefinition, testSuiteDefinition.getTestExecutor()), sprimberTestCaseExecutor)
+                                .supplyAsync(() -> executeTestCase(testCaseDefinition, testSuite.getTestExecutor()), sprimberTestCaseExecutor)
                                 .thenApply(result -> {
                                             testCaseDefinition.setExecutionResult(result);
                                             return testCaseDefinition;
                                         }
                                 ))
                 .collect(Collectors.toList());
-        CompletionStage<List<TestSuiteDefinition.TestCaseDefinition>> executedTestCases =
+        CompletionStage<List<TestSuite.TestCase>> executedTestCases =
                 CompletableFuture.allOf(testCases.toArray(new CompletableFuture[0]))
                         .thenApply(v -> testCases.stream()
                                 .map(CompletionStage::toCompletableFuture)
@@ -68,17 +68,17 @@ public class SuiteExecutor {
                                 .collect(Collectors.toList())
                         );
         executedTestCases.whenComplete(((testCaseDefinitions, throwable) -> testCaseDefinitions.stream()
-                .map(TestSuiteDefinition.TestCaseDefinition::getExecutionResult)
+                .map(TestSuite.TestCase::getExecutionResult)
                 .map(ExecutionResult::getStatus)
                 .forEach(status -> log.info("Test Case Status: {}", status))
         )).toCompletableFuture().join();
         return CompletableFuture.completedFuture(new ExecutionResult(ExecutionResult.Status.PASSED));
     }
 
-    public ExecutionResult executeTestCase(TestSuiteDefinition.TestCaseDefinition testCaseDefinition,
-                                           TestSuiteDefinition.TestExecutor testExecutor) {
+    public ExecutionResult executeTestCase(TestSuite.TestCase testCase,
+                                           TestSuite.TestExecutor testExecutor) {
         Map<ExecutionResult.Status, Long> statistic = new HashMap<>();
-        List<CompletionStage<TestSuiteDefinition.TestDefinition>> executedTests = testCaseDefinition.getTestDefinitions().stream()
+        List<CompletionStage<TestSuite.Test>> executedTests = testCase.getTests().stream()
                 .map(testDefinition ->
                         testExecutor.execute(testDefinition)
                                 .thenApply(result -> {
@@ -87,12 +87,12 @@ public class SuiteExecutor {
                                 }))
                 .collect(Collectors.toList());
         CompletableFuture<Void> done = CompletableFuture.allOf(executedTests.toArray(new CompletableFuture[executedTests.size()]));
-        CompletionStage<List<TestSuiteDefinition.TestDefinition>> updatedTests = done.thenApply(v -> executedTests.stream()
+        CompletionStage<List<TestSuite.Test>> updatedTests = done.thenApply(v -> executedTests.stream()
                 .map(CompletionStage::toCompletableFuture)
                 .map(CompletableFuture::join)
                 .collect(Collectors.toList()));
         updatedTests.whenComplete((testDefinitions, throwable) -> statistic.putAll(testDefinitions.stream()
-                .map(TestSuiteDefinition.TestDefinition::getExecutionResult)
+                .map(TestSuite.Test::getExecutionResult)
                 .collect(Collectors.groupingBy(ExecutionResult::getStatus, Collectors.counting())))
         ).toCompletableFuture().join();
         // TODO: 2019-09-14 add the test case name here

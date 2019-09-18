@@ -22,36 +22,36 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine;
+package com.griddynamics.qa.sprimber.discovery.support.classic;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuite;
-import lombok.Data;
+import com.griddynamics.qa.sprimber.discovery.support.AbstractStepFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.util.DigestUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Method;
 
 /**
- * This is a parent super container that can hold all necessary Sprimber objects during execution
- * in one place with the ability to share and provide access from different places inside of the
- * framework
- *
  * @author fparamonov
  */
 
-@Data
-public class ExecutionContext {
+@Component
+public class ClassicStepFactory extends AbstractStepFactory<Method> {
 
-    /**
-     * Collection that aimed to hold all available step definitions at runtime
-     * Without binding to any suite/case/test/step
-     */
-    private Map<String, StepDefinition> stepDefinitions = new HashMap<>();
+    @Override
+    public TestSuite.Step provideStep(Method method) {
+        TestSuite.Step step = new TestSuite.Step();
+        StepDefinition stepDefinition = getStepDefinitions().get(calculateHash(method));
+        step.setStepDefinition(stepDefinition);
+        step.setName(method.getName());
+        return step;
+    }
 
-    /**
-     * Convenient place to hold all test suite definitions that available at runtime
-     */
-    private List<TestSuite> testSuites = new ArrayList<>();
+    private String calculateHash(Method method) {
+        String uniqueName = method.getDeclaringClass().getCanonicalName() + "#" +
+                method.getName() + "#" +
+                method.getParameterCount();
+        return DigestUtils.md5DigestAsHex(uniqueName.getBytes());
+    }
 }
