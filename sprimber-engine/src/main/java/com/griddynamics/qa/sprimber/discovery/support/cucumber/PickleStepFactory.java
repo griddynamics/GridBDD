@@ -26,7 +26,7 @@ package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuite;
-import com.griddynamics.qa.sprimber.discovery.support.AbstractBddStepFactory;
+import com.griddynamics.qa.sprimber.discovery.support.AbstractStepFactory;
 import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import gherkin.pickles.PickleCell;
 import gherkin.pickles.PickleRow;
@@ -56,7 +56,7 @@ import java.util.stream.IntStream;
 
 @Component
 @RequiredArgsConstructor
-public class PickleStepFactory extends AbstractBddStepFactory<PickleStep> {
+public class PickleStepFactory extends AbstractStepFactory<PickleStep> {
 
     private final SprimberProperties sprimberProperties;
     private final StepExpressionFactory stepExpressionFactory;

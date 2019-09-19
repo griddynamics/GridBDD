@@ -64,8 +64,15 @@ public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContex
         executionContext.getStepDefinitions().putAll(stepDefinitions);
         ((ListableBeanFactory) getBeanFactory()).getBeansOfType(StepFactory.class)
                 .values().forEach(stepFactory -> stepFactory.setStepDefinitions(stepDefinitions));
+        setupHookOnlyStepFactory(executionContext, stepDefinitions);
         executionContext.getTestSuites().addAll(exploreSuiteDefinitions());
         return executionContext;
+    }
+
+    private void setupHookOnlyStepFactory(ExecutionContext executionContext, Map<String, StepDefinition> stepDefinitions) {
+        ExecutionContext.HookOnlyStepFactory hookOnlyStepFactory = new ExecutionContext.HookOnlyStepFactory();
+        hookOnlyStepFactory.setStepDefinitions(stepDefinitions);
+        executionContext.setHookOnlyStepFactory(hookOnlyStepFactory);
     }
 
     private List<TestSuite> exploreSuiteDefinitions() {

@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 
 import java.lang.reflect.Method;
+import java.util.function.Predicate;
 
 /**
  * @author fparamonov
@@ -53,5 +54,10 @@ public class ClassicStepFactory extends AbstractStepFactory<Method> {
                 method.getName() + "#" +
                 method.getParameterCount();
         return DigestUtils.md5DigestAsHex(uniqueName.getBytes());
+    }
+
+    @Override
+    protected Predicate<StepDefinition> hooksByAvailableTags() {
+        return stepDefinition -> true;
     }
 }
