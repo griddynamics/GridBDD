@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.event;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import com.griddynamics.qa.sprimber.event.Events.StepEvent;
 import lombok.RequiredArgsConstructor;

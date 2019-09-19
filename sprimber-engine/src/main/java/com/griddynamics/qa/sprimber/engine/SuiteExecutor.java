@@ -25,17 +25,22 @@ $Id:
 package com.griddynamics.qa.sprimber.engine;
 
 import com.griddynamics.qa.sprimber.discovery.TestSuite;
+import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
+import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ReflectionUtils;
 
-import java.util.HashMap;
+import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
+
+import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
+import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.SKIPPED;
 
 /**
  * @author fparamonov
@@ -47,56 +52,148 @@ import java.util.stream.Collectors;
 public class SuiteExecutor {
 
     private final Executor sprimberTestCaseExecutor;
+    private final Executor sprimberTestExecutor;
+    private final ErrorMapper errorMapper;
+    private final ExecutionContext executionContext;
+    private final ApplicationContext applicationContext;
+    private final SprimberEventPublisher eventPublisher;
 
-    public CompletableFuture<ExecutionResult> executeTestSuite(TestSuite testSuite) {
-
-        List<CompletableFuture<TestSuite.TestCase>> testCases = testSuite.getTestCases().stream()
-                .map(testCaseDefinition ->
-                        CompletableFuture
-                                .supplyAsync(() -> executeTestCase(testCaseDefinition, testSuite.getTestExecutor()), sprimberTestCaseExecutor)
-                                .thenApply(result -> {
-                                            testCaseDefinition.setExecutionResult(result);
-                                            return testCaseDefinition;
-                                        }
-                                ))
+    public ExecutionResult executeTestSuite(TestSuite testSuite) {
+        eventPublisher.testSuiteStarted(this, testSuite);
+        List<CompletableFuture<ExecutionResult>> testCases = testSuite.getTestCases().stream()
+                .map(testCase -> initTestCase(testCase)
+                        .thenApply(executionResult -> executionContext.getHookOnlyStepFactory().provideBeforeTestSuiteHooks()
+                                .stream().map(this::executeStep).collect(new ExecutionResult.ExecutionResultCollector()))
+                        .exceptionally(this::handleTestCaseException)
+                        .thenApplyAsync(executionResult -> executeTestCase(testCase), sprimberTestCaseExecutor)
+                        .exceptionally(this::handleTestCaseException)
+                        .thenApply(executionResult -> executionContext.getHookOnlyStepFactory().provideAfterTestSuiteHooks()
+                                .stream().map(this::executeStep).collect(new ExecutionResult.ExecutionResultCollector()))
+                )
                 .collect(Collectors.toList());
-        CompletionStage<List<TestSuite.TestCase>> executedTestCases =
+        CompletableFuture<List<ExecutionResult>> executedTestCases =
                 CompletableFuture.allOf(testCases.toArray(new CompletableFuture[0]))
                         .thenApply(v -> testCases.stream()
-                                .map(CompletionStage::toCompletableFuture)
                                 .map(CompletableFuture::join)
                                 .collect(Collectors.toList())
                         );
-        executedTestCases.whenComplete(((testCaseDefinitions, throwable) -> testCaseDefinitions.stream()
-                .map(TestSuite.TestCase::getExecutionResult)
-                .map(ExecutionResult::getStatus)
-                .forEach(status -> log.info("Test Case Status: {}", status))
-        )).toCompletableFuture().join();
-        return CompletableFuture.completedFuture(new ExecutionResult(ExecutionResult.Status.PASSED));
+        ExecutionResult suiteResult = executedTestCases.join().stream().collect(new ExecutionResult.ExecutionResultCollector());
+        testSuite.setExecutionResult(suiteResult);
+        log.info("Suite completed with status '{}' and test case details '{}'", suiteResult.getStatus(), suiteResult.getStatistic());
+        eventPublisher.testSuiteFinished(this, testSuite);
+        return suiteResult;
     }
 
-    public ExecutionResult executeTestCase(TestSuite.TestCase testCase,
-                                           TestSuite.TestExecutor testExecutor) {
-        Map<ExecutionResult.Status, Long> statistic = new HashMap<>();
-        List<CompletionStage<TestSuite.Test>> executedTests = testCase.getTests().stream()
-                .map(testDefinition ->
-                        testExecutor.execute(testDefinition)
-                                .thenApply(result -> {
-                                    testDefinition.setExecutionResult(result);
-                                    return testDefinition;
-                                }))
+    public ExecutionResult executeTestCase(TestSuite.TestCase testCase) {
+        eventPublisher.testCaseStarted(this, testCase);
+        List<CompletableFuture<ExecutionResult>> tests = testCase.getTests().stream()
+                .map(test -> initTest(test)
+                        .thenApply(executionResult -> executionContext.getHookOnlyStepFactory().provideBeforeTestCaseHooks()
+                                .stream().map(this::executeStep).collect(new ExecutionResult.ExecutionResultCollector()))
+                        .exceptionally(this::handleTestException)
+                        .thenApplyAsync(executionResult -> executeTest(test), sprimberTestExecutor)
+                        .exceptionally(this::handleTestException)
+                        .thenApply(executionResult -> executionContext.getHookOnlyStepFactory().provideAfterTestCaseHooks()
+                                .stream().map(this::executeStep).collect(new ExecutionResult.ExecutionResultCollector()))
+                )
                 .collect(Collectors.toList());
-        CompletableFuture<Void> done = CompletableFuture.allOf(executedTests.toArray(new CompletableFuture[executedTests.size()]));
-        CompletionStage<List<TestSuite.Test>> updatedTests = done.thenApply(v -> executedTests.stream()
-                .map(CompletionStage::toCompletableFuture)
-                .map(CompletableFuture::join)
-                .collect(Collectors.toList()));
-        updatedTests.whenComplete((testDefinitions, throwable) -> statistic.putAll(testDefinitions.stream()
-                .map(TestSuite.Test::getExecutionResult)
-                .collect(Collectors.groupingBy(ExecutionResult::getStatus, Collectors.counting())))
-        ).toCompletableFuture().join();
-        // TODO: 2019-09-14 add the test case name here
-        log.info("Statistic: {}", statistic);
-        return new ExecutionResult(ExecutionResult.Status.PASSED);
+        CompletableFuture<List<ExecutionResult>> executedTests =
+                CompletableFuture.allOf(tests.toArray(new CompletableFuture[0]))
+                        .thenApply(v -> tests.stream()
+                                .map(CompletableFuture::join)
+                                .collect(Collectors.toList())
+                        );
+        ExecutionResult testCaseResult = executedTests.join().stream().collect(new ExecutionResult.ExecutionResultCollector());
+        testCase.setExecutionResult(testCaseResult);
+        log.info("Test case completed with status '{}' and test details '{}'", testCaseResult.getStatus(), testCaseResult.getStatistic());
+        eventPublisher.testCaseFinished(this, testCase);
+        return testCaseResult;
+    }
+
+    private ExecutionResult executeTest(TestSuite.Test test) {
+        eventPublisher.testStarted(this, test);
+        List<CompletableFuture<ExecutionResult>> steps = test.getSteps().stream()
+                .map(step -> initStep(step)
+                        .handle((stepDef, throwable) -> {
+                            eventPublisher.stepStarted(this, step);
+                            if (test.isFallbackActive()) {
+                                if (!(test.getFallbackStrategy().allowedTypes().contains(step.getStepDefinition().getStepType()) &&
+                                        test.getFallbackStrategy().allowedPhases().contains(step.getStepDefinition().getStepPhase()))) {
+                                    step.setSkipped(true);
+                                }
+                            }
+                            return step;
+                        })
+                        .thenApply(this::executeStep)
+                        .exceptionally(throwable -> handleStepException(test, step, throwable))
+                        .handle((executionResult, throwable) -> {
+                            eventPublisher.stepFinished(this, step);
+                            if (test.isFallbackActive()) {
+                                test.getFallbackStrategy().updateScope(step);
+                            }
+                            return executionResult;
+                        })
+                )
+                .collect(Collectors.toList());
+        CompletableFuture<List<ExecutionResult>> executedSteps =
+                CompletableFuture.allOf(steps.toArray(new CompletableFuture[0]))
+                        .thenApply(v -> steps.stream()
+                                .map(CompletableFuture::join)
+                                .collect(Collectors.toList())
+                        );
+        ExecutionResult testResult = executedSteps.join().stream().collect(new ExecutionResult.ExecutionResultCollector());
+        test.setExecutionResult(testResult);
+        log.info("Test completed with status '{}' and step details '{}'", testResult.getStatus(), testResult.getStatistic());
+        eventPublisher.testFinished(this, test);
+        return testResult;
+    }
+
+    private CompletableFuture<TestSuite.TestCase> initTestCase(TestSuite.TestCase testCase) {
+        testCase.setExecutionResult(ExecutionResult.builder().status(PASSED).build());
+        return CompletableFuture.completedFuture(testCase);
+    }
+
+    private CompletableFuture<TestSuite.Test> initTest(TestSuite.Test test) {
+        test.setExecutionResult(ExecutionResult.builder().status(PASSED).build());
+        return CompletableFuture.completedFuture(test);
+    }
+
+    private CompletableFuture<TestSuite.Step> initStep(TestSuite.Step step) {
+        step.setExecutionResult(ExecutionResult.builder().status(PASSED).build());
+        return CompletableFuture.completedFuture(step);
+    }
+
+    private ExecutionResult handleTestCaseException(Throwable throwable) {
+        ExecutionResult result = errorMapper.parseThrowable(throwable);
+        return result;
+    }
+
+    private ExecutionResult handleTestException(Throwable throwable) {
+        ExecutionResult result = errorMapper.parseThrowable(throwable);
+        return result;
+    }
+
+    private ExecutionResult handleStepException(TestSuite.Test test, TestSuite.Step step, Throwable throwable) {
+        ExecutionResult result = errorMapper.parseThrowable(throwable);
+        step.setExecutionResult(result);
+        result.conditionallyPrintStacktrace();
+        test.setExecutionResult(result);
+        test.activeFallback();
+        log.trace(result.getErrorMessage());
+        log.error(throwable.getLocalizedMessage());
+        return result;
+    }
+
+    private ExecutionResult executeStep(TestSuite.Step step) {
+        if (step.isSkipped()) {
+            step.setExecutionResult(new ExecutionResult(SKIPPED));
+            return new ExecutionResult(SKIPPED);
+        }
+        Method testMethod = step.getStepDefinition().getMethod();
+        Object target = applicationContext.getBean(testMethod.getDeclaringClass());
+        Object[] args = step.getParameters().isEmpty() ?
+                new Object[0] : step.getParameters().values().toArray();
+        ReflectionUtils.invokeMethod(testMethod, target, args);
+        return new ExecutionResult(PASSED);
     }
 }

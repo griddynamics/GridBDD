@@ -28,7 +28,6 @@ import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import lombok.Data;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author fparamonov
@@ -37,7 +36,6 @@ import java.util.concurrent.CompletableFuture;
 @Data
 public class TestSuite {
 
-    private TestExecutor testExecutor;
     private ExecutionResult executionResult;
     private List<TestCase> testCases = new ArrayList<>();
 
@@ -92,14 +90,5 @@ public class TestSuite {
         List<StepDefinition.StepPhase> allowedPhases();
 
         void updateScope(Step executedStep);
-    }
-
-    /**
-     * Main difference happens in exact test execution, since the suite and testcase execution pretty straightforward
-     * for most cases(plain code, bdd). To provide this custom logic for each test execution implement this interface
-     * Each {@link TestSuite} should be aware about how to execute the tests under
-     */
-    public interface TestExecutor {
-        CompletableFuture<ExecutionResult> execute(Test test);
     }
 }

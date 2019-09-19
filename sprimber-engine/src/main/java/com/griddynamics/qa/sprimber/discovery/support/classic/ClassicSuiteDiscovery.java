@@ -27,7 +27,6 @@ package com.griddynamics.qa.sprimber.discovery.support.classic;
 import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import com.griddynamics.qa.sprimber.discovery.annotation.TestController;
 import com.griddynamics.qa.sprimber.discovery.annotation.TestMapping;
-import com.griddynamics.qa.sprimber.engine.ClassicTestExecutor;
 import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,12 +47,10 @@ public class ClassicSuiteDiscovery implements TestSuiteDiscovery {
 
     private final ClassicTestBinder classicTestBinder;
     private final ApplicationContext applicationContext;
-    private final ClassicTestExecutor classicTestExecutor;
 
     @Override
     public TestSuite discover() {
         TestSuite testSuite = new TestSuite();
-        testSuite.setTestExecutor(classicTestExecutor);
         applicationContext.getBeansWithAnnotation(TestController.class).values().stream()
                 .map(this::testCaseDiscover)
                 .forEach(testCase -> testSuite.getTestCases().add(testCase));

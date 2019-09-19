@@ -26,14 +26,17 @@ package com.griddynamics.qa.sprimber.engine;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
 
 /**
  * @author fparamonov
  */
+
 public class ExecutionResult {
 
     private final Status status;
@@ -78,6 +81,68 @@ public class ExecutionResult {
         Optional.ofNullable(throwable)
                 .ifPresent(error -> error.printStackTrace(printWriter));
         return stringWriter.getBuffer().toString();
+    }
+
+    public static ExecutionResultBuilder builder() {
+        return new ExecutionResultBuilder();
+    }
+
+    public static class ExecutionResultBuilder {
+
+        private Status status = Status.PASSED;
+        private Throwable throwable;
+        private Map<Status, Long> statistic = new HashMap<>();
+
+        private ExecutionResultBuilder() {
+        }
+
+        public ExecutionResultBuilder status(Status status) {
+            this.status = status;
+            return this;
+        }
+
+        public ExecutionResultBuilder executionResult(ExecutionResult executionResult) {
+            if (!(this.status.equals(Status.FAILED) || this.status.equals(Status.BROKEN))) {
+                this.status = executionResult.getStatus();
+            }
+            this.throwable = executionResult.getOptionalError().orElse(null);
+            this.statistic.compute(executionResult.getStatus(), (k, v) -> Objects.isNull(v) ? 1L : v++);
+            return this;
+        }
+
+        public ExecutionResult build() {
+            ExecutionResult executionResult = new ExecutionResult(this.status, this.throwable);
+            executionResult.getStatistic().putAll(this.statistic);
+            return executionResult;
+        }
+    }
+
+    public static class ExecutionResultCollector implements Collector<ExecutionResult, ExecutionResultBuilder, ExecutionResult> {
+
+        @Override
+        public Supplier<ExecutionResultBuilder> supplier() {
+            return ExecutionResult::builder;
+        }
+
+        @Override
+        public BiConsumer<ExecutionResultBuilder, ExecutionResult> accumulator() {
+            return ExecutionResult.ExecutionResultBuilder::executionResult;
+        }
+
+        @Override
+        public BinaryOperator<ExecutionResultBuilder> combiner() {
+            return (e1, e2) -> null;
+        }
+
+        @Override
+        public Function<ExecutionResultBuilder, ExecutionResult> finisher() {
+            return ExecutionResult.ExecutionResultBuilder::build;
+        }
+
+        @Override
+        public Set<Collector.Characteristics> characteristics() {
+            return Collections.emptySet();
+        }
     }
 
     public enum Status {
