@@ -26,12 +26,15 @@ package com.griddynamics.qa.sprimber.engine;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuite;
+import com.griddynamics.qa.sprimber.discovery.support.AbstractStepFactory;
 import lombok.Data;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * This is a parent super container that can hold all necessary Sprimber objects during execution
@@ -54,4 +57,18 @@ public class ExecutionContext {
      * Convenient place to hold all test suite definitions that available at runtime
      */
     private List<TestSuite> testSuites = new ArrayList<>();
+
+    private HookOnlyStepFactory hookOnlyStepFactory;
+
+    public static class HookOnlyStepFactory extends AbstractStepFactory<Object> {
+        @Override
+        protected Predicate<StepDefinition> hooksByAvailableTags() {
+            return stepDefinition -> true;
+        }
+
+        @Override
+        public TestSuite.Step provideStep(Object stepCandidate) {
+            throw new NotImplementedException("Method in hook factory should not provide non hook steps");
+        }
+    }
 }

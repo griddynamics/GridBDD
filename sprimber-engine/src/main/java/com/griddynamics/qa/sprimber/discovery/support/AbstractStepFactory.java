@@ -25,9 +25,14 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery.support;
 
 import com.griddynamics.qa.sprimber.discovery.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuite;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author fparamonov
@@ -41,7 +46,64 @@ public abstract class AbstractStepFactory<SC> implements StepFactory<SC> {
         this.stepDefinitions.putAll(stepDefinitions);
     }
 
+    public List<TestSuite.Step> provideBeforeTestHooks() {
+        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.TEST);
+    }
+
+    public List<TestSuite.Step> provideAfterTestHooks() {
+        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.TEST);
+    }
+
+    public List<TestSuite.Step> provideBeforeTestCaseHooks() {
+        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.TESTCASE);
+    }
+
+    public List<TestSuite.Step> provideAfterTestCaseHooks() {
+        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.TESTCASE);
+    }
+
+    public List<TestSuite.Step> provideBeforeTestSuiteHooks() {
+        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.SUITE);
+    }
+
+    public List<TestSuite.Step> provideAfterTestSuiteHooks() {
+        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.SUITE);
+    }
+
+    public List<TestSuite.Step> wrapStepWithStepHooks(TestSuite.Step step) {
+        List<TestSuite.Step> wrappedDefinition =
+                provideHooksForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.STEP);
+        wrappedDefinition.add(step);
+        List<TestSuite.Step> afterStepHooks =
+                provideHooksForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.STEP);
+        wrappedDefinition.addAll(afterStepHooks);
+        return wrappedDefinition;
+    }
+
+    protected abstract Predicate<StepDefinition> hooksByAvailableTags();
+
     protected Map<String, StepDefinition> getStepDefinitions() {
         return this.stepDefinitions;
+    }
+
+    private List<TestSuite.Step> provideHooksForTargetTypeAndPhase(StepDefinition.StepType stepType, StepDefinition.StepPhase stepPhase) {
+        return findStepHooksForCurrentStage(stepType, stepPhase)
+                .filter(hooksByAvailableTags())
+                .map(this::provideHookStep)
+                .collect(Collectors.toList());
+    }
+
+    private Stream<StepDefinition> findStepHooksForCurrentStage(StepDefinition.StepType stepType,
+                                                                StepDefinition.StepPhase stepPhase) {
+        return getStepDefinitions().values().stream()
+                .filter(stepDefinition -> stepDefinition.getStepType().equals(stepType))
+                .filter(stepDefinition -> stepDefinition.getStepPhase().equals(stepPhase));
+    }
+
+    private TestSuite.Step provideHookStep(StepDefinition stepDefinition) {
+        TestSuite.Step step = new TestSuite.Step();
+        step.setStepDefinition(stepDefinition);
+        step.setName(stepDefinition.getMethod().getName());
+        return step;
     }
 }

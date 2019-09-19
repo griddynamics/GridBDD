@@ -25,7 +25,6 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery.support.cucumber;
 
 import com.griddynamics.qa.sprimber.discovery.TestSuite;
-import com.griddynamics.qa.sprimber.engine.BddTestExecutor;
 import com.griddynamics.qa.sprimber.discovery.support.TestSuiteDiscovery;
 import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import gherkin.Parser;
@@ -59,7 +58,6 @@ public class CucumberSuiteDiscovery implements TestSuiteDiscovery {
 
     private final Compiler compiler;
     private final TokenMatcher tokenMatcher;
-    private final BddTestExecutor bddTestExecutor;
     private final CucumberTestBinder cucumberTestBinder;
     private final SprimberProperties sprimberProperties;
     private final Parser<GherkinDocument> gherkinParser;
@@ -75,7 +73,6 @@ public class CucumberSuiteDiscovery implements TestSuiteDiscovery {
     @Override
     public TestSuite discover() {
         TestSuite testSuite = new TestSuite();
-        testSuite.setTestExecutor(bddTestExecutor);
         try {
             Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()))
                     .map(this::buildCucumberDocument)
