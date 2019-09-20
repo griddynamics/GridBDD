@@ -35,6 +35,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author fparamonov
@@ -58,10 +60,12 @@ public class ClassicSuiteDiscovery implements TestSuiteDiscovery {
     }
 
     private TestSuite.TestCase testCaseDiscover(Object testController) {
-        val testCaseDefinition = new TestSuite.TestCase();
-        Arrays.stream(testController.getClass().getDeclaredMethods())
+        val testCase = new TestSuite.TestCase();
+        List<TestSuite.Test> tests = Arrays.stream(testController.getClass().getDeclaredMethods())
                 .filter(method -> method.isAnnotationPresent(TestMapping.class))
-                .forEach(testMethod -> testCaseDefinition.getTests().add(classicTestBinder.bind(testMethod)));
-        return testCaseDefinition;
+                .map(classicTestBinder::bind)
+                .peek(test -> test.setParentId(testCase.getRuntimeId()))
+                .collect(Collectors.toList());
+        return testCase;
     }
 }

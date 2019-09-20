@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.util.DigestUtils;
 
 import java.lang.reflect.Method;
 
@@ -50,14 +51,22 @@ public class ClassicTestBinder implements TestSuiteDiscovery.TestDefinitionBinde
         String testName = buildTestName(testCandidate, testMapping);
         val test = new TestSuite.Test();
         test.setName(testName);
-        test.setHistoryId(testName + testCandidate.getName());
+        test.setHistoryId(buildTestHistoryId(testCandidate));
         test.setDescription(String.valueOf(AnnotationUtils.getValue(testMapping, "description")));
         test.getSteps().add(classicStepFactory.provideStep(testCandidate));
+        test.getSteps().forEach(step -> step.setParentId(test.getRuntimeId()));
         return test;
     }
 
     private String buildTestName(Method method, TestMapping testMapping) {
         String testName = String.valueOf(AnnotationUtils.getValue(testMapping, "name"));
         return testName.isEmpty() ? method.getName() : testName;
+    }
+
+    private String buildTestHistoryId(Method method) {
+        String uniqueName = method.getDeclaringClass().getCanonicalName() + "#" +
+                method.getName() + "#" +
+                method.getParameterCount();
+        return DigestUtils.md5DigestAsHex(uniqueName.getBytes());
     }
 }

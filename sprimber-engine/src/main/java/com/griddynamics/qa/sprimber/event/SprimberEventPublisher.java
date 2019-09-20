@@ -51,21 +51,33 @@ public class SprimberEventPublisher {
     }
 
     public void testStarted(Object target, TestSuite.Test test) {
+        if (test.getSteps().isEmpty()) {
+            return;
+        }
         TestStartedEvent testStartedEvent = new TestStartedEvent(target, test);
         eventPublisher.publishEvent(testStartedEvent);
     }
 
     public void testFinished(Object target, TestSuite.Test test) {
+        if (test.getSteps().isEmpty()) {
+            return;
+        }
         TestFinishedEvent testFinishedEvent = new TestFinishedEvent(target, test);
         eventPublisher.publishEvent(testFinishedEvent);
     }
 
     public void testCaseStarted(Object target, TestSuite.TestCase testCase) {
+        if (testCase.getTests().isEmpty()) {
+            return;
+        }
         TestCaseStartedEvent testCaseStartedEvent = new TestCaseStartedEvent(target, testCase);
         eventPublisher.publishEvent(testCaseStartedEvent);
     }
 
     public void testCaseFinished(Object target, TestSuite.TestCase testCase) {
+        if (testCase.getTests().isEmpty()) {
+            return;
+        }
         TestCaseFinishedEvent testCaseFinishedEvent = new TestCaseFinishedEvent(target, testCase);
         eventPublisher.publishEvent(testCaseFinishedEvent);
     }

@@ -43,13 +43,13 @@ public class ClassicStepFactory extends AbstractStepFactory<Method> {
     @Override
     public TestSuite.Step provideStep(Method method) {
         TestSuite.Step step = new TestSuite.Step();
-        StepDefinition stepDefinition = getStepDefinitions().get(calculateHash(method));
+        StepDefinition stepDefinition = getStepDefinitions().get(calculateId(method));
         step.setStepDefinition(stepDefinition);
         step.setName(method.getName());
         return step;
     }
 
-    private String calculateHash(Method method) {
+    private String calculateId(Method method) {
         String uniqueName = method.getDeclaringClass().getCanonicalName() + "#" +
                 method.getName() + "#" +
                 method.getParameterCount();

@@ -24,11 +24,13 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting.allure;
 
+import com.griddynamics.qa.sprimber.discovery.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.TestSuite;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import com.griddynamics.qa.sprimber.reporting.StepDefinitionFormatter;
 import io.qameta.allure.AllureLifecycle;
+import io.qameta.allure.SeverityLevel;
 import io.qameta.allure.model.*;
 import io.qameta.allure.util.ResultsUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +41,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PreDestroy;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
-import java.time.Clock;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -55,24 +54,28 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Component
 public class AllureSprimber {
 
+    private static final String CUCUMBER_SUITES = "Cucumber Suites";
     private static final int DEFAULT_AWAIT_TERMINATION_SECONDS = 5;
+    private static final String ALLURE_WRITER_POOL_PREFIX = "AllureWriter-";
+    private static final String SUB_CONTAINER_PREFIX_NAME = "subContainer-";
+    private static final String EPIC_DEFAULT_NAME = "Cucumber Features";
     private final Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping;
 
-    private final Clock clock;
     private final AllureLifecycle lifecycle;
     private ThreadPoolTaskExecutor taskExecutor;
     private StepDefinitionFormatter formatter;
-    private ThreadLocal<String> testCaseRuntimeId = new ThreadLocal<>();
 
     public AllureSprimber(Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping,
-                          Clock clock,
                           AllureLifecycle lifecycle, StepDefinitionFormatter formatter) {
         this.allureToSprimberStatusMapping = allureToSprimberStatusMapping;
-        this.clock = clock;
         this.lifecycle = lifecycle;
         this.formatter = formatter;
+        initThreadPool();
+    }
+
+    private void initThreadPool() {
         taskExecutor = new ThreadPoolTaskExecutor();
-        taskExecutor.setThreadNamePrefix("AllureWriter-");
+        taskExecutor.setThreadNamePrefix(ALLURE_WRITER_POOL_PREFIX);
         taskExecutor.initialize();
         taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
         taskExecutor.setAwaitTerminationSeconds(DEFAULT_AWAIT_TERMINATION_SECONDS);
@@ -84,79 +87,156 @@ public class AllureSprimber {
     }
 
     @EventListener
+    public void testCaseStarted(SprimberEventPublisher.TestCaseStartedEvent testCaseStartedEvent) {
+        TestResultContainer testCaseResultContainer = new TestResultContainer();
+        testCaseResultContainer.setName(testCaseStartedEvent.getTestCase().getName());
+        testCaseResultContainer.setDescription(testCaseStartedEvent.getTestCase().getDescription());
+        testCaseResultContainer.setUuid(testCaseStartedEvent.getTestCase().getRuntimeId());
+        lifecycle.startTestContainer(testCaseResultContainer);
+        testCaseStartedEvent.getTestCase().getTests().forEach(test -> {
+            scheduleTest(testCaseStartedEvent, test);
+        });
+    }
+
+    private void scheduleTest(SprimberEventPublisher.TestCaseStartedEvent testCaseStartedEvent, TestSuite.Test test) {
+        TestResultContainer testResultContainer = new TestResultContainer();
+        testResultContainer.setUuid(SUB_CONTAINER_PREFIX_NAME + test.getRuntimeId());
+        lifecycle.startTestContainer(testCaseStartedEvent.getTestCase().getRuntimeId(), testResultContainer);
+
+        TestResult testResult = prepareTestResult(testCaseStartedEvent, test);
+
+        lifecycle.scheduleTestCase(testResultContainer.getUuid(), testResult);
+    }
+
+    private TestResult prepareTestResult(SprimberEventPublisher.TestCaseStartedEvent testCaseStartedEvent, TestSuite.Test test) {
+        TestResult testResult = new TestResult();
+        testResult.setName(test.getName());
+        testResult.setDescription(test.getDescription());
+        testResult.setUuid(test.getRuntimeId());
+        testResult.setHistoryId(test.getHistoryId());
+        List<Label> labels = processTestLabels(testCaseStartedEvent, test);
+        List<Link> links = processTestLinks(testCaseStartedEvent, test);
+        testResult.setLabels(labels);
+        testResult.setLinks(links);
+        return testResult;
+    }
+
+    private List<Link> processTestLinks(SprimberEventPublisher.TestCaseStartedEvent testCaseStartedEvent, TestSuite.Test test) {
+        return Collections.emptyList();
+    }
+
+    private List<Label> processTestLabels(SprimberEventPublisher.TestCaseStartedEvent testCaseStartedEvent, TestSuite.Test test) {
+        List<Label> labels = new ArrayList<>();
+        Label epicLabel = ResultsUtils.createEpicLabel(test.getMeta().getSingleValueOrDefault("epic", EPIC_DEFAULT_NAME));
+        Label featureLabel = ResultsUtils.createFeatureLabel(test.getMeta().getSingleValueOrDefault("feature", testCaseStartedEvent.getTestCase().getName()));
+        Label storyLabel = ResultsUtils.createStoryLabel(test.getMeta().getSingleValueOrDefault("story", test.getName()));
+
+        Label packageLabel = ResultsUtils.createPackageLabel(test.getMeta().getSingleValueOrDefault("package", testCaseStartedEvent.getTestCase().getName()));
+
+        Label parentSuiteLabel = ResultsUtils.createParentSuiteLabel(test.getMeta().getSingleValueOrDefault("parentSuite", CUCUMBER_SUITES));
+        Label suiteLabel = ResultsUtils.createSuiteLabel(test.getMeta().getSingleValueOrDefault("suite", testCaseStartedEvent.getTestCase().getName()));
+        Label subSuiteLabel = ResultsUtils.createSubSuiteLabel(test.getMeta().getSingleValueOrDefault("subSuite", test.getName()));
+
+        Label severityLabel = ResultsUtils.createSeverityLabel(test.getMeta().getSingleValueOrDefault("severity", SeverityLevel.NORMAL.value()));
+
+        labels.add(epicLabel);
+        labels.add(featureLabel);
+        labels.add(storyLabel);
+        labels.add(packageLabel);
+        labels.add(parentSuiteLabel);
+        labels.add(suiteLabel);
+        labels.add(subSuiteLabel);
+        labels.add(severityLabel);
+        return labels;
+    }
+
+    @EventListener
+    public void testCaseFinished(SprimberEventPublisher.TestCaseFinishedEvent testCaseFinishedEvent) {
+        lifecycle.stopTestContainer(testCaseFinishedEvent.getTestCase().getRuntimeId());
+        lifecycle.writeTestContainer(testCaseFinishedEvent.getTestCase().getRuntimeId());
+    }
+
+    @EventListener
     public void testStarted(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
-        testCaseRuntimeId.set(testStartedEvent.getTest().getRuntimeId());
-        TestResult testResult = new TestResult()
-                .withUuid(testCaseRuntimeId.get())
-                .withHistoryId(testStartedEvent.getTest().getHistoryId())
-                .withName(testStartedEvent.getTest().getName())
-                .withDescription(testStartedEvent.getTest().getDescription());
-        lifecycle.scheduleTestCase(testResult);
-        lifecycle.startTestCase(testCaseRuntimeId.get());
+        lifecycle.startTestCase(testStartedEvent.getTest().getRuntimeId());
     }
 
     @EventListener
     public void testFinished(SprimberEventPublisher.TestFinishedEvent testFinishedEvent) {
         ExecutionResult result = testFinishedEvent.getTest().getExecutionResult();
         Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
-        String runtimeUuid = testCaseRuntimeId.get();
+        String runtimeUuid = testFinishedEvent.getTest().getRuntimeId();
         lifecycle.updateTestCase(runtimeUuid, scenarioResult -> {
-            scenarioResult.withStatus(allureToSprimberStatusMapping.get(result.getStatus()));
-            statusDetails.ifPresent(scenarioResult::withStatusDetails);
+            scenarioResult.setStatus(allureToSprimberStatusMapping.get(result.getStatus()));
+            statusDetails.ifPresent(scenarioResult::setStatusDetails);
         });
         lifecycle.stopTestCase(runtimeUuid);
-        taskExecutor.execute(() -> lifecycle.writeTestCase(runtimeUuid));
-    }
+        lifecycle.stopTestContainer(SUB_CONTAINER_PREFIX_NAME + testFinishedEvent.getTest().getRuntimeId());
 
-//    @Deprecated
-//    @EventListener
-//    public void testCaseStarted(TestCaseStartedEvent startedEvent) {
-//        HelperInfoBuilder helperInfoBuilder = new HelperInfoBuilder(startedEvent.getTestCase());
-//        String historyId = getTestCaseHistoryId(startedEvent.getTestCase());
-//        testCaseRuntimeId.set(startedEvent.getTestCase().getRuntimeId());
-//        TestResult testResult = new TestResult()
-//                .withUuid(testCaseRuntimeId.get())
-//                .withHistoryId(historyId)
-//                .withName(startedEvent.getTestCase().getName())
-//                .withLinks(helperInfoBuilder.getLinks())
-//                .withLabels(helperInfoBuilder.getLabels())
-//                .withDescription(startedEvent.getTestCase().getDescription());
-//        lifecycle.scheduleTestCase(testResult);
-//        lifecycle.startTestCase(testCaseRuntimeId.get());
-//    }
+        taskExecutor.execute(() -> {
+            lifecycle.writeTestCase(runtimeUuid);
+            lifecycle.writeTestContainer(SUB_CONTAINER_PREFIX_NAME + testFinishedEvent.getTest().getRuntimeId());
+        });
+
+    }
 
     @EventListener
     public void testStepStarted(SprimberEventPublisher.StepStartedEvent stepStartedEvent) {
         String stepReportName = stepStartedEvent.getStep().getStepDefinition().getStepType() + " " +
                 stepStartedEvent.getStep().getStepDefinition().getStepPhase() + " " +
                 formatter.formatStepName(stepStartedEvent.getStep());
-        StepResult stepResult = new StepResult()
-                .withName(stepReportName)
-                .withParameters(convertStepParameters(stepStartedEvent.getStep()))
-                .withStart(clock.millis());
-        lifecycle.startStep(testCaseRuntimeId.get(), testCaseRuntimeId.get() + stepReportName, stepResult);
+
+        if (stepStartedEvent.getStep().isHookStep()
+                && stepStartedEvent.getStep().getStepDefinition().getStepPhase().equals(StepDefinition.StepPhase.TEST)) {
+            FixtureResult fixtureResult = new FixtureResult();
+            fixtureResult.setName(stepReportName);
+            fixtureResult.setParameters(convertStepParameters(stepStartedEvent.getStep()));
+            if (stepStartedEvent.getStep().getStepDefinition().getStepType().equals(StepDefinition.StepType.BEFORE)) {
+                lifecycle.startPrepareFixture(SUB_CONTAINER_PREFIX_NAME + stepStartedEvent.getStep().getParentId(),
+                        stepStartedEvent.getStep().getRuntimeId(), fixtureResult);
+            }
+            if (stepStartedEvent.getStep().getStepDefinition().getStepType().equals(StepDefinition.StepType.AFTER)) {
+                lifecycle.startTearDownFixture(SUB_CONTAINER_PREFIX_NAME + stepStartedEvent.getStep().getParentId(),
+                        stepStartedEvent.getStep().getRuntimeId(), fixtureResult);
+            }
+        } else {
+            StepResult stepResult = new StepResult();
+            stepResult.setName(stepReportName);
+            stepResult.setParameters(convertStepParameters(stepStartedEvent.getStep()));
+            lifecycle.startStep(stepStartedEvent.getStep().getParentId(), stepStartedEvent.getStep().getRuntimeId(), stepResult);
+        }
+
         StringBuilder dataTableCsv = new StringBuilder();
         stepStartedEvent.getStep().getStepDefinition().getAttributes().entrySet().stream()
                 .filter(entry -> !entry.getKey().equals("stepData"))
                 .forEach(entry -> dataTableCsv.append(entry.getKey()).append("\t").append(entry.getValue()).append("\n"));
+
         lifecycle.addAttachment("Step Attributes", "text/tab-separated-values", "csv", dataTableCsv.toString().getBytes());
         attachStepDataParameterIfPresent(String.valueOf(stepStartedEvent.getStep().getStepDefinition().getAttributes().getOrDefault("stepData", "")));
     }
 
     @EventListener
     public void testStepFinished(SprimberEventPublisher.StepFinishedEvent stepFinishedEvent) {
-        String stepReportName = stepFinishedEvent.getStep().getStepDefinition().getStepType() + " " +
-                stepFinishedEvent.getStep().getStepDefinition().getStepPhase() + " " +
-                formatter.formatStepName(stepFinishedEvent.getStep());
         ExecutionResult result = stepFinishedEvent.getStep().getExecutionResult();
         Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
-        lifecycle.updateStep(testCaseRuntimeId.get() + stepReportName,
-                stepResult -> {
-                    stepResult.withStatus(allureToSprimberStatusMapping.get(result.getStatus()));
-                    statusDetails.ifPresent(stepResult::withStatusDetails);
-                }
-        );
-        lifecycle.stopStep(testCaseRuntimeId.get() + stepReportName);
+
+        if (stepFinishedEvent.getStep().isHookStep()
+                && stepFinishedEvent.getStep().getStepDefinition().getStepPhase().equals(StepDefinition.StepPhase.TEST)) {
+            lifecycle.updateFixture(stepFinishedEvent.getStep().getRuntimeId(), fixtureResult -> {
+                fixtureResult.setStatus(allureToSprimberStatusMapping.get(result.getStatus()));
+                statusDetails.ifPresent(fixtureResult::setStatusDetails);
+            });
+            lifecycle.stopFixture(stepFinishedEvent.getStep().getRuntimeId());
+        } else {
+            lifecycle.updateStep(stepFinishedEvent.getStep().getRuntimeId(),
+                    stepResult -> {
+                        stepResult.setStatus(allureToSprimberStatusMapping.get(result.getStatus()));
+                        statusDetails.ifPresent(stepResult::setStatusDetails);
+                    }
+            );
+            lifecycle.stopStep(stepFinishedEvent.getStep().getRuntimeId());
+        }
+
     }
 
     private List<Parameter> convertStepParameters(TestSuite.Step step) {
