@@ -55,7 +55,7 @@ public class TestCaseSummaryPrinter {
     public void illuminateTestStart(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n\n");
-        stringBuilder.append(String.format("Test Case Completed: %s", testStartedEvent.getTest().getName()));
+        stringBuilder.append(String.format("Test Completed: %s", testStartedEvent.getTest().getName()));
         reportBuilder.set(stringBuilder);
     }
 

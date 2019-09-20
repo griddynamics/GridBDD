@@ -85,6 +85,7 @@ public class PickleStepFactory extends AbstractStepFactory<PickleStep> {
         TestSuite.Step step = new TestSuite.Step();
         step.setStepDefinition(targetDefinitions.get(0));
         step.setName(stepCandidate.getText());
+        step.setResolvedTextPattern(stepCandidate.getText());
         handleAdditionalStepData(stepCandidate)
                 .ifPresent(stepData -> step.getStepDefinition().getAttributes().put("stepData", stepData));
         step.getParameters().putAll(handleStepArguments(arguments, actualParameters));

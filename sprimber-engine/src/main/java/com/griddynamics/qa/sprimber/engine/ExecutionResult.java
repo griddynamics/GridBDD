@@ -102,10 +102,13 @@ public class ExecutionResult {
         }
 
         public ExecutionResultBuilder executionResult(ExecutionResult executionResult) {
+            if (executionResult == null) {
+                return this;
+            }
             if (!(this.status.equals(Status.FAILED) || this.status.equals(Status.BROKEN))) {
                 this.status = executionResult.getStatus();
+                this.throwable = executionResult.getOptionalError().orElse(null);
             }
-            this.throwable = executionResult.getOptionalError().orElse(null);
             this.statistic.compute(executionResult.getStatus(), (k, v) -> Objects.isNull(v) ? 1L : v++);
             return this;
         }
@@ -119,9 +122,18 @@ public class ExecutionResult {
 
     public static class ExecutionResultCollector implements Collector<ExecutionResult, ExecutionResultBuilder, ExecutionResult> {
 
+        private ExecutionResult initResult;
+
+        public ExecutionResultCollector() {
+        }
+
+        public ExecutionResultCollector(ExecutionResult initResult) {
+            this.initResult = initResult;
+        }
+
         @Override
         public Supplier<ExecutionResultBuilder> supplier() {
-            return ExecutionResult::builder;
+            return () -> ExecutionResult.builder().executionResult(initResult);
         }
 
         @Override
