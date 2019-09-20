@@ -62,13 +62,17 @@ public class SuiteExecutor {
         eventPublisher.testSuiteStarted(this, testSuite);
         List<CompletableFuture<ExecutionResult>> testCases = testSuite.getTestCases().stream()
                 .map(testCase -> initTestCase(testCase)
-                        .thenApply(executionResult -> executionContext.getHookOnlyStepFactory().provideBeforeTestSuiteHooks()
-                                .stream().map(this::executeStep).collect(new ExecutionResult.ExecutionResultCollector()))
+                        .thenApply(tc -> executionContext.getHookOnlyStepFactory().provideBeforeTestSuiteHooks().stream()
+                                .map(this::executeStep)
+                                .collect(new ExecutionResult.ExecutionResultCollector()))
                         .exceptionally(this::handleTestCaseException)
                         .thenApplyAsync(executionResult -> executeTestCase(testCase), sprimberTestCaseExecutor)
                         .exceptionally(this::handleTestCaseException)
                         .thenApply(executionResult -> executionContext.getHookOnlyStepFactory().provideAfterTestSuiteHooks()
-                                .stream().map(this::executeStep).collect(new ExecutionResult.ExecutionResultCollector()))
+                                .stream()
+                                .map(this::executeStep)
+                                .collect(new ExecutionResult.ExecutionResultCollector()))
+                        .exceptionally(this::handleTestCaseException)
                 )
                 .collect(Collectors.toList());
         CompletableFuture<List<ExecutionResult>> executedTestCases =
@@ -79,8 +83,8 @@ public class SuiteExecutor {
                         );
         ExecutionResult suiteResult = executedTestCases.join().stream().collect(new ExecutionResult.ExecutionResultCollector());
         testSuite.setExecutionResult(suiteResult);
-        log.info("Suite completed with status '{}' and test case details '{}'", suiteResult.getStatus(), suiteResult.getStatistic());
         eventPublisher.testSuiteFinished(this, testSuite);
+        log.info("Suite completed with status '{}' and test case details '{}'", suiteResult.getStatus(), suiteResult.getStatistic());
         return suiteResult;
     }
 
@@ -88,13 +92,16 @@ public class SuiteExecutor {
         eventPublisher.testCaseStarted(this, testCase);
         List<CompletableFuture<ExecutionResult>> tests = testCase.getTests().stream()
                 .map(test -> initTest(test)
-                        .thenApply(executionResult -> executionContext.getHookOnlyStepFactory().provideBeforeTestCaseHooks()
-                                .stream().map(this::executeStep).collect(new ExecutionResult.ExecutionResultCollector()))
+                        .thenApply(executionResult -> executionContext.getHookOnlyStepFactory().provideBeforeTestCaseHooks().stream()
+                                .map(this::executeStep)
+                                .collect(new ExecutionResult.ExecutionResultCollector()))
                         .exceptionally(this::handleTestException)
                         .thenApplyAsync(executionResult -> executeTest(test), sprimberTestExecutor)
                         .exceptionally(this::handleTestException)
-                        .thenApply(executionResult -> executionContext.getHookOnlyStepFactory().provideAfterTestCaseHooks()
-                                .stream().map(this::executeStep).collect(new ExecutionResult.ExecutionResultCollector()))
+                        .thenApply(executionResult -> executionContext.getHookOnlyStepFactory().provideAfterTestCaseHooks().stream()
+                                .map(this::executeStep)
+                                .collect(new ExecutionResult.ExecutionResultCollector(executionResult)))
+                        .exceptionally(this::handleTestException)
                 )
                 .collect(Collectors.toList());
         CompletableFuture<List<ExecutionResult>> executedTests =
@@ -165,11 +172,13 @@ public class SuiteExecutor {
 
     private ExecutionResult handleTestCaseException(Throwable throwable) {
         ExecutionResult result = errorMapper.parseThrowable(throwable);
+        result.conditionallyPrintStacktrace();
         return result;
     }
 
     private ExecutionResult handleTestException(Throwable throwable) {
         ExecutionResult result = errorMapper.parseThrowable(throwable);
+        result.conditionallyPrintStacktrace();
         return result;
     }
 

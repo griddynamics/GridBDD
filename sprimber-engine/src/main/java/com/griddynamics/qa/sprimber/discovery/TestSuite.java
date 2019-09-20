@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 
@@ -42,6 +43,9 @@ public class TestSuite {
     @Data
     public static class TestCase {
 
+        private final String runtimeId = UUID.randomUUID().toString();
+        private String name;
+        private String description;
         private ExecutionResult executionResult;
         private List<Test> tests = new ArrayList<>();
     }
@@ -49,11 +53,13 @@ public class TestSuite {
     @Data
     public static class Test {
 
+        private final String runtimeId = UUID.randomUUID().toString();
         private boolean isFallbackActive;
         private String name;
         private String description;
-        private String runtimeId = UUID.randomUUID().toString();
+        private String parentId;
         private String historyId;
+        private Meta meta;
         private ExecutionResult executionResult;
         private FallbackStrategy fallbackStrategy;
         private List<Step> steps = new ArrayList<>();
@@ -62,13 +68,28 @@ public class TestSuite {
         public void activeFallback() {
             this.isFallbackActive = true;
         }
+
+        public static class Meta extends HashMap<String, List<String>> {
+
+            public String getSingleValueOrEmpty(String key) {
+                return getSingleValueOrDefault(key, StringUtils.EMPTY);
+            }
+
+            public String getSingleValueOrDefault(String key, String defaultValue) {
+                return Optional.ofNullable(this.get(key))
+                        .map(list -> list.get(0))
+                        .orElse(defaultValue);
+            }
+        }
     }
 
     @Data
     public static class Step {
 
+        private final String runtimeId = UUID.randomUUID().toString();
         private boolean isSkipped;
         private String name;
+        private String parentId;
         private String resolvedTextPattern;
         private StepDefinition stepDefinition;
         private ExecutionResult executionResult;

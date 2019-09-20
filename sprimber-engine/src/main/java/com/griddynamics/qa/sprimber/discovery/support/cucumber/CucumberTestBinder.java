@@ -32,11 +32,10 @@ import gherkin.pickles.PickleLocation;
 import gherkin.pickles.PickleTag;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -49,24 +48,29 @@ public class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBind
 
     public static final String BDD_TAGS_ATTRIBUTE_NAME = "bddTags";
     public static final String LOCATION_ATTRIBUTE_NAME = "location";
+    private static final String TAG_SYMBOL = "@";
+    private static final String TAG_VALUE_SEPARATOR = ":";
+    private static final String VALUE_SEPARATOR = ",";
 
     private final PickleStepFactory pickleStepFactory;
     private final StandardFallbackStrategy fallbackStrategy = new StandardFallbackStrategy();
 
     @Override
     public TestSuite.Test bind(Pickle testCandidate) {
-        val testDefinition = new TestSuite.Test();
-        testDefinition.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(testCandidate));
-        testDefinition.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(testCandidate));
-        testDefinition.setName(testCandidate.getName());
-        testDefinition.getSteps().addAll(pickleStepFactory.provideBeforeTestHooks());
+        val test = new TestSuite.Test();
+        test.setMeta(getMetaFromPickle(testCandidate));
+        test.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(testCandidate));
+        test.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(testCandidate));
+        test.setName(testCandidate.getName());
+        test.getSteps().addAll(pickleStepFactory.provideBeforeTestHooks());
         testCandidate.getSteps().stream()
                 .map(pickleStepFactory::provideStep)
                 .map(pickleStepFactory::wrapStepWithStepHooks)
-                .forEach(stepDefinitions -> testDefinition.getSteps().addAll(stepDefinitions));
-        testDefinition.getSteps().addAll(pickleStepFactory.provideAfterTestHooks());
-        testDefinition.setFallbackStrategy(fallbackStrategy);
-        return testDefinition;
+                .forEach(stepDefinitions -> test.getSteps().addAll(stepDefinitions));
+        test.getSteps().addAll(pickleStepFactory.provideAfterTestHooks());
+        test.setFallbackStrategy(fallbackStrategy);
+        test.getSteps().forEach(step -> step.setParentId(test.getRuntimeId()));
+        return test;
     }
 
     private String formatLocation(Pickle pickle) {
@@ -78,6 +82,24 @@ public class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBind
         return pickle.getTags().stream()
                 .map(PickleTag::getName)
                 .collect(Collectors.toList());
+    }
+
+    private TestSuite.Test.Meta getMetaFromPickle(Pickle pickle) {
+        return pickle.getTags().stream()
+                .map(PickleTag::getName)
+                .map(tag -> StringUtils.remove(tag, TAG_SYMBOL))
+                .collect(TestSuite.Test.Meta::new, this::convertValues, HashMap::putAll);
+    }
+
+    private void convertValues(TestSuite.Test.Meta meta, String s) {
+        StringTokenizer stringTokenizer = new StringTokenizer(s, TAG_VALUE_SEPARATOR);
+        String key = stringTokenizer.nextToken();
+        if (stringTokenizer.hasMoreTokens()) {
+            List<String> values = Arrays.asList(StringUtils.split(stringTokenizer.nextToken(), VALUE_SEPARATOR));
+            meta.put(key, values);
+        } else {
+            meta.put(key, Collections.emptyList());
+        }
     }
 
     class StandardFallbackStrategy implements TestSuite.FallbackStrategy {
