@@ -66,6 +66,7 @@ public class ClassicSuiteDiscovery implements TestSuiteDiscovery {
                 .map(classicTestBinder::bind)
                 .peek(test -> test.setParentId(testCase.getRuntimeId()))
                 .collect(Collectors.toList());
+        testCase.getTests().addAll(tests);
         return testCase;
     }
 }

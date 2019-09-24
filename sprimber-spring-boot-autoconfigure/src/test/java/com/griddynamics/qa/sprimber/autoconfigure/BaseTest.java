@@ -25,11 +25,10 @@ $Id:
 package com.griddynamics.qa.sprimber.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.griddynamics.qa.sprimber.autoconfigure.annotation.EnableSprimber;
+import com.griddynamics.qa.sprimber.discovery.support.cucumber.JacksonDataTableTransformer;
+import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.executor.CliExecutor;
 import com.griddynamics.qa.sprimber.engine.model.action.ActionsContainer;
-import com.griddynamics.qa.sprimber.engine.configuration.SprimberProperties;
-import com.griddynamics.qa.sprimber.discovery.support.cucumber.JacksonDataTableTransformer;
 import com.griddynamics.qa.sprimber.engine.scope.FlowOrchestrator;
 import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
 import gherkin.Parser;
@@ -48,7 +47,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.Clock;
 
-import static com.griddynamics.qa.sprimber.autoconfigure.SprimberRegistrar.ATTRIBUTES_BEAN_NAME;
 import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_EXECUTOR_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -81,13 +79,11 @@ public class BaseTest {
                             assertThat(context).hasSingleBean(FlowOrchestrator.class);
                             assertThat(context).hasSingleBean(TestCaseSummaryPrinter.class);
                             assertThat(context).hasBean(SPRIMBER_EXECUTOR_NAME);
-                            assertThat(context).hasBean(ATTRIBUTES_BEAN_NAME);
                         }
                 );
     }
 
     @SpringBootApplication
-    @EnableSprimber
     static class SomeTestConfiguration {
 
         @Bean

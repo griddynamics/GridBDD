@@ -2,10 +2,6 @@ logging:
   level:
     com.griddynamics.qa.sprimber.lifecycle.TestCaseIlluminator: DEBUG
     com.griddynamics.qa.sprimber.engine.executor: DEBUG
-spring:
-  aop:
-    auto: false
-    proxy-target-class: false
 sprimber:
   configuration:
     featurePath: feature/**/*.feature

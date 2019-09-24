@@ -25,18 +25,14 @@ $Id:
 package com.griddynamics.qa.sprimber.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.griddynamics.qa.sprimber.autoconfigure.annotation.EnableSprimber;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * @author fparamonov
  */
 @SpringBootApplication
-@EnableSprimber
-@EnableAsync
 public class EchoTestBackend {
 
     public static void main(String[] args) throws Exception {
