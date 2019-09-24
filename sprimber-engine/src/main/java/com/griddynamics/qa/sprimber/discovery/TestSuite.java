@@ -59,7 +59,7 @@ public class TestSuite {
         private String description;
         private String parentId;
         private String historyId;
-        private Meta meta;
+        private Meta meta = new Meta();
         private ExecutionResult executionResult;
         private FallbackStrategy fallbackStrategy;
         private List<Step> steps = new ArrayList<>();
