@@ -38,6 +38,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -51,6 +52,7 @@ import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 @Slf4j
 @Aspect
 @Component
+@ConditionalOnProperty(value = "enable.aspect.reporting", prefix = "sprimber.configuration", havingValue = "true")
 public class StepExecutionReportCatcher {
 
     private static SprimberEventPublisher eventPublisher;
