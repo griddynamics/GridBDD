@@ -37,7 +37,7 @@ import java.lang.reflect.Method;
  * @author fparamonov
  */
 
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class ClassicTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Method> {
 
     private final ClassicStepFactory classicStepFactory;

@@ -22,17 +22,19 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.autoconfigure;
-
-import com.griddynamics.qa.sprimber.discovery.SprimberCucumberConfiguration;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+package com.griddynamics.qa.sprimber.discovery;
 
 /**
  * @author fparamonov
  */
+class ExampleTestController {
 
-@Configuration
-@Import({SprimberCucumberConfiguration.class, SprimberClassicConfiguration.class})
-public class SprimberExtensionsConfiguration {
+    static final String TEST_NAME = "Test Name";
+    static final String TEST_DESCRIPTION = "Test Description";
+    static final String TEST_STEP_NAME = "Test Step Name";
+
+    @TestMapping(name = TEST_NAME, description = TEST_DESCRIPTION)
+    void testMe() {
+        // return nothing
+    }
 }
