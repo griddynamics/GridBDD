@@ -22,11 +22,9 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.autoconfigure;
+package com.griddynamics.qa.sprimber.discovery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.griddynamics.qa.sprimber.discovery.CucumberDiscoveryConfiguration;
-import com.griddynamics.qa.sprimber.discovery.JacksonDataTableTransformer;
 import gherkin.AstBuilder;
 import gherkin.Parser;
 import gherkin.TokenMatcher;
@@ -49,6 +47,13 @@ import java.util.Locale;
 public class SprimberCucumberConfiguration {
 
     @Configuration
+    @Import({CucumberClassMarkerProvider.class, CucumberStepDefinitionResolver.class, CucumberSuiteDiscovery.class,
+            CucumberTestBinder.class, PickleStepFactory.class, TagFilter.class
+    })
+    static class DiscoveryConfiguration {
+    }
+
+    @Configuration
     static class ThirdPartyConfiguration {
         @Bean
         public Parser<GherkinDocument> gherkinParser() {
@@ -65,6 +70,11 @@ public class SprimberCucumberConfiguration {
             return new Compiler();
         }
 
+        @Bean
+        @ConditionalOnMissingBean
+        public ObjectMapper typeRegistryObjectMapper() {
+            return new ObjectMapper();
+        }
 
         @Bean
         @ConditionalOnMissingBean
@@ -74,17 +84,12 @@ public class SprimberCucumberConfiguration {
 
         @Bean
         @ConditionalOnMissingBean
-        public TypeRegistry typeRegistry(ObjectMapper objectMapper) {
+        public TypeRegistry typeRegistry(ObjectMapper typeRegistryObjectMapper) {
             TypeRegistry typeRegistry = new TypeRegistry(Locale.ENGLISH);
-            JacksonDataTableTransformer jacksonDataTableTransformer = new JacksonDataTableTransformer(objectMapper);
+            JacksonDataTableTransformer jacksonDataTableTransformer = new JacksonDataTableTransformer(typeRegistryObjectMapper);
             typeRegistry.dataTableTypeRegistry().setDefaultDataTableEntryTransformer(jacksonDataTableTransformer);
             typeRegistry.dataTableTypeRegistry().setDefaultDataTableCellTransformer(jacksonDataTableTransformer);
             return typeRegistry;
         }
-    }
-
-    @Configuration
-    @Import({CucumberDiscoveryConfiguration.class})
-    static class CucumberDiscovery {
     }
 }

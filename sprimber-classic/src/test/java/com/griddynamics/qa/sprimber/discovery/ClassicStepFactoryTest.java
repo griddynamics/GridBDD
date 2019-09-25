@@ -24,16 +24,21 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import com.griddynamics.qa.sprimber.common.TestSuite;
+import org.junit.Test;
+import org.springframework.util.ReflectionUtils;
+
+import java.lang.reflect.Method;
 
 /**
  * @author fparamonov
  */
+public class ClassicStepFactoryTest {
 
-@Configuration
-@Import({CucumberClassMarkerProvider.class, CucumberStepDefinitionResolver.class, CucumberSuiteDiscovery.class,
-        CucumberTestBinder.class, PickleStepFactory.class, TagFilter.class
-})
-public class CucumberDiscoveryConfiguration {
+    @Test
+    public void testBasicFunctionality() {
+        ClassicStepFactory stepFactory = new ClassicStepFactory();
+        Method testMethod = ReflectionUtils.findMethod(ExampleTestController.class, "testMe");
+        TestSuite.Step step = stepFactory.provideStep(testMethod);
+    }
 }
