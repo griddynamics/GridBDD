@@ -22,17 +22,33 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.autoconfigure;
+package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.discovery.SprimberCucumberConfiguration;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import org.assertj.core.api.Assertions;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 
 /**
  * @author fparamonov
  */
 
-@Configuration
-@Import({SprimberCucumberConfiguration.class, SprimberClassicConfiguration.class})
-public class SprimberExtensionsConfiguration {
+@RunWith(SpringRunner.class)
+public class ConfigurationTest {
+
+    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(ClassicDiscoveryConfiguration.class));
+
+    @Test
+    public void testRequiredBeans() {
+        this.contextRunner.run(context -> {
+            Assertions.assertThat(context).hasSingleBean(ClassicStepDefinitionResolver.class);
+            Assertions.assertThat(context).hasSingleBean(ClassicStepFactory.class);
+            Assertions.assertThat(context).hasSingleBean(ClassicSuiteDiscovery.class);
+            Assertions.assertThat(context).hasSingleBean(ClassicTestBinder.class);
+            Assertions.assertThat(context).hasSingleBean(SprimberClassMarkerProvider.class);
+        });
+    }
 }
