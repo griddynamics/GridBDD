@@ -24,17 +24,15 @@ $Id:
 
 package com.griddynamics.qa.sprimber.event;
 
-import com.griddynamics.qa.sprimber.discovery.TestSuite;
+import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.event.Events.StepEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Component;
 
 /**
  * @author fparamonov
  */
 
-@Component
 @RequiredArgsConstructor
 public class SprimberEventPublisher {
 
@@ -94,83 +92,83 @@ public class SprimberEventPublisher {
 
     public class StepStartedEvent extends StepEvent {
 
-        public StepStartedEvent(Object source) {
+        StepStartedEvent(Object source) {
             super(source);
         }
 
-        public StepStartedEvent(Object source, TestSuite.Step step) {
+        StepStartedEvent(Object source, TestSuite.Step step) {
             super(source, step);
         }
     }
 
     public class StepFinishedEvent extends StepEvent {
 
-        public StepFinishedEvent(Object source) {
+        StepFinishedEvent(Object source) {
             super(source);
         }
 
-        public StepFinishedEvent(Object source, TestSuite.Step step) {
+        StepFinishedEvent(Object source, TestSuite.Step step) {
             super(source, step);
         }
     }
 
     public class TestStartedEvent extends Events.TestEvent {
-        public TestStartedEvent(Object source) {
+        TestStartedEvent(Object source) {
             super(source);
         }
 
-        public TestStartedEvent(Object source, TestSuite.Test test) {
+        TestStartedEvent(Object source, TestSuite.Test test) {
             super(source, test);
         }
     }
 
     public class TestFinishedEvent extends Events.TestEvent {
-        public TestFinishedEvent(Object source) {
+        TestFinishedEvent(Object source) {
             super(source);
         }
 
-        public TestFinishedEvent(Object source, TestSuite.Test test) {
+        TestFinishedEvent(Object source, TestSuite.Test test) {
             super(source, test);
         }
     }
 
     public class TestCaseStartedEvent extends Events.TestCaseEvent {
-        public TestCaseStartedEvent(Object source) {
+        TestCaseStartedEvent(Object source) {
             super(source);
         }
 
-        public TestCaseStartedEvent(Object source, TestSuite.TestCase testCase) {
+        TestCaseStartedEvent(Object source, TestSuite.TestCase testCase) {
             super(source, testCase);
         }
     }
 
     public class TestCaseFinishedEvent extends Events.TestCaseEvent {
 
-        public TestCaseFinishedEvent(Object source) {
+        TestCaseFinishedEvent(Object source) {
             super(source);
         }
 
-        public TestCaseFinishedEvent(Object source, TestSuite.TestCase testCase) {
+        TestCaseFinishedEvent(Object source, TestSuite.TestCase testCase) {
             super(source, testCase);
         }
     }
 
     public class TestSuiteStartedEvent extends Events.TestSuiteEvent {
-        public TestSuiteStartedEvent(Object source) {
+        TestSuiteStartedEvent(Object source) {
             super(source);
         }
 
-        public TestSuiteStartedEvent(Object source, TestSuite testSuite) {
+        TestSuiteStartedEvent(Object source, TestSuite testSuite) {
             super(source, testSuite);
         }
     }
 
     public class TestSuiteFinishedEvent extends Events.TestSuiteEvent {
-        public TestSuiteFinishedEvent(Object source) {
+        TestSuiteFinishedEvent(Object source) {
             super(source);
         }
 
-        public TestSuiteFinishedEvent(Object source, TestSuite testSuite) {
+        TestSuiteFinishedEvent(Object source, TestSuite testSuite) {
             super(source, testSuite);
         }
     }

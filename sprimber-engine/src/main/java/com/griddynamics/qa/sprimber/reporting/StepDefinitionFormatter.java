@@ -24,8 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuite;
+import com.griddynamics.qa.sprimber.common.TestSuite;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +32,6 @@ import org.springframework.stereotype.Component;
  * @author fparamonov
  */
 
-@Component
 public class StepDefinitionFormatter {
 
     public String formatStepName(TestSuite.Step step) {
@@ -42,9 +40,5 @@ public class StepDefinitionFormatter {
         } else {
             return StringUtils.isBlank(step.getResolvedTextPattern()) ? step.getName() : step.getResolvedTextPattern();
         }
-    }
-
-    public boolean isHookStep(StepDefinition stepDefinition) {
-        return stepDefinition.getStepType().equals(StepDefinition.StepType.BEFORE) || stepDefinition.getStepType().equals(StepDefinition.StepType.AFTER);
     }
 }
