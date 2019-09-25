@@ -65,12 +65,12 @@ public class BaseEchoSteps {
         LOGGER.info("Hey, I'm given action");
     }
 
-    @Given("the next author exist:")
-    public void givenDataTable(List<Author> authors) {
-        LOGGER.info("Hey, I'm given action for author {}", authors.get(0));
-        Assertions.assertThat(authors).hasSize(1);
-        Assertions.assertThat(authors).extracting("name").contains("testName");
-    }
+//    @Given("the next author exist:")
+//    public void givenDataTable(List<Author> authors) {
+//        LOGGER.info("Hey, I'm given action for author {}", authors.get(0));
+//        Assertions.assertThat(authors).hasSize(1);
+//        Assertions.assertThat(authors).extracting("name").contains("testName");
+//    }
 
     @Given("the next author long consumed '{long}'")
     public void givenLong(Long dummyNumber) {

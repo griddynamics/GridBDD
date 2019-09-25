@@ -24,13 +24,12 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine;
 
-import com.griddynamics.qa.sprimber.discovery.TestSuite;
-import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
+import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.discovery.ExecutionContext;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
@@ -47,7 +46,6 @@ import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.SKIPPED
  */
 
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class SuiteExecutor {
 

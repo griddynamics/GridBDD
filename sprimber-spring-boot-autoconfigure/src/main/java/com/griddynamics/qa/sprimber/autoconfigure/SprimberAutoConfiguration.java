@@ -24,55 +24,15 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import java.util.concurrent.Executor;
-
-import static com.griddynamics.qa.sprimber.engine.model.ThreadConstants.SPRIMBER_EXECUTOR_NAME;
 
 /**
  * @author fparamonov
  */
+
 @Configuration
-@ComponentScan(basePackages = {"com.griddynamics.qa.sprimber.engine",
-        "com.griddynamics.qa.sprimber.discovery",
-        "com.griddynamics.qa.sprimber.reporting",
-        "com.griddynamics.qa.sprimber.event"})
-@Import(SprimberBeans.class)
+@Import({SprimberConfiguration.class, SprimberReportingConfiguration.class, SprimberExtensionsConfiguration.class})
 public class SprimberAutoConfiguration {
-
-    @Deprecated
-    @Bean(SPRIMBER_EXECUTOR_NAME)
-    public Executor asyncExecutor() {
-        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-        taskExecutor.setCorePoolSize(3);
-        taskExecutor.setMaxPoolSize(3);
-        taskExecutor.setThreadNamePrefix("TCExecutor-");
-        taskExecutor.initialize();
-        return taskExecutor;
-    }
-
-    @Bean
-    public Executor sprimberTestExecutor() {
-        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-        taskExecutor.setCorePoolSize(3);
-        taskExecutor.setMaxPoolSize(3);
-        taskExecutor.setThreadNamePrefix("TestExecutor-");
-        taskExecutor.initialize();
-        return taskExecutor;
-    }
-
-    @Bean
-    public Executor sprimberTestCaseExecutor() {
-        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-        taskExecutor.setCorePoolSize(3);
-        taskExecutor.setMaxPoolSize(3);
-        taskExecutor.setThreadNamePrefix("TestCaseExecutor-");
-        taskExecutor.initialize();
-        return taskExecutor;
-    }
 }

@@ -18,10 +18,21 @@
             <version>2.0.2.RELEASE</version>
             <optional>true</optional>
         </dependency>
-
         <dependency>
             <groupId>com.griddynamics.qa</groupId>
             <artifactId>sprimber-engine</artifactId>
+            <version>1.0.5-SNAPSHOT</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.griddynamics.qa</groupId>
+            <artifactId>sprimber-cucumber</artifactId>
+            <version>1.0.5-SNAPSHOT</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.griddynamics.qa</groupId>
+            <artifactId>sprimber-classic</artifactId>
             <version>1.0.5-SNAPSHOT</version>
             <optional>true</optional>
         </dependency>
@@ -33,7 +44,6 @@
             <scope>test</scope>
             <optional>true</optional>
         </dependency>
-
     </dependencies>
 
     <build>

@@ -24,13 +24,12 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuite;
-import com.griddynamics.qa.sprimber.discovery.support.StepDefinitionsAbstractFactory;
+import com.griddynamics.qa.sprimber.common.StepDefinition;
+import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.discovery.SpringStepDefinitionsFactory;
+import com.griddynamics.qa.sprimber.engine.ErrorMapper;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
-import com.griddynamics.qa.sprimber.engine.executor.ErrorMapper;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
-import cucumber.runtime.java.StepDefAnnotation;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -38,10 +37,6 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 
@@ -51,13 +46,11 @@ import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 
 @Slf4j
 @Aspect
-@Component
-@ConditionalOnProperty(value = "enable.aspect.reporting", prefix = "sprimber.configuration", havingValue = "true")
 public class StepExecutionReportCatcher {
 
     private static SprimberEventPublisher eventPublisher;
     private static ErrorMapper errorMapper;
-    private static List<StepDefinitionsAbstractFactory.StepDefinitionResolver> converters;
+    private static SpringStepDefinitionsFactory stepDefinitionsFactory;
 
     @Autowired
     public void setEventPublisher(SprimberEventPublisher eventPublisher) {
@@ -70,8 +63,8 @@ public class StepExecutionReportCatcher {
     }
 
     @Autowired
-    public void setConverters(List<StepDefinitionsAbstractFactory.StepDefinitionResolver> stepDefinitionResolvers) {
-        StepExecutionReportCatcher.converters = stepDefinitionResolvers;
+    public static void setStepDefinitionsFactory(SpringStepDefinitionsFactory stepDefinitionsFactory) {
+        StepExecutionReportCatcher.stepDefinitionsFactory = stepDefinitionsFactory;
     }
 
     @Around("stepMethodsExecution()")
@@ -79,10 +72,7 @@ public class StepExecutionReportCatcher {
         Object result = null;
         ExecutionResult executionResult = new ExecutionResult(PASSED);
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        StepDefinition stepDefinition = converters.stream()
-                .filter(converter -> converter.accept(methodSignature.getMethod()))
-                .flatMap(converter -> converter.resolve(methodSignature.getMethod()).stream())
-                .findFirst().get();
+        StepDefinition stepDefinition = stepDefinitionsFactory.getStepDefinitions().get("..");
         TestSuite.Step step = new TestSuite.Step();
         step.setStepDefinition(stepDefinition);
         step.setName(methodSignature.getMethod().getName());
@@ -107,7 +97,7 @@ public class StepExecutionReportCatcher {
 
     /**
      * This pointcut designed to catch all Cucumber step definition annotation that has parent
-     * meta annotation <code>{@link StepDefAnnotation}</code>
+     * meta annotation <code>{@link cucumber.runtime.java.StepDefAnnotation}</code>
      */
     @Pointcut("execution(@(@cucumber.runtime.java.StepDefAnnotation *) public void *(..))")
     public void cucumberStepExecution() {
@@ -115,7 +105,7 @@ public class StepExecutionReportCatcher {
 
     /**
      * This pointcut designed to catch all Cucumber step definition annotation that has parent
-     * meta annotation <code>{@link StepDefAnnotation}</code>
+     * meta annotation <code>{@link cucumber.runtime.java.StepDefAnnotation}</code>
      */
     @Pointcut("call(@(@cucumber.runtime.java.StepDefAnnotation *) public void *(..))")
     public void cucumberStepCall() {
@@ -135,11 +125,11 @@ public class StepExecutionReportCatcher {
     public void cucumberHookCall() {
     }
 
-    @Pointcut("within(@com.griddynamics.qa.sprimber.discovery.annotation.TestController *)")
+    @Pointcut("within(@com.griddynamics.qa.sprimber.discovery.TestController *)")
     public void withinTestControlelr() {
     }
 
-    @Pointcut("withincode(@com.griddynamics.qa.sprimber.discovery.annotation.TestMapping * *(..))")
+    @Pointcut("withincode(@com.griddynamics.qa.sprimber.discovery.TestMapping * *(..))")
     public void withinTestMappingMethods() {
     }
 
