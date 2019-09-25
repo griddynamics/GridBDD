@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.test.model;
 
-import com.griddynamics.qa.sprimber.engine.scope.annotation.ScenarioComponent;
+import com.griddynamics.qa.sprimber.scope.ScenarioComponent;
 
 /**
  * @author fparamonov

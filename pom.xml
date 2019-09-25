@@ -45,6 +45,9 @@
         <module>sprimber-spring-boot-autoconfigure</module>
         <module>sprimber-spring-boot-starter</module>
         <module>sprimber-test</module>
+        <module>sprimber-cucumber</module>
+        <module>sprimber-classic</module>
+        <module>sprimber-classic-bdd</module>
     </modules>
 
     <properties>

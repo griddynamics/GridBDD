@@ -24,8 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.test.tests;
 
-import com.griddynamics.qa.sprimber.discovery.annotation.TestController;
-import com.griddynamics.qa.sprimber.discovery.annotation.TestMapping;
+import com.griddynamics.qa.sprimber.discovery.TestController;
+import com.griddynamics.qa.sprimber.discovery.TestMapping;
 import com.griddynamics.qa.sprimber.test.steps.BaseEchoSteps;
 
 /**

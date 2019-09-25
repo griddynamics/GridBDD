@@ -24,8 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.event;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuite;
+import com.griddynamics.qa.sprimber.common.TestSuite;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;
@@ -35,11 +34,11 @@ import org.springframework.context.ApplicationEvent;
  *
  * @author fparamonov
  */
-public class Events {
+class Events {
 
     @Getter
     @Setter
-    public static abstract class StepEvent extends ApplicationEvent {
+    static abstract class StepEvent extends ApplicationEvent {
 
         private TestSuite.Step step;
 
@@ -48,11 +47,11 @@ public class Events {
          *
          * @param source the object on which the event initially occurred (never {@code null})
          */
-        public StepEvent(Object source) {
+        StepEvent(Object source) {
             super(source);
         }
 
-        public StepEvent(Object source, TestSuite.Step step) {
+        StepEvent(Object source, TestSuite.Step step) {
             super(source);
             this.step = step;
         }
@@ -60,7 +59,7 @@ public class Events {
 
     @Getter
     @Setter
-    public static abstract class TestEvent extends ApplicationEvent {
+    static abstract class TestEvent extends ApplicationEvent {
 
         private TestSuite.Test test;
 
@@ -69,11 +68,11 @@ public class Events {
          *
          * @param source the object on which the event initially occurred (never {@code null})
          */
-        public TestEvent(Object source) {
+        TestEvent(Object source) {
             super(source);
         }
 
-        public TestEvent(Object source, TestSuite.Test test) {
+        TestEvent(Object source, TestSuite.Test test) {
             super(source);
             this.test = test;
         }
@@ -81,7 +80,7 @@ public class Events {
 
     @Getter
     @Setter
-    public static abstract class TestCaseEvent extends ApplicationEvent {
+    static abstract class TestCaseEvent extends ApplicationEvent {
 
         private TestSuite.TestCase testCase;
 
@@ -90,11 +89,11 @@ public class Events {
          *
          * @param source the object on which the event initially occurred (never {@code null})
          */
-        public TestCaseEvent(Object source) {
+        TestCaseEvent(Object source) {
             super(source);
         }
 
-        public TestCaseEvent(Object source, TestSuite.TestCase testCase) {
+        TestCaseEvent(Object source, TestSuite.TestCase testCase) {
             super(source);
             this.testCase = testCase;
         }
@@ -102,7 +101,7 @@ public class Events {
 
     @Getter
     @Setter
-    public static abstract class TestSuiteEvent extends ApplicationEvent {
+    static abstract class TestSuiteEvent extends ApplicationEvent {
 
         private TestSuite testSuite;
 
@@ -111,11 +110,11 @@ public class Events {
          *
          * @param source the object on which the event initially occurred (never {@code null})
          */
-        public TestSuiteEvent(Object source) {
+        TestSuiteEvent(Object source) {
             super(source);
         }
 
-        public TestSuiteEvent(Object source, TestSuite testSuite) {
+        TestSuiteEvent(Object source, TestSuite testSuite) {
             super(source);
             this.testSuite = testSuite;
         }

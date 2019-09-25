@@ -24,8 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting.allure;
 
-import com.griddynamics.qa.sprimber.discovery.StepDefinition;
-import com.griddynamics.qa.sprimber.discovery.TestSuite;
+import com.griddynamics.qa.sprimber.common.StepDefinition;
+import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import com.griddynamics.qa.sprimber.reporting.StepDefinitionFormatter;
@@ -36,7 +36,6 @@ import io.qameta.allure.util.ResultsUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
 import java.io.ByteArrayInputStream;
@@ -51,7 +50,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
  */
 
 @Slf4j
-@Component
 public class AllureSprimber {
 
     private static final String CUCUMBER_SUITES = "Cucumber Suites";
