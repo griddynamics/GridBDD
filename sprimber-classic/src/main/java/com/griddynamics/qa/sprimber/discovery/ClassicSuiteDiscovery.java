@@ -30,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +44,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 class ClassicSuiteDiscovery implements TestSuiteDiscovery {
 
+    private static final String NAME_ATTRIBUTE_NAME = "testCaseName";
+    private static final String DESCRIPTION_ATTRIBUTE_NAME = "description";
     private final ClassicTestBinder classicTestBinder;
     private final ApplicationContext applicationContext;
 
@@ -57,6 +60,9 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
 
     private TestSuite.TestCase testCaseDiscover(Object testController) {
         val testCase = new TestSuite.TestCase();
+        TestController controller = testController.getClass().getAnnotation(TestController.class);
+        testCase.setName(String.valueOf(AnnotationUtils.getValue(controller, NAME_ATTRIBUTE_NAME)));
+        testCase.setDescription(String.valueOf(AnnotationUtils.getValue(controller, DESCRIPTION_ATTRIBUTE_NAME)));
         List<TestSuite.Test> tests = Arrays.stream(testController.getClass().getDeclaredMethods())
                 .filter(method -> method.isAnnotationPresent(TestMapping.class))
                 .map(classicTestBinder::bind)

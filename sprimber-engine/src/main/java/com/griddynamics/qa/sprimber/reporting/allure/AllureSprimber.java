@@ -91,9 +91,7 @@ public class AllureSprimber {
         testCaseResultContainer.setDescription(testCaseStartedEvent.getTestCase().getDescription());
         testCaseResultContainer.setUuid(testCaseStartedEvent.getTestCase().getRuntimeId());
         lifecycle.startTestContainer(testCaseResultContainer);
-        testCaseStartedEvent.getTestCase().getTests().forEach(test -> {
-            scheduleTest(testCaseStartedEvent, test);
-        });
+        testCaseStartedEvent.getTestCase().getTests().forEach(test -> scheduleTest(testCaseStartedEvent, test));
     }
 
     private void scheduleTest(SprimberEventPublisher.TestCaseStartedEvent testCaseStartedEvent, TestSuite.Test test) {

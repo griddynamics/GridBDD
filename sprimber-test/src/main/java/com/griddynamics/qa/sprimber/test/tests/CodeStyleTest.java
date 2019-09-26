@@ -32,7 +32,7 @@ import com.griddynamics.qa.sprimber.test.steps.BaseEchoSteps;
  * @author fparamonov
  */
 
-@TestController
+@TestController(suiteName = "Code Style Suite", testCaseName = "Simple functionality check")
 public class CodeStyleTest {
 
     private final BaseEchoSteps baseEchoSteps;
@@ -41,7 +41,7 @@ public class CodeStyleTest {
         this.baseEchoSteps = baseEchoSteps;
     }
 
-    @TestMapping(value = "some test", description = "Some test that uses BDD steps")
+    @TestMapping(name = "Some simple test", description = "Some test that uses BDD steps")
     public void myFirstTest() {
         baseEchoSteps.given();
         baseEchoSteps.when();
