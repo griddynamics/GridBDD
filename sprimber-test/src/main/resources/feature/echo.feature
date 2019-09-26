@@ -34,12 +34,12 @@ Feature: This is a test feature for echo application
     When test when action
     Then test then action
 
-#  @echo
-#  @Story=positive
-#  Scenario: Simple scenario to check steps with DataTable arguments
-#    Given the next author exist:
-#      | name     | surname     | book     |
-#      | testName | testSurname | testBook |
+  @echo
+  @Story=positive
+  Scenario: Simple scenario to check steps with DataTable arguments
+    Given the next author exist:
+      | name     | surname     | book     |
+      | testName | testSurname | testBook |
 
   @echo
   @Story=positive
