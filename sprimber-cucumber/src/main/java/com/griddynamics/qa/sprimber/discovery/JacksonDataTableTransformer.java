@@ -24,11 +24,13 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cucumber.datatable.TableCellByTypeTransformer;
 import io.cucumber.datatable.TableEntryByTypeTransformer;
-import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
 
+import java.lang.reflect.Type;
 import java.util.Map;
 
 /**
@@ -37,21 +39,28 @@ import java.util.Map;
  * @author fparamonov
  */
 
-public class JacksonDataTableTransformer implements TableEntryByTypeTransformer, TableCellByTypeTransformer {
+@RequiredArgsConstructor
+class JacksonDataTableTransformer implements TableEntryByTypeTransformer, TableCellByTypeTransformer {
 
     private final ObjectMapper objectMapper;
 
-    public JacksonDataTableTransformer(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    @Override
+    public Object transform(String cellValue, Type toValueType) throws Throwable {
+        return objectMapper.convertValue(cellValue, new TypeReference<Object>() {
+            @Override
+            public Type getType() {
+                return toValueType;
+            }
+        });
     }
 
     @Override
-    public <T> T transform(String value, Class<T> cellType) throws Throwable {
-        return objectMapper.convertValue(value, cellType);
-    }
-
-    @Override
-    public <T> T transform(Map<String, String> entry, Class<T> type, TableCellByTypeTransformer cellTransformer) throws Throwable {
-        return objectMapper.convertValue(entry, type);
+    public Object transform(Map<String, String> entryValue, Type toValueType, TableCellByTypeTransformer cellTransformer) throws Throwable {
+        return objectMapper.convertValue(entryValue, new TypeReference<Object>() {
+            @Override
+            public Type getType() {
+                return toValueType;
+            }
+        });
     }
 }

@@ -48,7 +48,7 @@ public class SprimberCucumberConfiguration {
 
     @Configuration
     @Import({CucumberClassMarkerProvider.class, CucumberStepDefinitionResolver.class, CucumberSuiteDiscovery.class,
-            CucumberTestBinder.class, PickleStepFactory.class, TagFilter.class
+            CucumberTestBinder.class, PickleStepFactory.class, TagFilter.class, StepMatcher.class
     })
     static class DiscoveryConfiguration {
     }
@@ -71,15 +71,15 @@ public class SprimberCucumberConfiguration {
         }
 
         @Bean
-        @ConditionalOnMissingBean
+        @ConditionalOnMissingBean(name = "typeRegistryObjectMapper")
         public ObjectMapper typeRegistryObjectMapper() {
             return new ObjectMapper();
         }
 
         @Bean
         @ConditionalOnMissingBean
-        public StepExpressionFactory stepExpressionFactory() {
-            return new StepExpressionFactory(new TypeRegistry(Locale.ENGLISH));
+        public StepExpressionFactory stepExpressionFactory(TypeRegistry typeRegistry) {
+            return new StepExpressionFactory(typeRegistry);
         }
 
         @Bean
