@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.griddynamics.qa.sprimber.common.SprimberProperties;
 import com.griddynamics.qa.sprimber.discovery.ExecutionContextFactory;
 import com.griddynamics.qa.sprimber.discovery.SpringStepDefinitionsFactory;
@@ -69,12 +68,6 @@ public class SprimberConfiguration {
     @ConditionalOnMissingBean
     public Clock clock() {
         return Clock.systemDefaultZone();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public ObjectMapper sprimberObjectMapper() {
-        return new ObjectMapper();
     }
 
     @Configuration

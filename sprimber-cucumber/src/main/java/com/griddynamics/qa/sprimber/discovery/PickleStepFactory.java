@@ -32,16 +32,16 @@ import gherkin.pickles.PickleStep;
 import gherkin.pickles.PickleTable;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.stepexpression.Argument;
-import io.cucumber.stepexpression.ExpressionArgumentMatcher;
-import io.cucumber.stepexpression.StepExpression;
-import io.cucumber.stepexpression.StepExpressionFactory;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -53,31 +53,37 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 class PickleStepFactory extends AbstractStepFactory<PickleStep> {
 
-    private final StepExpressionFactory stepExpressionFactory;
     private final TagFilter tagFilter;
+    private final StepMatcher stepMatcher;
 
     @Override
     public TestSuite.Step provideStep(PickleStep stepCandidate) {
-        List<StepDefinition> targetDefinitions = getStepDefinitions().values().stream()
+        List<TestSuite.Step> steps = getStepDefinitions().values().stream()
                 .filter(stepDefinition -> StringUtils.isNotBlank(stepDefinition.getBindingTextPattern()))
-                .filter(stepDefinition -> Objects.nonNull(getArgumentsFromPickleStep(stepDefinition, stepCandidate)))
+                .map(stepDefinition ->
+                        stepMatcher.matchAndGetArgumentsFrom(stepCandidate, stepDefinition, stepDefinition.getMethod().getParameterTypes())
+                                .map(arguments -> buildStep(stepCandidate, stepDefinition, arguments))
+                )
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .collect(Collectors.toList());
-        if (targetDefinitions.size() == 0) {
+        if (steps.size() == 0) {
             throw new StepNotFoundException(stepCandidate);
         }
-        if (targetDefinitions.size() > 1) {
-            throw new ExtraMappingFoundException(targetDefinitions, stepCandidate);
+        if (steps.size() > 1) {
+            throw new ExtraMappingFoundException(steps, stepCandidate);
         }
-        List<Argument> arguments = getArgumentsFromPickleStep(targetDefinitions.get(0), stepCandidate);
-        List<Type> actualParameters = Arrays.asList(targetDefinitions.get(0).getMethod().getGenericParameterTypes());
+        return steps.get(0);
+    }
 
+    private TestSuite.Step buildStep(PickleStep stepCandidate, StepDefinition stepDefinition, List<Argument> arguments) {
         TestSuite.Step step = new TestSuite.Step();
-        step.setStepDefinition(targetDefinitions.get(0));
+        step.setStepDefinition(stepDefinition);
         step.setName(stepCandidate.getText());
         step.setResolvedTextPattern(stepCandidate.getText());
         handleAdditionalStepData(stepCandidate)
                 .ifPresent(stepData -> step.getStepDefinition().getAttributes().put("stepData", stepData));
-        step.getParameters().putAll(handleStepArguments(arguments, actualParameters));
+        step.getParameters().putAll(convertStepArguments(arguments, Arrays.asList(stepDefinition.getMethod().getGenericParameterTypes())));
         return step;
     }
 
@@ -86,7 +92,7 @@ class PickleStepFactory extends AbstractStepFactory<PickleStep> {
                 tagFilter.filter((String) stepDefinition.getAttributes().get(CucumberStepDefinitionResolver.TAGS_ATTRIBUTE));
     }
 
-    private Map<String, Object> handleStepArguments(List<Argument> arguments, List<Type> methodParameters) {
+    private Map<String, Object> convertStepArguments(List<Argument> arguments, List<Type> methodParameters) {
         return IntStream.range(0, methodParameters.size())
                 .mapToObj(counter -> argumentToEntry(arguments.get(counter), methodParameters.get(counter)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -130,18 +136,13 @@ class PickleStepFactory extends AbstractStepFactory<PickleStep> {
                 );
     }
 
-    private List<Argument> getArgumentsFromPickleStep(StepDefinition definition, PickleStep pickleStep) {
-        StepExpression stepExpression = stepExpressionFactory.createExpression(definition.getBindingTextPattern());
-        ExpressionArgumentMatcher argumentMatcher = new ExpressionArgumentMatcher(stepExpression);
-        return argumentMatcher.argumentsFrom(pickleStep, definition.getMethod().getParameterTypes());
-    }
-
     class ExtraMappingFoundException extends RuntimeException {
 
-        ExtraMappingFoundException(List<StepDefinition> stepDefinitions, PickleStep pickleStep) {
+        ExtraMappingFoundException(List<TestSuite.Step> steps, PickleStep pickleStep) {
             super(String.format("Step '%s' mapped to next methods '%s'!",
                     pickleStep.getText(),
-                    stepDefinitions.stream()
+                    steps.stream()
+                            .map(TestSuite.Step::getStepDefinition)
                             .map(StepDefinition::getMethod)
                             .map(Method::toString)
                             .collect(Collectors.joining(","))

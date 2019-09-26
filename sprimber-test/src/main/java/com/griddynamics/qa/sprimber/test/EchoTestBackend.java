@@ -24,10 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 
 /**
  * @author fparamonov
@@ -37,10 +35,5 @@ public class EchoTestBackend {
 
     public static void main(String[] args) throws Exception {
         SpringApplication.exit(SpringApplication.run(EchoTestBackend.class));
-    }
-
-    @Bean
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper();
     }
 }
