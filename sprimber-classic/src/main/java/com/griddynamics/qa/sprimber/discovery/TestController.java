@@ -50,4 +50,10 @@ public @interface TestController {
      */
     @AliasFor(annotation = Component.class)
     String value() default "";
+
+    String suiteName() default "";
+
+    String testCaseName() default "";
+
+    String description() default "";
 }
