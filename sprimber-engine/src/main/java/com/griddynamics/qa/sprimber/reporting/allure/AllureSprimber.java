@@ -177,6 +177,24 @@ public class AllureSprimber {
     }
 
     @EventListener
+    public void codeStyleStepStarted(SprimberEventPublisher.UtilityStepStartedEvent utilityStepStartedEvent) {
+        StepResult stepResult = new StepResult();
+        stepResult.setName(utilityStepStartedEvent.getStep().getName());
+        lifecycle.startStep(utilityStepStartedEvent.getStep().getRuntimeId(), stepResult);
+    }
+
+    @EventListener
+    public void codeStyleStepFinished(SprimberEventPublisher.UtilityStepFinishedEvent utilityStepFinishedEvent) {
+        ExecutionResult result = utilityStepFinishedEvent.getStep().getExecutionResult();
+        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
+        lifecycle.updateStep(step -> {
+            step.setStatus(allureToSprimberStatusMapping.get(result.getStatus()));
+            statusDetails.ifPresent(step::setStatusDetails);
+        });
+        lifecycle.stopStep();
+    }
+
+    @EventListener
     public void testStepStarted(SprimberEventPublisher.StepStartedEvent stepStartedEvent) {
         String stepReportName = stepStartedEvent.getStep().getStepDefinition().getStepType() + " " +
                 stepStartedEvent.getStep().getStepDefinition().getStepPhase() + " " +

@@ -37,6 +37,9 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.DigestUtils;
+
+import java.lang.reflect.Method;
 
 import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 
@@ -63,7 +66,7 @@ public class StepExecutionReportCatcher {
     }
 
     @Autowired
-    public static void setStepDefinitionsFactory(SpringStepDefinitionsFactory stepDefinitionsFactory) {
+    public void setStepDefinitionsFactory(SpringStepDefinitionsFactory stepDefinitionsFactory) {
         StepExecutionReportCatcher.stepDefinitionsFactory = stepDefinitionsFactory;
     }
 
@@ -72,13 +75,13 @@ public class StepExecutionReportCatcher {
         Object result = null;
         ExecutionResult executionResult = new ExecutionResult(PASSED);
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        StepDefinition stepDefinition = stepDefinitionsFactory.getStepDefinitions().get("..");
+        StepDefinition stepDefinition = stepDefinitionsFactory.getStepDefinitions().get(buildHash(methodSignature.getMethod()));
         TestSuite.Step step = new TestSuite.Step();
         step.setStepDefinition(stepDefinition);
-        step.setName(methodSignature.getMethod().getName());
+        step.setName(stepDefinition.getName());
         try {
             log.info("Starting point");
-            StepExecutionReportCatcher.eventPublisher.stepStarted(this, step);
+            StepExecutionReportCatcher.eventPublisher.utilityStepStarted(this, step);
             result = joinPoint.proceed();
             step.setExecutionResult(executionResult);
             log.info("Point completed");
@@ -90,7 +93,7 @@ public class StepExecutionReportCatcher {
             log.trace(executionResult.getErrorMessage());
             log.error(throwable.getLocalizedMessage());
         } finally {
-            StepExecutionReportCatcher.eventPublisher.stepFinished(this, step);
+            StepExecutionReportCatcher.eventPublisher.utilityStepFinished(this, step);
         }
         return result;
     }
@@ -135,5 +138,12 @@ public class StepExecutionReportCatcher {
 
     @Pointcut("withinTestMappingMethods() && (cucumberStepCall() || cucumberHookCall())")
     public void stepMethodsExecution() {
+    }
+
+    private String buildHash(Method method) {
+        String uniqueName = method.getDeclaringClass().getCanonicalName() + "#" +
+                method.getName() + "#" +
+                method.getParameterCount();
+        return DigestUtils.md5DigestAsHex(uniqueName.getBytes());
     }
 }
