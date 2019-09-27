@@ -51,22 +51,23 @@ public class SprimberReportingConfiguration {
     @Configuration
     static class ClassicReporting {
         @Bean
-        @ConditionalOnProperty(value = "sprimber.configuration.summary.printer.enable", havingValue = "true")
+        @ConditionalOnProperty(value = "reporting.summary.enable", prefix = "sprimber.configuration", havingValue = "true", matchIfMissing = true)
         public TestCaseSummaryPrinter summaryPrinter(StepDefinitionFormatter stepDefinitionFormatter) {
             return new TestCaseSummaryPrinter(stepDefinitionFormatter);
         }
 
         @Bean
-        @ConditionalOnProperty(value = "sprimber.configuration.summary.printer.enable", havingValue = "true")
+        @ConditionalOnProperty(value = "reporting.illuminator.enable", prefix = "sprimber.configuration", havingValue = "true", matchIfMissing = true)
         public TestCaseIlluminator testCaseIlluminator() {
             return new TestCaseIlluminator();
         }
 
         @Bean
-        @ConditionalOnProperty(value = "enable.aspect.reporting", prefix = "sprimber.configuration", havingValue = "true")
+        @ConditionalOnProperty(value = "reporting.aspect.enable", prefix = "sprimber.configuration", havingValue = "true")
         public StepExecutionReportCatcher stepExecutionReportCatcher() {
             return new StepExecutionReportCatcher();
         }
+
         @Bean
         public StepDefinitionFormatter stepDefinitionFormatter() {
             return new StepDefinitionFormatter();

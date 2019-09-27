@@ -48,6 +48,16 @@ public class SprimberEventPublisher {
         eventPublisher.publishEvent(stepFinishedEvent);
     }
 
+    public void utilityStepStarted(Object target, TestSuite.Step step) {
+        UtilityStepStartedEvent stepStartedEvent = new UtilityStepStartedEvent(target, step);
+        eventPublisher.publishEvent(stepStartedEvent);
+    }
+
+    public void utilityStepFinished(Object target, TestSuite.Step step) {
+        UtilityStepFinishedEvent stepFinishedEvent = new UtilityStepFinishedEvent(target, step);
+        eventPublisher.publishEvent(stepFinishedEvent);
+    }
+
     public void testStarted(Object target, TestSuite.Test test) {
         if (test.getSteps().isEmpty()) {
             return;
@@ -88,6 +98,28 @@ public class SprimberEventPublisher {
     public void testSuiteFinished(Object target, TestSuite testSuite) {
         TestSuiteFinishedEvent testSuiteFinishedEvent = new TestSuiteFinishedEvent(target, testSuite);
         eventPublisher.publishEvent(testSuiteFinishedEvent);
+    }
+
+    public class UtilityStepStartedEvent extends StepEvent {
+
+        UtilityStepStartedEvent(Object source) {
+            super(source);
+        }
+
+        UtilityStepStartedEvent(Object source, TestSuite.Step step) {
+            super(source, step);
+        }
+    }
+
+    public class UtilityStepFinishedEvent extends StepEvent {
+
+        UtilityStepFinishedEvent(Object source) {
+            super(source);
+        }
+
+        UtilityStepFinishedEvent(Object source, TestSuite.Step step) {
+            super(source, step);
+        }
     }
 
     public class StepStartedEvent extends StepEvent {
