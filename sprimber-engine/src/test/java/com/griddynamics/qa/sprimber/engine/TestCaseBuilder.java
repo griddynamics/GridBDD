@@ -30,7 +30,7 @@ import org.springframework.util.ReflectionUtils;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
-import static com.griddynamics.qa.sprimber.engine.TreeSuiteExecutor.Node.*;
+import static com.griddynamics.qa.sprimber.engine.Node.*;
 
 /**
  * @author fparamonov
@@ -39,69 +39,87 @@ import static com.griddynamics.qa.sprimber.engine.TreeSuiteExecutor.Node.*;
 @Slf4j
 public class TestCaseBuilder {
 
-    private final Method beforeMethod = ReflectionUtils.findMethod(TreeSuiteExecutor.class, "before");
-    private final Method stepMethod = ReflectionUtils.findMethod(TreeSuiteExecutor.class, "step");
-    private final Method afterMethod = ReflectionUtils.findMethod(TreeSuiteExecutor.class, "after");
-    private final Method exceptionalStepMethod = ReflectionUtils.findMethod(TreeSuiteExecutor.class, "exceptionalStep");
+    private final Method beforeMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "before");
+    private final Method stepMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "step");
+    private final Method afterMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "after");
+    private final Method exceptionalStepMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "exceptionalStep");
 
-    TreeSuiteExecutor.Node buildTestCase() {
-        TreeSuiteExecutor.ContainerNode testCaseNode = childNode();
+    Node buildTestCase() {
+        Node.ContainerNode testCaseNode = childNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
-        TreeSuiteExecutor.Node testNode = buildTestNodeWithOneSurroundStep();
+        Node testNode = buildTestNodeWithOneSurroundStep();
         testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
         return testCaseNode;
     }
 
-    TreeSuiteExecutor.Node buildTestCaseWithTestWithTwoStep() {
-        TreeSuiteExecutor.ContainerNode testCaseNode = childNode();
+    Node buildTestCaseWithTestWithTwoStep() {
+        Node.ContainerNode testCaseNode = childNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
-        TreeSuiteExecutor.Node testNode = buildTestNodeWithTwoSurroundStep();
+        Node testNode = buildTestNodeWithTwoSurroundStep();
         testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
         return testCaseNode;
     }
 
-    TreeSuiteExecutor.Node buildTestCaseWithTestWithTwoStepDoubleHooks() {
-        TreeSuiteExecutor.ContainerNode testCaseNode = childNode();
+    Node buildTestCaseWithTestWithTwoStepDoubleHooks() {
+        Node.ContainerNode testCaseNode = childNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
-        TreeSuiteExecutor.Node testNode = buildTestNodeWithTwoSurroundStepDoubleHooks();
+        Node testNode = buildTestNodeWithTwoSurroundStepDoubleHooks();
         testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
         return testCaseNode;
     }
 
-    TreeSuiteExecutor.Node buildTestCaseWithException() {
-        TreeSuiteExecutor.ContainerNode testCaseNode = childNode();
+    Node buildTestCaseWithException() {
+        Node.ContainerNode testCaseNode = childNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
-        TreeSuiteExecutor.Node testNode = buildTestWithRegularAndExceptionalSurroundStep();
+        Node testNode = buildTestWithRegularAndExceptionalSurroundStep();
         testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
         return testCaseNode;
     }
 
-    TreeSuiteExecutor.Node buildTestCaseWithJustException() {
-        TreeSuiteExecutor.ContainerNode testCaseNode = childNode();
+    Node buildTestCaseWithBeforeStepException() {
+        Node.ContainerNode testCaseNode = childNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
-        TreeSuiteExecutor.Node testNode = buildTestWithJustExceptionalSurroundStep();
+        Node testNode = buildTestWithTwoSurroundStepAndBeforeStepException();
         testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
         return testCaseNode;
     }
 
-    TreeSuiteExecutor.Node buildTestNodeWithOneSurroundStep() {
-        TreeSuiteExecutor.Node testNode = testNode();
-        TreeSuiteExecutor.Node stepNode = buildStepSurroundWithSingleHooks();
+    Node buildTestCaseWithBeforeStepExceptionSkipOnError() {
+        Node.ContainerNode testCaseNode = childNode();
+        testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
+        testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        Node testNode = buildTestWithTwoSurroundStepAndBeforeStepExceptionSkipOnError();
+        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
+        return testCaseNode;
+    }
+
+    Node buildTestCaseWithJustException() {
+        Node.ContainerNode testCaseNode = childNode();
+        testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
+        testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        Node testNode = buildTestWithJustExceptionalSurroundStep();
+        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
+        return testCaseNode;
+    }
+
+    Node buildTestNodeWithOneSurroundStep() {
+        Node testNode = testNode();
+        Node stepNode = buildStepSurroundWithSingleHooks();
         testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(stepNode);
         testNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
         return testNode;
     }
 
-    TreeSuiteExecutor.Node buildTestNodeWithTwoSurroundStep() {
-        TreeSuiteExecutor.Node testNode = testNode();
-        TreeSuiteExecutor.Node firstStepNode = buildStepSurroundWithSingleHooks();
-        TreeSuiteExecutor.Node secondStepNode = buildStepSurroundWithSingleHooks();
+    Node buildTestNodeWithTwoSurroundStep() {
+        Node testNode = testNode();
+        Node firstStepNode = buildStepSurroundWithSingleHooks();
+        Node secondStepNode = buildStepSurroundWithSingleHooks();
         testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstStepNode);
         testNode.getChildren().get("child").add(secondStepNode);
@@ -109,10 +127,10 @@ public class TestCaseBuilder {
         return testNode;
     }
 
-    TreeSuiteExecutor.Node buildTestNodeWithTwoSurroundStepDoubleHooks() {
-        TreeSuiteExecutor.Node testNode = testNode();
-        TreeSuiteExecutor.Node firstStepNode = buildStepSurroundWithDoubleHooks();
-        TreeSuiteExecutor.Node secondStepNode = buildStepSurroundWithDoubleHooks();
+    Node buildTestNodeWithTwoSurroundStepDoubleHooks() {
+        Node testNode = testNode();
+        Node firstStepNode = buildStepSurroundWithDoubleHooks();
+        Node secondStepNode = buildStepSurroundWithDoubleHooks();
         testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstStepNode);
         testNode.getChildren().get("child").add(secondStepNode);
@@ -120,11 +138,11 @@ public class TestCaseBuilder {
         return testNode;
     }
 
-    TreeSuiteExecutor.Node buildTestWithRegularAndExceptionalSurroundStep() {
-        TreeSuiteExecutor.Node testNode = testNode();
-        TreeSuiteExecutor.Node firstStepNode = buildStepSurroundWithSingleHooks();
-        TreeSuiteExecutor.Node secondStepNode = buildExceptionalStepSurroundWithSingleHooks();
-        TreeSuiteExecutor.Node thirdStepNode = buildStepSurroundWithDoubleHooks();
+    Node buildTestWithRegularAndExceptionalSurroundStep() {
+        Node testNode = testNode();
+        Node firstStepNode = buildStepSurroundWithSingleHooks();
+        Node secondStepNode = buildExceptionalStepSurroundWithSingleHooks();
+        Node thirdStepNode = buildStepSurroundWithDoubleHooks();
         testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstStepNode);
         testNode.getChildren().get("child").add(secondStepNode);
@@ -133,33 +151,77 @@ public class TestCaseBuilder {
         return testNode;
     }
 
-    TreeSuiteExecutor.Node buildTestWithJustExceptionalSurroundStep() {
-        TreeSuiteExecutor.Node testNode = testNode();
-        TreeSuiteExecutor.Node stepNode = buildExceptionalStepSurroundWithSingleHooks();
+    Node buildTestWithTwoSurroundStepAndBeforeStepException() {
+        Node testNode = testNode();
+        Node firstStepNode = buildStepSurroundWithSingleHooks();
+        Node secondStepNode = buildSurroundStepWithBeforeException();
+        Node thirdStepNode = buildStepSurroundWithDoubleHooks();
+        testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
+        testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstStepNode);
+        testNode.getChildren().get("child").add(secondStepNode);
+        testNode.getChildren().get("child").add(thirdStepNode);
+        testNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        return testNode;
+    }
+
+    Node buildTestWithTwoSurroundStepAndBeforeStepExceptionSkipOnError() {
+        Node testNode = testNode();
+        Node firstStepNode = buildStepSurroundWithSingleHooks();
+        Node secondStepNode = buildSurroundStepWithBeforeExceptionDryOnError();
+        Node thirdStepNode = buildStepSurroundWithDoubleHooks();
+        testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
+        testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstStepNode);
+        testNode.getChildren().get("child").add(secondStepNode);
+        testNode.getChildren().get("child").add(thirdStepNode);
+        testNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        return testNode;
+    }
+
+    Node buildTestWithJustExceptionalSurroundStep() {
+        Node testNode = testNode();
+        Node stepNode = buildExceptionalStepSurroundWithSingleHooks();
         testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(stepNode);
         testNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
         return testNode;
     }
 
-    TreeSuiteExecutor.Node buildStepSurroundWithSingleHooks() {
-        TreeSuiteExecutor.Node stepNode = stepNode();
+    Node buildStepSurroundWithSingleHooks() {
+        Node stepNode = stepNode();
         stepNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         stepNode.getChildren().computeIfAbsent("target", k -> new ArrayList<>()).add(targetNode());
         stepNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
         return stepNode;
     }
 
-    TreeSuiteExecutor.Node buildExceptionalStepSurroundWithSingleHooks() {
-        TreeSuiteExecutor.Node stepNode = stepNode();
+    Node buildExceptionalStepSurroundWithSingleHooks() {
+        Node stepNode = stepNode();
         stepNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         stepNode.getChildren().computeIfAbsent("target", k -> new ArrayList<>()).add(exceptionalStepNode());
         stepNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
         return stepNode;
     }
 
-    TreeSuiteExecutor.Node buildStepSurroundWithDoubleHooks() {
-        TreeSuiteExecutor.Node stepNode = stepNode();
+    Node buildSurroundStepWithBeforeException() {
+        Node stepNode = stepNode();
+        stepNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(exceptionalStepNode());
+        stepNode.getChildren().get("before").add(beforeNode());
+        stepNode.getChildren().computeIfAbsent("target", k -> new ArrayList<>()).add(targetNode());
+        stepNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        return stepNode;
+    }
+
+    Node buildSurroundStepWithBeforeExceptionDryOnError() {
+        Node stepNode = stepNodeErrorPolicy();
+        stepNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(exceptionalStepNode());
+        stepNode.getChildren().get("before").add(beforeNode());
+        stepNode.getChildren().computeIfAbsent("target", k -> new ArrayList<>()).add(targetNode());
+        stepNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        return stepNode;
+    }
+
+    Node buildStepSurroundWithDoubleHooks() {
+        Node stepNode = stepNode();
         stepNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         stepNode.getChildren().get("before").add(beforeNode());
         stepNode.getChildren().computeIfAbsent("target", k -> new ArrayList<>()).add(targetNode());
@@ -168,43 +230,44 @@ public class TestCaseBuilder {
         return stepNode;
     }
 
-    private TreeSuiteExecutor.ExecutableNode beforeNode() {
-        TreeSuiteExecutor.ExecutableNode executableNode = new TreeSuiteExecutor.ExecutableNode();
+    private Node.ExecutableNode beforeNode() {
+        Node.ExecutableNode executableNode = new Node.ExecutableNode();
         executableNode.setMethod(beforeMethod);
         return executableNode;
     }
 
-    private TreeSuiteExecutor.ExecutableNode afterNode() {
-        TreeSuiteExecutor.ExecutableNode executableNode = new TreeSuiteExecutor.ExecutableNode();
+    private Node.ExecutableNode afterNode() {
+        Node.ExecutableNode executableNode = new Node.ExecutableNode();
         executableNode.setMethod(afterMethod);
         return executableNode;
     }
 
-    private TreeSuiteExecutor.ExecutableNode targetNode() {
-        TreeSuiteExecutor.ExecutableNode executableNode = new TreeSuiteExecutor.ExecutableNode();
+    private Node.ExecutableNode targetNode() {
+        Node.ExecutableNode executableNode = new Node.ExecutableNode();
         executableNode.setMethod(stepMethod);
         return executableNode;
     }
 
-    private TreeSuiteExecutor.ExecutableNode exceptionalStepNode() {
-        TreeSuiteExecutor.ExecutableNode executableNode = new TreeSuiteExecutor.ExecutableNode();
+    private Node.ExecutableNode exceptionalStepNode() {
+        Node.ExecutableNode executableNode = new Node.ExecutableNode();
         executableNode.setMethod(exceptionalStepMethod);
         return executableNode;
     }
 
-    private TreeSuiteExecutor.ContainerNode testNode() {
-        TreeSuiteExecutor.ContainerNode containerNode = new TreeSuiteExecutor.ContainerNode();
-        containerNode.setSubNodesSkippingFlags(BEFORE_ON_SKIP | AFTER_ON_SKIP | TARGET_ON_SKIP | CHILD_ON_ERROR);
-        return containerNode;
+    private Node.ContainerNode testNode() {
+        return new ContainerNode(DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY | DRY_CHILDES_ON_ERROR);
     }
 
-    private TreeSuiteExecutor.ContainerNode stepNode() {
-        TreeSuiteExecutor.ContainerNode containerNode = new TreeSuiteExecutor.ContainerNode();
-        containerNode.setSubNodesSkippingFlags(BEFORE_ON_SKIP | AFTER_ON_SKIP | TARGET_ON_SKIP);
-        return containerNode;
+    private Node.ContainerNode stepNode() {
+        return new ContainerNode(DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY);
     }
 
-    private TreeSuiteExecutor.ContainerNode childNode() {
-        return new TreeSuiteExecutor.ContainerNode();
+    private Node.ContainerNode stepNodeErrorPolicy() {
+        return new ContainerNode(DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY | DRY_CHILDES_ON_ERROR
+                | DRY_BEFORES_ON_ERROR | DRY_TARGETS_ON_ERROR | DRY_AFTERS_ON_ERROR);
+    }
+
+    private Node.ContainerNode childNode() {
+        return new Node.ContainerNode();
     }
 }
