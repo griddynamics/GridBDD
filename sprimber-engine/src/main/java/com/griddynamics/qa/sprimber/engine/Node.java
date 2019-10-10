@@ -38,6 +38,8 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 abstract class Node {
 
+    private Status status;
+    private final String type;
     /**
      * The node can be in one the 3 state - SKIP, ERROR and normal execution.
      * During the SKIP and ERROR state the source spliterators over the sub nodes of current node
@@ -51,7 +53,6 @@ abstract class Node {
      * the result of seed flags represented as ORed values from constants below.
      */
     private final int subNodesSkippingFlags;
-    private Status status;
     private final String runtimeId = UUID.randomUUID().toString();
     private final Map<String, List<Node>> children = new HashMap<>();
     private final Map<String, Object> attributes = new HashMap<>();
@@ -241,12 +242,12 @@ abstract class Node {
 
     @Data
     static class ContainerNode extends Node {
-        public ContainerNode() {
-            super(0);
+        public ContainerNode(String type) {
+            super(type, 0);
         }
 
-        public ContainerNode(int subNodesSkippingFlags) {
-            super(subNodesSkippingFlags);
+        public ContainerNode(String type, int subNodesSkippingFlags) {
+            super(type, subNodesSkippingFlags);
         }
     }
 
@@ -256,12 +257,12 @@ abstract class Node {
         private Throwable throwable;
         private Map<String, Object> parameters = new HashMap<>();
 
-        public ExecutableNode() {
-            super(0);
+        public ExecutableNode(String type) {
+            super(type, 0);
         }
 
-        public ExecutableNode(int subNodesSkippingFlags) {
-            super(subNodesSkippingFlags);
+        public ExecutableNode(String type, int subNodesSkippingFlags) {
+            super(type, subNodesSkippingFlags);
         }
     }
 }
