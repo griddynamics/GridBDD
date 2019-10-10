@@ -45,7 +45,7 @@ public class TestCaseBuilder {
     private final Method exceptionalStepMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "exceptionalStep");
 
     Node buildTestCase() {
-        Node.ContainerNode testCaseNode = childNode();
+        Node.ContainerNode testCaseNode = testCaseNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
         Node testNode = buildTestNodeWithOneSurroundStep();
@@ -54,7 +54,7 @@ public class TestCaseBuilder {
     }
 
     Node buildTestCaseWithTestWithTwoStep() {
-        Node.ContainerNode testCaseNode = childNode();
+        Node.ContainerNode testCaseNode = testCaseNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
         Node testNode = buildTestNodeWithTwoSurroundStep();
@@ -62,8 +62,19 @@ public class TestCaseBuilder {
         return testCaseNode;
     }
 
+    Node buildTestCaseWithTwoTestWithTwoStep() {
+        Node.ContainerNode testCaseNode = testCaseNode();
+        testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
+        testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        Node firstTestNode = buildTestNodeWithTwoSurroundStep();
+        Node secondTestNode = buildTestNodeWithTwoSurroundStep();
+        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstTestNode);
+        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(secondTestNode);
+        return testCaseNode;
+    }
+
     Node buildTestCaseWithTestWithTwoStepDoubleHooks() {
-        Node.ContainerNode testCaseNode = childNode();
+        Node.ContainerNode testCaseNode = testCaseNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
         Node testNode = buildTestNodeWithTwoSurroundStepDoubleHooks();
@@ -72,7 +83,7 @@ public class TestCaseBuilder {
     }
 
     Node buildTestCaseWithException() {
-        Node.ContainerNode testCaseNode = childNode();
+        Node.ContainerNode testCaseNode = testCaseNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
         Node testNode = buildTestWithRegularAndExceptionalSurroundStep();
@@ -81,7 +92,7 @@ public class TestCaseBuilder {
     }
 
     Node buildTestCaseWithBeforeStepException() {
-        Node.ContainerNode testCaseNode = childNode();
+        Node.ContainerNode testCaseNode = testCaseNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
         Node testNode = buildTestWithTwoSurroundStepAndBeforeStepException();
@@ -90,7 +101,7 @@ public class TestCaseBuilder {
     }
 
     Node buildTestCaseWithBeforeStepExceptionSkipOnError() {
-        Node.ContainerNode testCaseNode = childNode();
+        Node.ContainerNode testCaseNode = testCaseNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
         Node testNode = buildTestWithTwoSurroundStepAndBeforeStepExceptionSkipOnError();
@@ -99,7 +110,7 @@ public class TestCaseBuilder {
     }
 
     Node buildTestCaseWithJustException() {
-        Node.ContainerNode testCaseNode = childNode();
+        Node.ContainerNode testCaseNode = testCaseNode();
         testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
         testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
         Node testNode = buildTestWithJustExceptionalSurroundStep();
@@ -231,43 +242,43 @@ public class TestCaseBuilder {
     }
 
     private Node.ExecutableNode beforeNode() {
-        Node.ExecutableNode executableNode = new Node.ExecutableNode();
+        Node.ExecutableNode executableNode = new Node.ExecutableNode("before");
         executableNode.setMethod(beforeMethod);
         return executableNode;
     }
 
     private Node.ExecutableNode afterNode() {
-        Node.ExecutableNode executableNode = new Node.ExecutableNode();
+        Node.ExecutableNode executableNode = new Node.ExecutableNode("after");
         executableNode.setMethod(afterMethod);
         return executableNode;
     }
 
     private Node.ExecutableNode targetNode() {
-        Node.ExecutableNode executableNode = new Node.ExecutableNode();
+        Node.ExecutableNode executableNode = new Node.ExecutableNode("step");
         executableNode.setMethod(stepMethod);
         return executableNode;
     }
 
     private Node.ExecutableNode exceptionalStepNode() {
-        Node.ExecutableNode executableNode = new Node.ExecutableNode();
+        Node.ExecutableNode executableNode = new Node.ExecutableNode("step");
         executableNode.setMethod(exceptionalStepMethod);
         return executableNode;
     }
 
     private Node.ContainerNode testNode() {
-        return new ContainerNode(DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY | DRY_CHILDES_ON_ERROR);
+        return new ContainerNode("test",DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY | DRY_CHILDES_ON_ERROR);
     }
 
     private Node.ContainerNode stepNode() {
-        return new ContainerNode(DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY);
+        return new ContainerNode("stepContainer", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY);
     }
 
     private Node.ContainerNode stepNodeErrorPolicy() {
-        return new ContainerNode(DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY | DRY_CHILDES_ON_ERROR
+        return new ContainerNode("stepContainer", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY | DRY_CHILDES_ON_ERROR
                 | DRY_BEFORES_ON_ERROR | DRY_TARGETS_ON_ERROR | DRY_AFTERS_ON_ERROR);
     }
 
-    private Node.ContainerNode childNode() {
-        return new Node.ContainerNode();
+    private Node.ContainerNode testCaseNode() {
+        return new Node.ContainerNode("testCase");
     }
 }
