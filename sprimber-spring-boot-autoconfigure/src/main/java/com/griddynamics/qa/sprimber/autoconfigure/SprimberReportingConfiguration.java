@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
-import com.griddynamics.qa.sprimber.engine.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.Node;
 import com.griddynamics.qa.sprimber.reporting.StepDefinitionFormatter;
 import com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher;
 import com.griddynamics.qa.sprimber.reporting.TestCaseIlluminator;
@@ -77,9 +77,9 @@ public class SprimberReportingConfiguration {
     @Configuration
     static class AllureReporting {
         @Bean
-        public AllureSprimber allureSprimber(Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping,
+        public AllureSprimber allureSprimber(Map<Node.Status, Status> allureToSprimberStatusMapping,
                                              AllureLifecycle allureLifecycle, StepDefinitionFormatter stepDefinitionFormatter) {
-            return new AllureSprimber(allureToSprimberStatusMapping, allureLifecycle, stepDefinitionFormatter);
+            return new AllureSprimber(allureToSprimberStatusMapping, allureLifecycle);
         }
 
         @Bean
@@ -89,13 +89,14 @@ public class SprimberReportingConfiguration {
         }
 
         @Bean
-        public Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping() {
-            HashMap<ExecutionResult.Status, Status> statusMapping = new HashMap<>();
-            statusMapping.put(ExecutionResult.Status.PASSED, Status.PASSED);
-            statusMapping.put(ExecutionResult.Status.SKIPPED, Status.SKIPPED);
-            statusMapping.put(ExecutionResult.Status.FAILED, Status.FAILED);
-            statusMapping.put(ExecutionResult.Status.PENDING, Status.BROKEN);
-            statusMapping.put(ExecutionResult.Status.BROKEN, Status.BROKEN);
+        public Map<Node.Status, Status> allureToSprimberStatusMapping() {
+            HashMap<Node.Status, Status> statusMapping = new HashMap<>();
+            statusMapping.put(Node.Status.COMPLETED, Status.PASSED);
+            statusMapping.put(Node.Status.SKIP, Status.SKIPPED);
+            statusMapping.put(Node.Status.FAILED, Status.FAILED);
+            statusMapping.put(Node.Status.PENDING, Status.BROKEN);
+            statusMapping.put(Node.Status.ERROR, Status.BROKEN);
+            statusMapping.put(Node.Status.DRY, Status.SKIPPED);
             return statusMapping;
         }
 

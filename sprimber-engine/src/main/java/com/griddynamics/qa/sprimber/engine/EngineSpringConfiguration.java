@@ -22,29 +22,17 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
+package com.griddynamics.qa.sprimber.engine;
 
-import com.griddynamics.qa.sprimber.common.TestSuite;
-import com.griddynamics.qa.sprimber.engine.Node;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 /**
  * @author fparamonov
  */
-interface TestSuiteDiscovery {
 
-    TestSuite discoverOld();
-
-    Node discover();
-
-    /**
-     * This interface allow to extract the specific logic for test parsing.
-     * For example the classic test consist of one method rather than BDD test
-     * consist of comp[lex logic to bind the text to corresponding Java methods
-     *
-     * @author fparamonov
-     */
-    interface TestDefinitionBinder<TC> {
-
-        TestSuite.Test bind(TC testCandidate);
-    }
+@Configuration
+@Import({CliExecutor.class, SpringNodeInvoker.class, NodeFallbackManager.class,
+        ErrorMapper.class, SuiteExecutor.class, TreeSuiteExecutor.class})
+public class EngineSpringConfiguration {
 }

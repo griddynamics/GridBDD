@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.StepDefinition;
 import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
 
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +45,22 @@ abstract class AbstractStepFactory<SC> implements StepFactory<SC> {
     @Override
     public void setStepDefinitions(Map<String, StepDefinition> stepDefinitions) {
         this.stepDefinitions.putAll(stepDefinitions);
+    }
+
+    public Stream<Node> provideBeforeTestHookNodes() {
+        return provideNodesForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.TEST);
+    }
+
+    public Stream<Node> provideAfterTestHookNodes() {
+        return provideNodesForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.TEST);
+    }
+
+    public Stream<Node> provideBeforeStepHookNodes() {
+        return provideNodesForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.STEP);
+    }
+
+    public Stream<Node> provideAfterStepHookNodes() {
+        return provideNodesForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.STEP);
     }
 
     public List<TestSuite.Step> provideBeforeTestHooks() {
@@ -93,11 +110,25 @@ abstract class AbstractStepFactory<SC> implements StepFactory<SC> {
                 .collect(Collectors.toList());
     }
 
+    private Stream<Node> provideNodesForTargetTypeAndPhase(StepDefinition.StepType stepType, StepDefinition.StepPhase stepPhase) {
+        return findStepHooksForCurrentStage(stepType, stepPhase)
+                .filter(hooksByAvailableTags())
+                .map(this::provideExecutableNode);
+    }
+
     private Stream<StepDefinition> findStepHooksForCurrentStage(StepDefinition.StepType stepType,
                                                                 StepDefinition.StepPhase stepPhase) {
         return getStepDefinitions().values().stream()
                 .filter(stepDefinition -> stepDefinition.getStepType().equals(stepType))
                 .filter(stepDefinition -> stepDefinition.getStepPhase().equals(stepPhase));
+    }
+
+    private Node provideExecutableNode(StepDefinition stepDefinition) {
+        Node.ExecutableNode executableNode = new Node.ExecutableNode("step");
+        executableNode.setName(stepDefinition.getName());
+        executableNode.setMethod(stepDefinition.getMethod());
+        executableNode.setName(stepDefinition.getMethod().getName());
+        return executableNode;
     }
 
     private TestSuite.Step provideHookStep(StepDefinition stepDefinition) {

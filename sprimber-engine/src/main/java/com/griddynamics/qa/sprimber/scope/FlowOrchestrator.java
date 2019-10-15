@@ -29,7 +29,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.support.AbstractBeanFactory;
 import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
 
 /**
  * Kind of event listener that monitor test case start and finish events.
@@ -44,12 +43,16 @@ public class FlowOrchestrator {
     private final AbstractBeanFactory beanFactory;
 
     @EventListener
-    public void setupTestCaseContext(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
-        TestCaseContextHolder.setupNewContext(testStartedEvent.getTest().getRuntimeId());
+    public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
+        if ("test".equals(startedEvent.getContainerNode().getType())) {
+            TestCaseContextHolder.setupNewContext(startedEvent.getContainerNode().getRuntimeId());
+        }
     }
 
     @EventListener
-    public void resetTestCaseContextOld(SprimberEventPublisher.TestFinishedEvent testFinishedEvent) {
-        TestCaseContextHolder.cleanContext(beanFactory);
+    public void containerNodeFinished(SprimberEventPublisher.ContainerNodeFinishedEvent finishedEvent) {
+        if ("test".equals(finishedEvent.getContainerNode().getType())) {
+            TestCaseContextHolder.cleanContext(beanFactory);
+        }
     }
 }

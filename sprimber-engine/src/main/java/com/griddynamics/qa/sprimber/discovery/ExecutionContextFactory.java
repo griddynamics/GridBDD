@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.StepDefinition;
 import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
@@ -61,6 +62,7 @@ public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContex
                 .values().forEach(stepFactory -> stepFactory.setStepDefinitions(stepDefinitions));
         setupHookOnlyStepFactory(executionContext, stepDefinitions);
         executionContext.getTestSuites().addAll(exploreSuiteDefinitions());
+        executionContext.getNodes().addAll(exploreNodes());
         return executionContext;
     }
 
@@ -70,9 +72,15 @@ public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContex
         executionContext.setHookOnlyStepFactory(hookOnlyStepFactory);
     }
 
-    private List<TestSuite> exploreSuiteDefinitions() {
+    private List<Node> exploreNodes() {
         return testSuiteDiscoveries.stream()
                 .map(TestSuiteDiscovery::discover)
+                .collect(Collectors.toList());
+    }
+
+    private List<TestSuite> exploreSuiteDefinitions() {
+        return testSuiteDiscoveries.stream()
+                .map(TestSuiteDiscovery::discoverOld)
                 .collect(Collectors.toList());
     }
 

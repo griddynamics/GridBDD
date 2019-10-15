@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.StepDefinition;
 import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
 import gherkin.pickles.PickleCell;
 import gherkin.pickles.PickleRow;
 import gherkin.pickles.PickleStep;
@@ -56,6 +57,25 @@ class PickleStepFactory extends AbstractStepFactory<PickleStep> {
     private final TagFilter tagFilter;
     private final StepMatcher stepMatcher;
 
+    public Node provideStepNode(PickleStep stepCandidate) {
+        List<Node.ExecutableNode> steps = getStepDefinitions().values().stream()
+                .filter(stepDefinition -> StringUtils.isNotBlank(stepDefinition.getBindingTextPattern()))
+                .map(stepDefinition ->
+                        stepMatcher.matchAndGetArgumentsFrom(stepCandidate, stepDefinition, stepDefinition.getMethod().getParameterTypes())
+                                .map(arguments -> buildStepNode(stepCandidate, stepDefinition, arguments))
+                )
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+        if (steps.size() == 0) {
+            throw new StepNotFoundException(stepCandidate);
+        }
+        if (steps.size() > 1) {
+            throw new ExtraMappingFoundException(steps, stepCandidate);
+        }
+        return steps.get(0);
+    }
+
     @Override
     public TestSuite.Step provideStep(PickleStep stepCandidate) {
         List<TestSuite.Step> steps = getStepDefinitions().values().stream()
@@ -71,9 +91,19 @@ class PickleStepFactory extends AbstractStepFactory<PickleStep> {
             throw new StepNotFoundException(stepCandidate);
         }
         if (steps.size() > 1) {
-            throw new ExtraMappingFoundException(steps, stepCandidate);
+//            throw new ExtraMappingFoundException(steps, stepCandidate);
         }
         return steps.get(0);
+    }
+
+    private Node.ExecutableNode buildStepNode(PickleStep stepCandidate, StepDefinition stepDefinition, List<Argument> arguments) {
+        Node.ExecutableNode executableStepNode = new Node.ExecutableNode("step");
+        executableStepNode.setMethod(stepDefinition.getMethod());
+        executableStepNode.setName(stepDefinition.getStepType() + " " + stepCandidate.getText());
+        handleAdditionalStepData(stepCandidate)
+                .ifPresent(stepData -> executableStepNode.getAttributes().put("stepData", stepData));
+        executableStepNode.getParameters().putAll(convertStepArguments(arguments, Arrays.asList(stepDefinition.getMethod().getGenericParameterTypes())));
+        return executableStepNode;
     }
 
     private TestSuite.Step buildStep(PickleStep stepCandidate, StepDefinition stepDefinition, List<Argument> arguments) {
@@ -138,12 +168,11 @@ class PickleStepFactory extends AbstractStepFactory<PickleStep> {
 
     class ExtraMappingFoundException extends RuntimeException {
 
-        ExtraMappingFoundException(List<TestSuite.Step> steps, PickleStep pickleStep) {
+        ExtraMappingFoundException(List<Node.ExecutableNode> executableNodes, PickleStep pickleStep) {
             super(String.format("Step '%s' mapped to next methods '%s'!",
                     pickleStep.getText(),
-                    steps.stream()
-                            .map(TestSuite.Step::getStepDefinition)
-                            .map(StepDefinition::getMethod)
+                    executableNodes.stream()
+                            .map(Node.ExecutableNode::getMethod)
                             .map(Method::toString)
                             .collect(Collectors.joining(","))
             ));
