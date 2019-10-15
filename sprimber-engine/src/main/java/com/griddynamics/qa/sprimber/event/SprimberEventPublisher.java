@@ -25,6 +25,8 @@ $Id:
 package com.griddynamics.qa.sprimber.event;
 
 import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.engine.NodeExecutionEventsPublisher;
 import com.griddynamics.qa.sprimber.event.Events.StepEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -34,7 +36,7 @@ import org.springframework.context.ApplicationEventPublisher;
  */
 
 @RequiredArgsConstructor
-public class SprimberEventPublisher {
+public class SprimberEventPublisher implements NodeExecutionEventsPublisher {
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -98,6 +100,199 @@ public class SprimberEventPublisher {
     public void testSuiteFinished(Object target, TestSuite testSuite) {
         TestSuiteFinishedEvent testSuiteFinishedEvent = new TestSuiteFinishedEvent(target, testSuite);
         eventPublisher.publishEvent(testSuiteFinishedEvent);
+    }
+
+    @Override
+    public void containerNodeStarted(Node node) {
+        ContainerNodeStartedEvent containerNodeStartedEvent = new ContainerNodeStartedEvent(this, (Node.ContainerNode) node);
+        eventPublisher.publishEvent(containerNodeStartedEvent);
+    }
+
+    @Override
+    public void containerNodeCompleted(Node node) {
+        ContainerNodeFinishedEvent containerNodeFinishedEvent = new ContainerNodeFinishedEvent(this, (Node.ContainerNode) node);
+        eventPublisher.publishEvent(containerNodeFinishedEvent);
+    }
+
+    @Override
+    public void beforeNodeStarted(Node node) {
+        BeforeNodeStartedEvent beforeNodeStartedEvent = new BeforeNodeStartedEvent(this, (Node.ExecutableNode) node);
+        eventPublisher.publishEvent(beforeNodeStartedEvent);
+    }
+
+    @Override
+    public void beforeNodeCompleted(Node node) {
+        BeforeNodeCompletedEvent beforeNodeCompletedEvent = new BeforeNodeCompletedEvent(this, (Node.ExecutableNode) node);
+        eventPublisher.publishEvent(beforeNodeCompletedEvent);
+    }
+
+    @Override
+    public void beforeNodeError(Node node) {
+        BeforeNodeErrorEvent beforeNodeErrorEvent = new BeforeNodeErrorEvent(this, (Node.ExecutableNode) node);
+        eventPublisher.publishEvent(beforeNodeErrorEvent);
+    }
+
+    @Override
+    public void targetNodeStarted(Node node) {
+        TargetNodeStartedEvent targetNodeStartedEvent = new TargetNodeStartedEvent(this, (Node.ExecutableNode) node);
+        eventPublisher.publishEvent(targetNodeStartedEvent);
+    }
+
+    @Override
+    public void targetNodeCompleted(Node node) {
+        TargetNodeCompletedEvent targetNodeFinishedEvent = new TargetNodeCompletedEvent(this, (Node.ExecutableNode) node);
+        eventPublisher.publishEvent(targetNodeFinishedEvent);
+    }
+
+    @Override
+    public void targetNodeError(Node node) {
+        TargetNodeErrorEvent targetNodeFinishedEvent = new TargetNodeErrorEvent(this, (Node.ExecutableNode) node);
+        eventPublisher.publishEvent(targetNodeFinishedEvent);
+    }
+
+    @Override
+    public void afterNodeStarted(Node node) {
+        AfterNodeStartedEvent afterNodeStartedEvent = new AfterNodeStartedEvent(this, (Node.ExecutableNode) node);
+        eventPublisher.publishEvent(afterNodeStartedEvent);
+    }
+
+    @Override
+    public void afterNodeCompleted(Node node) {
+        AfterNodeCompletedEvent afterNodeCompletedEvent = new AfterNodeCompletedEvent(this, (Node.ExecutableNode) node);
+        eventPublisher.publishEvent(afterNodeCompletedEvent);
+    }
+
+    @Override
+    public void afterNodeError(Node node) {
+        AfterNodeErrorEvent afterNodeErrorEvent = new AfterNodeErrorEvent(this, (Node.ExecutableNode) node);
+        eventPublisher.publishEvent(afterNodeErrorEvent);
+    }
+
+    public class ContainerNodeStartedEvent extends Events.ContainerNodeEvent {
+
+        public ContainerNodeStartedEvent(Object source) {
+            super(source);
+        }
+
+        public ContainerNodeStartedEvent(Object source, Node.ContainerNode containerNode) {
+            super(source, containerNode);
+        }
+    }
+
+    public class ContainerNodeFinishedEvent extends Events.ContainerNodeEvent {
+
+        public ContainerNodeFinishedEvent(Object source) {
+            super(source);
+        }
+
+        public ContainerNodeFinishedEvent(Object source, Node.ContainerNode containerNode) {
+            super(source, containerNode);
+        }
+    }
+
+    // Target node events
+
+    public class TargetNodeStartedEvent extends Events.ExecutableNodeEvent {
+
+        public TargetNodeStartedEvent(Object source) {
+            super(source);
+        }
+
+        public TargetNodeStartedEvent(Object source, Node.ExecutableNode executableNode) {
+            super(source, executableNode);
+        }
+    }
+
+    public class TargetNodeCompletedEvent extends Events.ExecutableNodeEvent {
+
+        public TargetNodeCompletedEvent(Object source) {
+            super(source);
+        }
+
+        public TargetNodeCompletedEvent(Object source, Node.ExecutableNode executableNode) {
+            super(source, executableNode);
+        }
+    }
+
+    public class TargetNodeErrorEvent extends Events.ExecutableNodeEvent {
+
+        public TargetNodeErrorEvent(Object source) {
+            super(source);
+        }
+
+        public TargetNodeErrorEvent(Object source, Node.ExecutableNode executableNode) {
+            super(source, executableNode);
+        }
+    }
+
+    //Before node events
+
+    public class BeforeNodeStartedEvent extends Events.ExecutableNodeEvent {
+
+        public BeforeNodeStartedEvent(Object source) {
+            super(source);
+        }
+
+        public BeforeNodeStartedEvent(Object source, Node.ExecutableNode executableNode) {
+            super(source, executableNode);
+        }
+    }
+
+    public class BeforeNodeCompletedEvent extends Events.ExecutableNodeEvent {
+
+        public BeforeNodeCompletedEvent(Object source) {
+            super(source);
+        }
+
+        public BeforeNodeCompletedEvent(Object source, Node.ExecutableNode executableNode) {
+            super(source, executableNode);
+        }
+    }
+
+    public class BeforeNodeErrorEvent extends Events.ExecutableNodeEvent {
+
+        public BeforeNodeErrorEvent(Object source) {
+            super(source);
+        }
+
+        public BeforeNodeErrorEvent(Object source, Node.ExecutableNode executableNode) {
+            super(source, executableNode);
+        }
+    }
+
+    // After node events
+
+    public class AfterNodeStartedEvent extends Events.ExecutableNodeEvent {
+
+        public AfterNodeStartedEvent(Object source) {
+            super(source);
+        }
+
+        public AfterNodeStartedEvent(Object source, Node.ExecutableNode executableNode) {
+            super(source, executableNode);
+        }
+    }
+
+    public class AfterNodeCompletedEvent extends Events.ExecutableNodeEvent {
+
+        public AfterNodeCompletedEvent(Object source) {
+            super(source);
+        }
+
+        public AfterNodeCompletedEvent(Object source, Node.ExecutableNode executableNode) {
+            super(source, executableNode);
+        }
+    }
+
+    public class AfterNodeErrorEvent extends Events.ExecutableNodeEvent {
+
+        public AfterNodeErrorEvent(Object source) {
+            super(source);
+        }
+
+        public AfterNodeErrorEvent(Object source, Node.ExecutableNode executableNode) {
+            super(source, executableNode);
+        }
     }
 
     public class UtilityStepStartedEvent extends StepEvent {

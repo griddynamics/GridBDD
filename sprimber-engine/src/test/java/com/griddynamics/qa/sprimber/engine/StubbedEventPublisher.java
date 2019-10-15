@@ -35,12 +35,12 @@ import java.util.stream.IntStream;
  */
 
 @Slf4j
-public class StubbedEventPublisher implements TreeSuiteExecutor.NodeExecutionEventsPublisher {
+public class StubbedEventPublisher implements NodeExecutionEventsPublisher {
 
     private ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
 
     @Override
-    public void nodeExecutionStarted(Node node) {
+    public void containerNodeStarted(Node node) {
         int currentLevel = Optional.ofNullable(depthLevelThreadLocal.get()).orElse(1);
         currentLevel++;
         depthLevelThreadLocal.set(currentLevel);
@@ -48,7 +48,7 @@ public class StubbedEventPublisher implements TreeSuiteExecutor.NodeExecutionEve
     }
 
     @Override
-    public void nodeExecutionCompleted(Node node) {
+    public void containerNodeCompleted(Node node) {
         log.info("{}{} Node Status after {}", getIndents(depthLevelThreadLocal.get()), node.getType(), node.getStatus());
         int currentLevel = Optional.ofNullable(depthLevelThreadLocal.get()).orElse(1);
         currentLevel--;

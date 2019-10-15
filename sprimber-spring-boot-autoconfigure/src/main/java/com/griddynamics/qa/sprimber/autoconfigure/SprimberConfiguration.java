@@ -27,9 +27,7 @@ package com.griddynamics.qa.sprimber.autoconfigure;
 import com.griddynamics.qa.sprimber.common.SprimberProperties;
 import com.griddynamics.qa.sprimber.discovery.ExecutionContextFactory;
 import com.griddynamics.qa.sprimber.discovery.SpringStepDefinitionsFactory;
-import com.griddynamics.qa.sprimber.engine.CliExecutor;
-import com.griddynamics.qa.sprimber.engine.ErrorMapper;
-import com.griddynamics.qa.sprimber.engine.SuiteExecutor;
+import com.griddynamics.qa.sprimber.engine.EngineSpringConfiguration;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import com.griddynamics.qa.sprimber.scope.FlowOrchestrator;
 import com.griddynamics.qa.sprimber.scope.TestCaseScope;
@@ -100,7 +98,7 @@ public class SprimberConfiguration {
     }
 
     @Configuration
-    @Import({CliExecutor.class, ErrorMapper.class, SuiteExecutor.class, FlowOrchestrator.class, SprimberEventPublisher.class})
+    @Import({EngineSpringConfiguration.class, FlowOrchestrator.class, SprimberEventPublisher.class})
     static class SprimberCore {
     }
 

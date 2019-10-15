@@ -22,29 +22,30 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
+package com.griddynamics.qa.sprimber.engine;
 
-import com.griddynamics.qa.sprimber.common.TestSuite;
-import com.griddynamics.qa.sprimber.engine.Node;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationContext;
+import org.springframework.util.ReflectionUtils;
+
+import java.lang.reflect.Method;
 
 /**
  * @author fparamonov
  */
-interface TestSuiteDiscovery {
 
-    TestSuite discoverOld();
+@RequiredArgsConstructor
+class SpringNodeInvoker implements TreeSuiteExecutor.NodeInvoker {
 
-    Node discover();
+    private final ApplicationContext applicationContext;
 
-    /**
-     * This interface allow to extract the specific logic for test parsing.
-     * For example the classic test consist of one method rather than BDD test
-     * consist of comp[lex logic to bind the text to corresponding Java methods
-     *
-     * @author fparamonov
-     */
-    interface TestDefinitionBinder<TC> {
-
-        TestSuite.Test bind(TC testCandidate);
+    @Override
+    public Node.Status invoke(Node.ExecutableNode executableNode) {
+        Method testMethod = executableNode.getMethod();
+        Object target = applicationContext.getBean(testMethod.getDeclaringClass());
+        Object[] args = executableNode.getParameters().isEmpty() ?
+                new Object[0] : executableNode.getParameters().values().toArray();
+        ReflectionUtils.invokeMethod(testMethod, target, args);
+        return Node.Status.COMPLETED;
     }
 }

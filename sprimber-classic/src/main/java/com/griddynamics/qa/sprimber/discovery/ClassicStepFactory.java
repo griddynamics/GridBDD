@@ -26,16 +26,29 @@ package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.StepDefinition;
 import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
 import org.springframework.util.DigestUtils;
 
 import java.lang.reflect.Method;
 import java.util.function.Predicate;
+
+import static com.griddynamics.qa.sprimber.engine.Node.*;
 
 /**
  * @author fparamonov
  */
 
 class ClassicStepFactory extends AbstractStepFactory<Method> {
+
+    public Node provideStepNode(Method method) {
+        Node stepContainerNode = new Node.ContainerNode("stepContainer", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY);
+        Node.ExecutableNode executableNode = new Node.ExecutableNode("step");
+        StepDefinition stepDefinition = getStepDefinitions().get(calculateId(method));
+        executableNode.setMethod(stepDefinition.getMethod());
+        executableNode.setName(method.getName());
+        stepContainerNode.addTarget(executableNode);
+        return stepContainerNode;
+    }
 
     @Override
     public TestSuite.Step provideStep(Method method) {

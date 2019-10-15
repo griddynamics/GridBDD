@@ -196,7 +196,7 @@ public class TreeSuiteExecutorTest {
         inOrder.verify(stubbedNodeInvoker, times(0)).step();
         inOrder.verify(stubbedNodeInvoker, times(0)).before();
         inOrder.verify(stubbedNodeInvoker, times(0)).step();
-        inOrder.verify(stubbedNodeInvoker, times(7)).skippedStep();
+        inOrder.verify(stubbedNodeInvoker, times(8)).skippedStep();
         inOrder.verify(stubbedNodeInvoker).after();
         inOrder.verify(stubbedNodeInvoker).after();
     }

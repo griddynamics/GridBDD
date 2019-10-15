@@ -24,15 +24,14 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting.allure;
 
-import com.griddynamics.qa.sprimber.common.StepDefinition;
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.Node;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
-import com.griddynamics.qa.sprimber.reporting.StepDefinitionFormatter;
 import io.qameta.allure.AllureLifecycle;
 import io.qameta.allure.SeverityLevel;
 import io.qameta.allure.model.*;
 import io.qameta.allure.util.ResultsUtils;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -41,6 +40,7 @@ import javax.annotation.PreDestroy;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -55,28 +55,28 @@ public class AllureSprimber {
     private static final String CUCUMBER_SUITES = "Cucumber Suites";
     private static final int DEFAULT_AWAIT_TERMINATION_SECONDS = 5;
     private static final String ALLURE_WRITER_POOL_PREFIX = "AllureWriter-";
-    private static final String SUB_CONTAINER_PREFIX_NAME = "subContainer-";
+    private static final String TEST_CONTAINER_PREFIX_NAME = "test-container-";
     private static final String EPIC_DEFAULT_NAME = "Cucumber Features";
-    private final Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping;
+    private final Map<Node.Status, Status> allureToSprimberStatusMapping;
+    private final Map<String, TestParentInfo> testParentsById = new ConcurrentHashMap<>();
 
     private final AllureLifecycle lifecycle;
-    private ThreadPoolTaskExecutor taskExecutor;
-    private StepDefinitionFormatter formatter;
+    private final ThreadPoolTaskExecutor taskExecutor;
 
-    public AllureSprimber(Map<ExecutionResult.Status, Status> allureToSprimberStatusMapping,
-                          AllureLifecycle lifecycle, StepDefinitionFormatter formatter) {
+    public AllureSprimber(Map<Node.Status, Status> allureToSprimberStatusMapping,
+                          AllureLifecycle lifecycle) {
         this.allureToSprimberStatusMapping = allureToSprimberStatusMapping;
         this.lifecycle = lifecycle;
-        this.formatter = formatter;
-        initThreadPool();
+        this.taskExecutor = initThreadPool();
     }
 
-    private void initThreadPool() {
-        taskExecutor = new ThreadPoolTaskExecutor();
+    private ThreadPoolTaskExecutor initThreadPool() {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
         taskExecutor.setThreadNamePrefix(ALLURE_WRITER_POOL_PREFIX);
         taskExecutor.initialize();
         taskExecutor.setWaitForTasksToCompleteOnShutdown(true);
         taskExecutor.setAwaitTerminationSeconds(DEFAULT_AWAIT_TERMINATION_SECONDS);
+        return taskExecutor;
     }
 
     @PreDestroy
@@ -85,55 +85,105 @@ public class AllureSprimber {
     }
 
     @EventListener
-    public void testCaseStarted(SprimberEventPublisher.TestCaseStartedEvent testCaseStartedEvent) {
+    public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
+        storeParentInfo(startedEvent.getContainerNode());
+        if ("testCase".equals(startedEvent.getContainerNode().getType())) {
+            doWithTestCaseStart(startedEvent.getContainerNode());
+        }
+        if ("test".equals(startedEvent.getContainerNode().getType())) {
+            doWithTestStart(startedEvent.getContainerNode());
+        }
+    }
+
+    @EventListener
+    public void containerNodeFinished(SprimberEventPublisher.ContainerNodeFinishedEvent finishedEvent) {
+        if ("testCase".equals(finishedEvent.getContainerNode().getType())) {
+            doWithTestCaseFinish(finishedEvent.getContainerNode());
+        }
+        if ("test".equals(finishedEvent.getContainerNode().getType())) {
+            doWithTestFinish(finishedEvent.getContainerNode());
+        }
+    }
+
+    private void storeParentInfo(Node.ContainerNode containerNode) {
+        TestParentInfo testParentInfo = new TestParentInfo();
+        testParentInfo.setParentName(containerNode.getName());
+        testParentInfo.setParentType(containerNode.getType());
+        testParentsById.put(containerNode.getRuntimeId(), testParentInfo);
+    }
+
+    private void doWithTestCaseStart(Node.ContainerNode containerNode) {
         TestResultContainer testCaseResultContainer = new TestResultContainer();
-        testCaseResultContainer.setName(testCaseStartedEvent.getTestCase().getName());
-        testCaseResultContainer.setDescription(testCaseStartedEvent.getTestCase().getDescription());
-        testCaseResultContainer.setUuid(testCaseStartedEvent.getTestCase().getRuntimeId());
+        testCaseResultContainer.setName(containerNode.getName());
+        testCaseResultContainer.setDescription(containerNode.getDescription());
+        testCaseResultContainer.setUuid(containerNode.getRuntimeId());
+
         lifecycle.startTestContainer(testCaseResultContainer);
-        testCaseStartedEvent.getTestCase().getTests().forEach(test -> scheduleTest(testCaseStartedEvent, test));
     }
 
-    private void scheduleTest(SprimberEventPublisher.TestCaseStartedEvent testCaseStartedEvent, TestSuite.Test test) {
+    private void doWithTestCaseFinish(Node.ContainerNode containerNode) {
+        lifecycle.stopTestContainer(containerNode.getRuntimeId());
+        lifecycle.writeTestContainer(containerNode.getRuntimeId());
+    }
+
+    private void doWithTestStart(Node.ContainerNode containerNode) {
         TestResultContainer testResultContainer = new TestResultContainer();
-        testResultContainer.setUuid(SUB_CONTAINER_PREFIX_NAME + test.getRuntimeId());
-        lifecycle.startTestContainer(testCaseStartedEvent.getTestCase().getRuntimeId(), testResultContainer);
-
-        TestResult testResult = prepareTestResult(testCaseStartedEvent, test);
-
-        lifecycle.scheduleTestCase(testResultContainer.getUuid(), testResult);
-    }
-
-    private TestResult prepareTestResult(SprimberEventPublisher.TestCaseStartedEvent testCaseStartedEvent, TestSuite.Test test) {
+        testResultContainer.setUuid(TEST_CONTAINER_PREFIX_NAME + containerNode.getRuntimeId());
         TestResult testResult = new TestResult();
-        testResult.setName(test.getName());
-        testResult.setDescription(test.getDescription());
-        testResult.setUuid(test.getRuntimeId());
-        testResult.setHistoryId(test.getHistoryId());
-        List<Label> labels = processTestLabels(testCaseStartedEvent, test);
-        List<Link> links = processTestLinks(testCaseStartedEvent, test);
+        testResult.setName(containerNode.getName());
+        testResult.setDescription(containerNode.getDescription());
+        testResult.setUuid(containerNode.getRuntimeId());
+        testResult.setHistoryId(containerNode.getHistoryId());
+        testResult.setFullName(String.valueOf(containerNode.getAttributes().getOrDefault("testLocation", "")));
+
+        lifecycle.startTestContainer(testResultContainer);
+        lifecycle.scheduleTestCase(testResultContainer.getUuid(), testResult);
+        lifecycle.startTestCase(containerNode.getRuntimeId());
+
+        List<Label> labels = processTestLabels(containerNode);
+        List<Link> links = processTestLinks(containerNode);
         testResult.setLabels(labels);
         testResult.setLinks(links);
-        return testResult;
     }
 
-    private List<Link> processTestLinks(SprimberEventPublisher.TestCaseStartedEvent testCaseStartedEvent, TestSuite.Test test) {
+    private void doWithTestFinish(Node.ContainerNode containerNode) {
+        Node.Status status = containerNode.getStatus();
+        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(null);
+
+        lifecycle.updateTestCase(containerNode.getRuntimeId(), scenarioResult -> {
+            scenarioResult.setStatus(allureToSprimberStatusMapping.get(status));
+            statusDetails.ifPresent(scenarioResult::setStatusDetails);
+        });
+        lifecycle.stopTestCase(containerNode.getRuntimeId());
+        lifecycle.stopTestContainer(TEST_CONTAINER_PREFIX_NAME + containerNode.getRuntimeId());
+
+        taskExecutor.execute(() -> {
+            lifecycle.writeTestCase(containerNode.getRuntimeId());
+            lifecycle.writeTestContainer(TEST_CONTAINER_PREFIX_NAME + containerNode.getRuntimeId());
+        });
+    }
+
+    // TODO: 2019-10-17 update this method to show the links
+    private List<Link> processTestLinks(Node.ContainerNode containerNode) {
         return Collections.emptyList();
     }
 
-    private List<Label> processTestLabels(SprimberEventPublisher.TestCaseStartedEvent testCaseStartedEvent, TestSuite.Test test) {
+    private List<Label> processTestLabels(Node.ContainerNode containerNode) {
         List<Label> labels = new ArrayList<>();
-        Label epicLabel = ResultsUtils.createEpicLabel(test.getMeta().getSingleValueOrDefault("epic", EPIC_DEFAULT_NAME));
-        Label featureLabel = ResultsUtils.createFeatureLabel(test.getMeta().getSingleValueOrDefault("feature", testCaseStartedEvent.getTestCase().getName()));
-        Label storyLabel = ResultsUtils.createStoryLabel(test.getMeta().getSingleValueOrDefault("story", test.getName()));
+        Label epicLabel = ResultsUtils.createEpicLabel(containerNode.getMeta().getSingleValueOrDefault("epic", EPIC_DEFAULT_NAME));
+        Label featureLabel = ResultsUtils.createFeatureLabel(
+                containerNode.getMeta().getSingleValueOrDefault("feature", testParentsById.get(containerNode.getParentId()).getParentName()));
+        Label storyLabel = ResultsUtils.createStoryLabel(containerNode.getMeta().getSingleValueOrDefault("story", containerNode.getName()));
 
-        Label packageLabel = ResultsUtils.createPackageLabel(test.getMeta().getSingleValueOrDefault("package", testCaseStartedEvent.getTestCase().getName()));
+        Label packageLabel = ResultsUtils.createPackageLabel(
+                containerNode.getMeta().getSingleValueOrDefault("package", testParentsById.get(containerNode.getParentId()).getParentName()));
 
-        Label parentSuiteLabel = ResultsUtils.createParentSuiteLabel(test.getMeta().getSingleValueOrDefault("parentSuite", CUCUMBER_SUITES));
-        Label suiteLabel = ResultsUtils.createSuiteLabel(test.getMeta().getSingleValueOrDefault("suite", testCaseStartedEvent.getTestCase().getName()));
-        Label subSuiteLabel = ResultsUtils.createSubSuiteLabel(test.getMeta().getSingleValueOrDefault("subSuite", test.getName()));
+        Label parentSuiteLabel = ResultsUtils.createParentSuiteLabel(containerNode.getMeta().getSingleValueOrDefault("parentSuite", CUCUMBER_SUITES));
+        Label suiteLabel = ResultsUtils.createSuiteLabel(
+                containerNode.getMeta().getSingleValueOrDefault("suite", testParentsById.get(containerNode.getParentId()).getParentName()));
+        Label subSuiteLabel = ResultsUtils.createSubSuiteLabel(containerNode.getMeta().getSingleValueOrDefault("subSuite", containerNode.getName()));
 
-        Label severityLabel = ResultsUtils.createSeverityLabel(test.getMeta().getSingleValueOrDefault("severity", SeverityLevel.NORMAL.value()));
+        Label severityLabel = ResultsUtils.createSeverityLabel(containerNode.getMeta().getSingleValueOrDefault("severity", SeverityLevel.NORMAL.value()));
 
         labels.add(epicLabel);
         labels.add(featureLabel);
@@ -147,42 +197,13 @@ public class AllureSprimber {
     }
 
     @EventListener
-    public void testCaseFinished(SprimberEventPublisher.TestCaseFinishedEvent testCaseFinishedEvent) {
-        lifecycle.stopTestContainer(testCaseFinishedEvent.getTestCase().getRuntimeId());
-        lifecycle.writeTestContainer(testCaseFinishedEvent.getTestCase().getRuntimeId());
-    }
-
-    @EventListener
-    public void testStarted(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
-        lifecycle.startTestCase(testStartedEvent.getTest().getRuntimeId());
-    }
-
-    @EventListener
-    public void testFinished(SprimberEventPublisher.TestFinishedEvent testFinishedEvent) {
-        ExecutionResult result = testFinishedEvent.getTest().getExecutionResult();
-        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
-        String runtimeUuid = testFinishedEvent.getTest().getRuntimeId();
-        lifecycle.updateTestCase(runtimeUuid, scenarioResult -> {
-            scenarioResult.setStatus(allureToSprimberStatusMapping.get(result.getStatus()));
-            statusDetails.ifPresent(scenarioResult::setStatusDetails);
-        });
-        lifecycle.stopTestCase(runtimeUuid);
-        lifecycle.stopTestContainer(SUB_CONTAINER_PREFIX_NAME + testFinishedEvent.getTest().getRuntimeId());
-
-        taskExecutor.execute(() -> {
-            lifecycle.writeTestCase(runtimeUuid);
-            lifecycle.writeTestContainer(SUB_CONTAINER_PREFIX_NAME + testFinishedEvent.getTest().getRuntimeId());
-        });
-
-    }
-
-    @EventListener
     public void codeStyleStepStarted(SprimberEventPublisher.UtilityStepStartedEvent utilityStepStartedEvent) {
         StepResult stepResult = new StepResult();
         stepResult.setName(utilityStepStartedEvent.getStep().getName());
         lifecycle.startStep(utilityStepStartedEvent.getStep().getRuntimeId(), stepResult);
     }
 
+    // TODO: 2019-10-17 handle the statuses transition
     @EventListener
     public void codeStyleStepFinished(SprimberEventPublisher.UtilityStepFinishedEvent utilityStepFinishedEvent) {
         ExecutionResult result = utilityStepFinishedEvent.getStep().getExecutionResult();
@@ -195,66 +216,129 @@ public class AllureSprimber {
     }
 
     @EventListener
-    public void testStepStarted(SprimberEventPublisher.StepStartedEvent stepStartedEvent) {
-        String stepReportName = stepStartedEvent.getStep().getStepDefinition().getStepType() + " " +
-                stepStartedEvent.getStep().getStepDefinition().getStepPhase() + " " +
-                formatter.formatStepName(stepStartedEvent.getStep());
+    public void targetNodeStarted(SprimberEventPublisher.TargetNodeStartedEvent startedEvent) {
+        startStep(startedEvent.getExecutableNode());
+    }
 
-        if (stepStartedEvent.getStep().isHookStep()
-                && stepStartedEvent.getStep().getStepDefinition().getStepPhase().equals(StepDefinition.StepPhase.TEST)) {
+    @EventListener
+    public void targetNodeCompleted(SprimberEventPublisher.TargetNodeCompletedEvent completedEvent) {
+        completeStep(completedEvent.getExecutableNode());
+    }
+
+    @EventListener
+    public void targetNodeError(SprimberEventPublisher.TargetNodeErrorEvent errorEvent) {
+        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(errorEvent.getExecutableNode().getThrowable());
+        lifecycle.updateStep(errorEvent.getExecutableNode().getRuntimeId(),
+                stepResult -> {
+                    stepResult.setStatus(allureToSprimberStatusMapping.get(errorEvent.getExecutableNode().getStatus()));
+                    statusDetails.ifPresent(stepResult::setStatusDetails);
+                });
+        lifecycle.updateTestCase(testResult -> statusDetails.ifPresent(testResult::setStatusDetails));
+        lifecycle.stopStep(errorEvent.getExecutableNode().getRuntimeId());
+    }
+
+    @EventListener
+    public void beforeNodeStarted(SprimberEventPublisher.BeforeNodeStartedEvent startedEvent) {
+        if ("test".equals(testParentsById.get(startedEvent.getExecutableNode().getParentId()).getParentType())) {
             FixtureResult fixtureResult = new FixtureResult();
-            fixtureResult.setName(stepReportName);
-            fixtureResult.setParameters(convertStepParameters(stepStartedEvent.getStep()));
-            if (stepStartedEvent.getStep().getStepDefinition().getStepType().equals(StepDefinition.StepType.BEFORE)) {
-                lifecycle.startPrepareFixture(SUB_CONTAINER_PREFIX_NAME + stepStartedEvent.getStep().getParentId(),
-                        stepStartedEvent.getStep().getRuntimeId(), fixtureResult);
-            }
-            if (stepStartedEvent.getStep().getStepDefinition().getStepType().equals(StepDefinition.StepType.AFTER)) {
-                lifecycle.startTearDownFixture(SUB_CONTAINER_PREFIX_NAME + stepStartedEvent.getStep().getParentId(),
-                        stepStartedEvent.getStep().getRuntimeId(), fixtureResult);
-            }
+            fixtureResult.setName(startedEvent.getExecutableNode().getName());
+            fixtureResult.setParameters(convertStepParameters(startedEvent.getExecutableNode().getParameters()));
+            lifecycle.startPrepareFixture(TEST_CONTAINER_PREFIX_NAME + startedEvent.getExecutableNode().getParentId(),
+                    startedEvent.getExecutableNode().getRuntimeId(), fixtureResult);
         } else {
-            StepResult stepResult = new StepResult();
-            stepResult.setName(stepReportName);
-            stepResult.setParameters(convertStepParameters(stepStartedEvent.getStep()));
-            lifecycle.startStep(stepStartedEvent.getStep().getParentId(), stepStartedEvent.getStep().getRuntimeId(), stepResult);
+            startStep(startedEvent.getExecutableNode());
         }
+    }
 
+    @EventListener
+    public void beforeNodeCompleted(SprimberEventPublisher.BeforeNodeCompletedEvent completedEvent) {
+        if ("test".equals(testParentsById.get(completedEvent.getExecutableNode().getParentId()).getParentType())) {
+            lifecycle.updateFixture(completedEvent.getExecutableNode().getRuntimeId(),
+                    fixtureResult -> fixtureResult.setStatus(allureToSprimberStatusMapping.get(completedEvent.getExecutableNode().getStatus())));
+            lifecycle.stopFixture(completedEvent.getExecutableNode().getRuntimeId());
+            lifecycle.setCurrentTestCase(completedEvent.getExecutableNode().getParentId());
+        } else {
+            completeStep(completedEvent.getExecutableNode());
+        }
+    }
+
+    @EventListener
+    public void beforeNodeError(SprimberEventPublisher.BeforeNodeErrorEvent errorEvent) {
+        stopStepWithError(errorEvent.getExecutableNode());
+    }
+
+    @EventListener
+    public void afterNodeStarted(SprimberEventPublisher.AfterNodeStartedEvent startedEvent) {
+        if ("test".equals(testParentsById.get(startedEvent.getExecutableNode().getParentId()).getParentType())) {
+            FixtureResult fixtureResult = new FixtureResult();
+            fixtureResult.setName(startedEvent.getExecutableNode().getName());
+            fixtureResult.setParameters(convertStepParameters(startedEvent.getExecutableNode().getParameters()));
+            lifecycle.startTearDownFixture(TEST_CONTAINER_PREFIX_NAME + startedEvent.getExecutableNode().getParentId(),
+                    startedEvent.getExecutableNode().getRuntimeId(), fixtureResult);
+        } else {
+            startStep(startedEvent.getExecutableNode());
+        }
+    }
+
+    @EventListener
+    public void afterNodeCompleted(SprimberEventPublisher.AfterNodeCompletedEvent completedEvent) {
+        if ("test".equals(testParentsById.get(completedEvent.getExecutableNode().getParentId()).getParentType())) {
+            lifecycle.updateFixture(completedEvent.getExecutableNode().getRuntimeId(),
+                    fixtureResult -> fixtureResult.setStatus(allureToSprimberStatusMapping.get(completedEvent.getExecutableNode().getStatus())));
+            lifecycle.stopFixture(completedEvent.getExecutableNode().getRuntimeId());
+        } else {
+            completeStep(completedEvent.getExecutableNode());
+        }
+    }
+
+    @EventListener
+    public void afterNodeError(SprimberEventPublisher.AfterNodeErrorEvent errorEvent) {
+        stopStepWithError(errorEvent.getExecutableNode());
+    }
+
+    private void startStep(Node.ExecutableNode executableNode) {
+        StepResult stepResult = new StepResult();
+        stepResult.setName(executableNode.getName());
+        stepResult.setParameters(convertStepParameters(executableNode.getParameters()));
+        lifecycle.startStep(executableNode.getRuntimeId(), stepResult);
         StringBuilder dataTableCsv = new StringBuilder();
-        stepStartedEvent.getStep().getStepDefinition().getAttributes().entrySet().stream()
+        executableNode.getAttributes().entrySet().stream()
                 .filter(entry -> !entry.getKey().equals("stepData"))
                 .forEach(entry -> dataTableCsv.append(entry.getKey()).append("\t").append(entry.getValue()).append("\n"));
 
         lifecycle.addAttachment("Step Attributes", "text/tab-separated-values", "csv", dataTableCsv.toString().getBytes());
-        attachStepDataParameterIfPresent(String.valueOf(stepStartedEvent.getStep().getStepDefinition().getAttributes().getOrDefault("stepData", "")));
+        attachStepDataParameterIfPresent(String.valueOf(executableNode.getAttributes().getOrDefault("stepData", "")));
     }
 
-    @EventListener
-    public void testStepFinished(SprimberEventPublisher.StepFinishedEvent stepFinishedEvent) {
-        ExecutionResult result = stepFinishedEvent.getStep().getExecutionResult();
-        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
+    private void completeStep(Node.ExecutableNode executableNode) {
+        lifecycle.updateStep(executableNode.getRuntimeId(),
+                stepResult -> stepResult.setStatus(allureToSprimberStatusMapping.get(executableNode.getStatus()))
+        );
+        lifecycle.stopStep(executableNode.getRuntimeId());
+    }
 
-        if (stepFinishedEvent.getStep().isHookStep()
-                && stepFinishedEvent.getStep().getStepDefinition().getStepPhase().equals(StepDefinition.StepPhase.TEST)) {
-            lifecycle.updateFixture(stepFinishedEvent.getStep().getRuntimeId(), fixtureResult -> {
-                fixtureResult.setStatus(allureToSprimberStatusMapping.get(result.getStatus()));
+    private void stopStepWithError(Node.ExecutableNode executableNode) {
+        if ("test".equals(testParentsById.get(executableNode.getParentId()).getParentType())) {
+            Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(executableNode.getThrowable());
+            lifecycle.updateFixture(executableNode.getRuntimeId(), fixtureResult -> {
+                fixtureResult.setStatus(allureToSprimberStatusMapping.get(executableNode.getStatus()));
                 statusDetails.ifPresent(fixtureResult::setStatusDetails);
             });
-            lifecycle.stopFixture(stepFinishedEvent.getStep().getRuntimeId());
+            lifecycle.stopFixture(executableNode.getRuntimeId());
+            lifecycle.setCurrentTestCase(executableNode.getParentId());
         } else {
-            lifecycle.updateStep(stepFinishedEvent.getStep().getRuntimeId(),
+            Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(executableNode.getThrowable());
+            lifecycle.updateStep(executableNode.getRuntimeId(),
                     stepResult -> {
-                        stepResult.setStatus(allureToSprimberStatusMapping.get(result.getStatus()));
+                        stepResult.setStatus(allureToSprimberStatusMapping.get(executableNode.getStatus()));
                         statusDetails.ifPresent(stepResult::setStatusDetails);
-                    }
-            );
-            lifecycle.stopStep(stepFinishedEvent.getStep().getRuntimeId());
+                    });
+            lifecycle.stopStep(executableNode.getRuntimeId());
         }
-
     }
 
-    private List<Parameter> convertStepParameters(TestSuite.Step step) {
-        return step.getParameters().entrySet().stream()
+    private List<Parameter> convertStepParameters(Map<String, Object> parameters) {
+        return parameters.entrySet().stream()
                 .map(this::getParameter)
                 .collect(Collectors.toList());
     }
@@ -273,5 +357,11 @@ public class AllureSprimber {
             lifecycle.writeAttachment(attachmentSource,
                     new ByteArrayInputStream(stepData.getBytes(Charset.forName("UTF-8"))));
         }
+    }
+
+    @Data
+    private class TestParentInfo {
+        private String parentName;
+        private String parentType;
     }
 }

@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.SprimberProperties;
 import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
 import gherkin.Parser;
 import gherkin.TokenMatcher;
 import gherkin.ast.GherkinDocument;
@@ -47,8 +48,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.griddynamics.qa.sprimber.discovery.CucumberTestBinder.LOCATION_ATTRIBUTE_NAME;
+import static com.griddynamics.qa.sprimber.engine.Node.*;
 
 /**
  * @author fparamonov
@@ -66,7 +69,7 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
     private final TagFilter tagFilter;
 
     @Override
-    public TestSuite discover() {
+    public TestSuite discoverOld() {
         TestSuite testSuite = new TestSuite();
         try {
             Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()))
@@ -78,6 +81,49 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
             e.printStackTrace();
         }
         return testSuite;
+    }
+
+    @Override
+    public Node discover() {
+        Node testSuite = new Node.ContainerNode("testSuite", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
+        featuresResourcesStream()
+                .map(this::buildCucumberDocument)
+                .map(this::testCaseNodeDiscover)
+                .forEach(testSuite::addChild);
+        return testSuite;
+    }
+
+    private Stream<Resource> featuresResourcesStream() {
+        try {
+            return Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()));
+        } catch (IOException e) {
+            // TODO: 2019-09-10 handle the exception from resource unavailability correctly
+            throw new RuntimeException(String.format("Could not find the resources by this path: %s", sprimberProperties.getFeaturePath()));
+        }
+    }
+
+    private Node testCaseNodeDiscover(CucumberDocument cucumberDocument) {
+        Node testCase = new Node.ContainerNode("testCase", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
+        testCase.setName(cucumberDocument.getDocument().getFeature().getName());
+        testCase.setDescription(cucumberDocument.getDocument().getFeature().getDescription());
+        compiler.compile(cucumberDocument.getDocument()).stream()
+                .filter(pickleTagFilter())
+                .map(cucumberTestBinder::bindTestNode)
+                .peek(node -> {
+                    String description = getScenarioDescriptionByTestName(cucumberDocument, node)
+                            .map(ScenarioDefinition::getDescription).orElse(node.getName());
+                    node.setDescription(description);
+                })
+                .peek(node -> {
+                    String testLocation = String.valueOf(node.getAttributes().get(LOCATION_ATTRIBUTE_NAME));
+                    String uniqueName = cucumberDocument.getUrl().toString() + cucumberDocument.getDocument().getFeature().getLocation().getLine() + ":" +
+                            cucumberDocument.getDocument().getFeature().getLocation().getColumn() +
+                            cucumberDocument.getDocument().getFeature().getName() + testLocation + node.getName();
+                    node.getAttributes().put("testLocation", uniqueName);
+                    node.setHistoryId(DigestUtils.md5DigestAsHex(uniqueName.getBytes()));
+                })
+                .forEach(testCase::addChild);
+        return testCase;
     }
 
     private TestSuite.TestCase testCaseDiscover(CucumberDocument cucumberDocument) {
@@ -94,21 +140,22 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
     }
 
     private void postProcessTestDescription(CucumberDocument cucumberDocument, TestSuite.TestCase testCase) {
-        testCase.getTests().forEach(test -> {
-            String description = getScenarioDescriptionByTestName(cucumberDocument, test)
-                    .map(ScenarioDefinition::getDescription).orElse(test.getName());
-            test.setDescription(description);
-        });
+//        testCase.getTests().forEach(test -> {
+//            String description = getScenarioDescriptionByTestName(cucumberDocument, test)
+//                    .map(ScenarioDefinition::getDescription).orElse(test.getName());
+//            test.setDescription(description);
+//        });
     }
 
     private void postProcessTestHistoryId(CucumberDocument cucumberDocument, TestSuite.TestCase testCase) {
-        testCase.getTests().forEach(test -> {
-            String testLocation = String.valueOf(test.getAttributes().get(LOCATION_ATTRIBUTE_NAME));
-            String uniqueName = cucumberDocument.getDocument().getFeature().getLocation().getLine() + ":" +
-                    cucumberDocument.getDocument().getFeature().getLocation().getColumn() +
-                    cucumberDocument.getDocument().getFeature().getName() + testLocation + test.getName();
-            test.setHistoryId(DigestUtils.md5DigestAsHex(uniqueName.getBytes()));
-        });
+//        testCase.getTests().forEach(test -> {
+//            String testLocation = String.valueOf(test.getAttributes().get(LOCATION_ATTRIBUTE_NAME));
+//            String uniqueName = cucumberDocument.getDocument().getFeature().getLocation().getLine() + ":" +
+//                    cucumberDocument.getDocument().getFeature().getLocation().getColumn() +
+//                    cucumberDocument.getUrl() +
+//                    cucumberDocument.getDocument().getFeature().getName() + testLocation + test.getName();
+//            test.setHistoryId(DigestUtils.md5DigestAsHex(uniqueName.getBytes()));
+//        });
     }
 
     private void postProcessParentId(TestSuite.TestCase testCase) {
@@ -116,9 +163,9 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
     }
 
     private Optional<ScenarioDefinition> getScenarioDescriptionByTestName(CucumberDocument cucumberDocument,
-                                                                          TestSuite.Test test) {
+                                                                          Node node) {
         return cucumberDocument.getDocument().getFeature().getChildren().stream()
-                .filter(scenarioDefinition -> test.getName().equals(scenarioDefinition.getName()))
+                .filter(scenarioDefinition -> node.getName().equals(scenarioDefinition.getName()))
                 .findFirst();
     }
 

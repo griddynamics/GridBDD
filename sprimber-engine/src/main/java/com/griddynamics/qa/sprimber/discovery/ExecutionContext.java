@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.StepDefinition;
 import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
 import lombok.Data;
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -56,6 +57,8 @@ public class ExecutionContext {
      * Convenient place to hold all test suite definitions that available at runtime
      */
     private List<TestSuite> testSuites = new ArrayList<>();
+
+    private List<Node> nodes = new ArrayList<>();
 
     private HookOnlyStepFactory hookOnlyStepFactory;
 

@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.engine.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.Node;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,8 @@ import org.springframework.core.NamedThreadLocal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * This is a helper class that able to print short summary after each scenario to info log level
@@ -50,6 +53,97 @@ public class TestCaseSummaryPrinter {
     private static final String EMPTY_STRING = "";
     private final StepDefinitionFormatter stepDefinitionFormatter;
     private ThreadLocal<StringBuilder> reportBuilder = new NamedThreadLocal<>("Testcase report builder");
+    private ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
+
+    @EventListener
+    public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
+        increaseDepthLevel();
+        if ("test".equals(startedEvent.getContainerNode().getType())) {
+            doWithTestStart(startedEvent.getContainerNode());
+        }
+    }
+
+    @EventListener
+    public void containerNodeFinished(SprimberEventPublisher.ContainerNodeFinishedEvent finishedEvent) {
+        decreaseDepthLevel();
+        if ("test".equals(finishedEvent.getContainerNode().getType())) {
+            doWithTestFinish(finishedEvent.getContainerNode());
+        }
+    }
+
+    @EventListener
+    public void targetNodeCompleted(SprimberEventPublisher.TargetNodeCompletedEvent completedEvent) {
+        StringBuilder stringBuilder = reportBuilder.get();
+        stringBuilder.append("\n");
+        stringBuilder.append(getIndents() + "\t");
+        stringBuilder.append(String.format(" %s", completedEvent.getExecutableNode().getName()));
+        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getExecutableNode().getParameters().values()})));
+        stringBuilder.append(String.format(" (%s) ", completedEvent.getExecutableNode().getStatus()));
+    }
+
+    @EventListener
+    public void targetNodeError(SprimberEventPublisher.TargetNodeErrorEvent errorEvent) {
+        StringBuilder stringBuilder = reportBuilder.get();
+        stringBuilder.append("\n");
+        stringBuilder.append(getIndents() + "\t");
+        stringBuilder.append(String.format(" %s", errorEvent.getExecutableNode().getName()));
+        stringBuilder.append(String.format(" (%s) ", errorEvent.getExecutableNode().getStatus()));
+    }
+
+    @EventListener
+    public void beforeNodeCompleted(SprimberEventPublisher.BeforeNodeCompletedEvent completedEvent) {
+        StringBuilder stringBuilder = reportBuilder.get();
+        stringBuilder.append("\n");
+        stringBuilder.append(getIndents());
+        stringBuilder.append(String.format(" %s", completedEvent.getExecutableNode().getName()));
+        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getExecutableNode().getParameters().values()})));
+        stringBuilder.append(String.format(" (%s) ", completedEvent.getExecutableNode().getStatus()));
+    }
+
+    @EventListener
+    public void beforeNodeError(SprimberEventPublisher.BeforeNodeErrorEvent errorEvent) {
+        StringBuilder stringBuilder = reportBuilder.get();
+        stringBuilder.append("\n");
+        stringBuilder.append(getIndents());
+        stringBuilder.append(String.format(" %s", errorEvent.getExecutableNode().getName()));
+        stringBuilder.append(String.format(" (%s) ", errorEvent.getExecutableNode().getStatus()));
+    }
+
+    @EventListener
+    public void afterNodeCompleted(SprimberEventPublisher.AfterNodeCompletedEvent completedEvent) {
+        StringBuilder stringBuilder = reportBuilder.get();
+        stringBuilder.append("\n");
+        stringBuilder.append(getIndents());
+        stringBuilder.append(String.format(" %s", completedEvent.getExecutableNode().getName()));
+        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getExecutableNode().getParameters().values()})));
+        stringBuilder.append(String.format(" (%s) ", completedEvent.getExecutableNode().getStatus()));
+    }
+
+    @EventListener
+    public void afterNodeError(SprimberEventPublisher.AfterNodeErrorEvent errorEvent) {
+        StringBuilder stringBuilder = reportBuilder.get();
+        stringBuilder.append("\n");
+        stringBuilder.append(getIndents());
+        stringBuilder.append(String.format(" %s", errorEvent.getExecutableNode().getName()));
+        stringBuilder.append(String.format(" (%s) ", errorEvent.getExecutableNode().getStatus()));
+    }
+
+    private void doWithTestStart(Node.ContainerNode containerNode) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("\n\n");
+        stringBuilder.append(String.format("Test Completed: %s", containerNode.getName()));
+        stringBuilder.append(" with status {STATUS}");
+        reportBuilder.set(stringBuilder);
+    }
+
+    private void doWithTestFinish(Node.ContainerNode containerNode) {
+        StringBuilder stringBuilder = reportBuilder.get();
+        stringBuilder.append("\n\n");
+        String summaryRaw = stringBuilder.toString();
+        String summary = summaryRaw.replaceFirst("\\{STATUS}", containerNode.getStatus().name());
+        log.info(summary);
+        reportBuilder.remove();
+    }
 
     @EventListener
     public void illuminateTestStart(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
@@ -83,6 +177,22 @@ public class TestCaseSummaryPrinter {
             stringBuilder.append(String.format(" (%s) ", stepFinishedEvent.getStep().getExecutionResult().getStatus()));
             stringBuilder.append(String.format(" (%s) ", getExceptionMessageIfAny(stepFinishedEvent.getStep().getExecutionResult())));
         }
+    }
+
+    private String getIndents() {
+        return IntStream.rangeClosed(0, depthLevelThreadLocal.get()).mapToObj(i -> "\t").collect(Collectors.joining());
+    }
+
+    private void increaseDepthLevel() {
+        int currentLevel = Optional.ofNullable(depthLevelThreadLocal.get()).orElse(1);
+        currentLevel++;
+        depthLevelThreadLocal.set(currentLevel);
+    }
+
+    private void decreaseDepthLevel() {
+        int currentLevel = Optional.ofNullable(depthLevelThreadLocal.get()).orElse(1);
+        currentLevel--;
+        depthLevelThreadLocal.set(currentLevel);
     }
 
     private String getExceptionMessageIfAny(ExecutionResult executionResult) {
