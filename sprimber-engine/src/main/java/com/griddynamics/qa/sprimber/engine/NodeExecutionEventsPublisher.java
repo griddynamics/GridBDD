@@ -22,29 +22,32 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
-
-import com.griddynamics.qa.sprimber.common.TestSuite;
-import com.griddynamics.qa.sprimber.engine.Node;
+package com.griddynamics.qa.sprimber.engine;
 
 /**
  * @author fparamonov
  */
-interface TestSuiteDiscovery {
+public interface NodeExecutionEventsPublisher {
 
-    TestSuite discoverOld();
+    void containerNodeStarted(Node node);
 
-    Node discover();
+    void containerNodeCompleted(Node node);
 
-    /**
-     * This interface allow to extract the specific logic for test parsing.
-     * For example the classic test consist of one method rather than BDD test
-     * consist of comp[lex logic to bind the text to corresponding Java methods
-     *
-     * @author fparamonov
-     */
-    interface TestDefinitionBinder<TC> {
+    void beforeNodeStarted(Node node);
 
-        TestSuite.Test bind(TC testCandidate);
-    }
+    void beforeNodeCompleted(Node node);
+
+    void beforeNodeError(Node node);
+
+    void targetNodeStarted(Node node);
+
+    void targetNodeCompleted(Node node);
+
+    void targetNodeError(Node node);
+
+    void afterNodeStarted(Node node);
+
+    void afterNodeCompleted(Node node);
+
+    void afterNodeError(Node node);
 }

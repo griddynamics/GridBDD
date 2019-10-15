@@ -77,82 +77,84 @@ class TreeSuiteExecutor {
 
     public Status executeRoot(Node node) {
         node.setStatus(Status.READY);
-        CompletableFuture<Status> rootStatus = CompletableFuture.supplyAsync(() -> executeNode(node), Executors.newSingleThreadExecutor());
-        return rootStatus.join();
+        CompletableFuture<Status> rootStatus = CompletableFuture.supplyAsync(() -> executeContainerNode(node), Executors.newSingleThreadExecutor());
+        Status status = rootStatus.join();
+        node.setStatus(status);
+        return status;
     }
 
-    public Node.Status executeNode(Node node) {
-        eventsPublisher.nodeExecutionStarted(node);
-        CompletableFuture<Node.Status> resultFuture = CompletableFuture.completedFuture(Node.Status.READY)
+    private Status executeContainerNode(Node node) {
+        eventsPublisher.containerNodeStarted(node);
+        CompletableFuture<Status> resultFuture = CompletableFuture.completedFuture(Status.READY)
                 .thenApply(initStatus -> processBeforeSubNodes(node, initStatus))
-                .exceptionally(throwable -> handleBeforeException(throwable, node))
                 .thenCompose(nodeStatus -> processChildSubNodes(node, nodeStatus))
                 .thenApply(nodeStatus -> processTargetSubNodes(node, nodeStatus))
-                .exceptionally(throwable -> handleTargetException(throwable, node))
-                .thenApply(nodeStatus -> processAfterSubNodes(node, nodeStatus))
-                .exceptionally(throwable -> handleAfterException(throwable, node));
-        Node.Status result = resultFuture.join();
+                .thenApply(nodeStatus -> processAfterSubNodes(node, nodeStatus));
+        Status result = resultFuture.join();
         node.setStatus(result);
-        eventsPublisher.nodeExecutionCompleted(node);
+        eventsPublisher.containerNodeCompleted(node);
         return result;
     }
 
-    private Node.Status processBeforeSubNodes(Node parentNode, Node.Status initStatus) {
-        return processExecutableSubNodes(parentNode.beforeSpliterator(), initStatus, BEFORE_SUB_NODE_NAME);
+    private Status processBeforeSubNodes(Node parentNode, Status initStatus) {
+        Status status = processExecutableSubNodes(parentNode.beforeSpliterator(), initStatus, BEFORE_SUB_NODE_NAME);
+        parentNode.setStatus(status);
+        return status;
     }
 
-    private Node.Status processTargetSubNodes(Node parentNode, Node.Status initStatus) {
-        return processExecutableSubNodes(parentNode.targetSpliterator(), initStatus, TARGET_SUB_NODE_NAME);
+    private Status processTargetSubNodes(Node parentNode, Status initStatus) {
+        Status status =  processExecutableSubNodes(parentNode.targetSpliterator(), initStatus, TARGET_SUB_NODE_NAME);
+        parentNode.setStatus(status);
+        return status;
     }
 
-    private Node.Status processAfterSubNodes(Node parentNode, Node.Status initStatus) {
-        return processExecutableSubNodes(parentNode.afterSpliterator(), initStatus, AFTER_SUB_NODE_NAME);
+    private Status processAfterSubNodes(Node parentNode, Status initStatus) {
+        Status status =  processExecutableSubNodes(parentNode.afterSpliterator(), initStatus, AFTER_SUB_NODE_NAME);
+        parentNode.setStatus(status);
+        return status;
     }
 
-    private Node.Status processExecutableSubNodes(Spliterator<Node> subNodesSpliterator,
-                                                  Node.Status initStatus, String nodeName) {
-        return StreamSupport.stream(subNodesSpliterator, false)
+    private Status processExecutableSubNodes(Spliterator<Node> subNodesSpliterator,
+                                                  Status initStatus, String stageName) {
+        List<CompletableFuture<Status>> subNodeResults = StreamSupport.stream(subNodesSpliterator, false)
                 .filter(subNode -> subNode instanceof ExecutableNode)
-                .map(subNode -> invokeExecutableNode((ExecutableNode) subNode, nodeName))
-                .reduce(initStatus, BinaryOperator.maxBy(Comparator.comparingInt(status -> status.value)));
+                .map(subNode -> CompletableFuture.completedFuture(Status.READY)
+                        .thenApply(status -> invokeExecutableNode((ExecutableNode) subNode, stageName))
+                        .exceptionally(throwable -> handleStageException(throwable, (ExecutableNode) subNode, stageName)))
+                .collect(Collectors.toList());
+        CompletableFuture<Void> done = CompletableFuture.allOf(subNodeResults.toArray(new CompletableFuture[0]));
+        return done.thenApply(v -> subNodeResults.stream()
+                .map(CompletableFuture::join)
+                .reduce(initStatus, BinaryOperator.maxBy(Comparator.comparingInt(s -> s.value)))
+        ).join();
     }
 
-    private Node.Status invokeExecutableNode(ExecutableNode executableNode, String nodeName) {
+    private Status invokeExecutableNode(ExecutableNode executableNode, String nodeName) {
         eventsPublisherByName.get(nodeName + STARTED_EVENT_POSTFIX).accept(executableNode);
-        if (Node.Status.DRY.equals(executableNode.getStatus())) {
-            return nodeInvoker.dryInvoke(executableNode);
+        Status status;
+        if (Status.DRY.equals(executableNode.getStatus())) {
+            status = nodeInvoker.dryInvoke(executableNode);
+        } else {
+            status = nodeInvoker.invoke(executableNode);
         }
-        Status status = nodeInvoker.invoke(executableNode);
         executableNode.setStatus(status);
         eventsPublisherByName.get(nodeName + COMPLETED_EVENT_POSTFIX).accept(executableNode);
         return status;
-
     }
 
-    private Node.Status handleBeforeException(Throwable throwable, Node parentNode) {
-        return handleException(throwable, parentNode, BEFORE_SUB_NODE_NAME);
-    }
-
-    private Node.Status handleTargetException(Throwable throwable, Node parentNode) {
-        return handleException(throwable, parentNode, TARGET_SUB_NODE_NAME);
-    }
-
-    private Node.Status handleAfterException(Throwable throwable, Node parentNode) {
-        return handleException(throwable, parentNode, AFTER_SUB_NODE_NAME);
-    }
-
-    private Node.Status handleException(Throwable throwable, Node parentNode, String nodeName) {
-        Node.Status errorStatus = nodeFallbackManager.parseThrowable(throwable);
-        parentNode.setStatus(errorStatus);
-        eventsPublisherByName.get(nodeName + ERROR_EVENT_POSTFIX).accept(parentNode);
+    private Status handleStageException(Throwable throwable, ExecutableNode stageNode, String stageName) {
+        Status errorStatus = nodeFallbackManager.parseThrowable(throwable);
+        stageNode.setStatus(errorStatus);
+        stageNode.setThrowable(throwable);
+        eventsPublisherByName.get(stageName + ERROR_EVENT_POSTFIX).accept(stageNode);
         nodeFallbackManager.conditionallyPrintStacktrace(errorStatus, throwable);
         log.trace(nodeFallbackManager.getErrorMessage(throwable));
         log.error(throwable.getLocalizedMessage());
         return errorStatus;
     }
 
-    private CompletableFuture<Node.Status> processChildSubNodes(Node node, Node.Status nodeStatus) {
-        List<CompletableFuture<Node.Status>> childFutures = StreamSupport.stream(node.childSpliterator(), false)
+    private CompletableFuture<Status> processChildSubNodes(Node node, Status nodeStatus) {
+        List<CompletableFuture<Status>> childFutures = StreamSupport.stream(node.childSpliterator(), false)
                 .filter(containerNode -> containerNode instanceof ContainerNode)
                 .map(containerNode -> applyContainerNode((ContainerNode) containerNode))
                 .collect(Collectors.toList());
@@ -164,8 +166,8 @@ class TreeSuiteExecutor {
 
     private CompletableFuture<Status> applyContainerNode(ContainerNode containerNode) {
         return Optional.ofNullable(childExecutors.get(containerNode.getType() + EXECUTOR_NAME_SUFFIX))
-                .map(executor -> CompletableFuture.supplyAsync(() -> executeNode(containerNode), executor))
-                .orElseGet(() -> CompletableFuture.completedFuture(executeNode(containerNode)));
+                .map(executor -> CompletableFuture.supplyAsync(() -> executeContainerNode(containerNode), executor))
+                .orElseGet(() -> CompletableFuture.completedFuture(executeContainerNode(containerNode)));
     }
 
     public interface NodeInvoker {
@@ -178,36 +180,11 @@ class TreeSuiteExecutor {
          * @param executableNode - target node for invocation
          * @return - status of invocation, usually COMPLETED.
          */
-        Node.Status invoke(ExecutableNode executableNode);
+        Status invoke(ExecutableNode executableNode);
 
-        default Node.Status dryInvoke(ExecutableNode executableNode) {
-            return Node.Status.DRY;
+        default Status dryInvoke(ExecutableNode executableNode) {
+            return Status.DRY;
         }
-    }
-
-    public interface NodeExecutionEventsPublisher {
-
-        void nodeExecutionStarted(Node node);
-
-        void nodeExecutionCompleted(Node node);
-
-        void beforeNodeStarted(Node node);
-
-        void beforeNodeCompleted(Node node);
-
-        void beforeNodeError(Node node);
-
-        void targetNodeStarted(Node node);
-
-        void targetNodeCompleted(Node node);
-
-        void targetNodeError(Node node);
-
-        void afterNodeStarted(Node node);
-
-        void afterNodeCompleted(Node node);
-
-        void afterNodeError(Node node);
     }
 
 }

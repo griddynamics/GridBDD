@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,8 @@ import org.springframework.core.annotation.AnnotationUtils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.griddynamics.qa.sprimber.engine.Node.*;
 
 /**
  * @author fparamonov
@@ -50,12 +53,34 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
     private final ApplicationContext applicationContext;
 
     @Override
-    public TestSuite discover() {
+    public TestSuite discoverOld() {
         TestSuite testSuite = new TestSuite();
         applicationContext.getBeansWithAnnotation(TestController.class).values().stream()
                 .map(this::testCaseDiscover)
                 .forEach(testCase -> testSuite.getTestCases().add(testCase));
         return testSuite;
+    }
+
+    @Override
+    public Node discover() {
+        Node testSuite = new Node.ContainerNode("testSuite", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
+        applicationContext.getBeansWithAnnotation(TestController.class).values().stream()
+                .map(this::testCaseNodeDiscover)
+                .forEach(testSuite::addChild);
+        return testSuite;
+    }
+
+    private Node testCaseNodeDiscover(Object testController) {
+        Node testCase = new Node.ContainerNode("testCase", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
+        TestController controller = testController.getClass().getAnnotation(TestController.class);
+        testCase.setName(String.valueOf(AnnotationUtils.getValue(controller, NAME_ATTRIBUTE_NAME)));
+        testCase.setDescription(String.valueOf(AnnotationUtils.getValue(controller, DESCRIPTION_ATTRIBUTE_NAME)));
+
+        Arrays.stream(testController.getClass().getDeclaredMethods())
+                .filter(method -> method.isAnnotationPresent(TestMapping.class))
+                .map(classicTestBinder::bindNode)
+                .forEach(testCase::addChild);
+        return testCase;
     }
 
     private TestSuite.TestCase testCaseDiscover(Object testController) {

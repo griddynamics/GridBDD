@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.engine;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -36,8 +37,13 @@ import java.util.function.Consumer;
  */
 @Data
 @RequiredArgsConstructor
-abstract class Node {
+public abstract class Node {
 
+    private String name;
+    private String description;
+    private String parentId;
+    private String historyId;
+    // core related properties
     private Status status;
     private final String type;
     /**
@@ -55,34 +61,59 @@ abstract class Node {
     private final int subNodesSkippingFlags;
     private final String runtimeId = UUID.randomUUID().toString();
     private final Map<String, List<Node>> children = new HashMap<>();
+    private final Meta meta = new Meta();
     private final Map<String, Object> attributes = new HashMap<>();
 
+    public void addChild(Node node) {
+        node.setParentId(this.runtimeId);
+        getChildren().computeIfAbsent(CHILD_SUB_NODE_NAME, k -> new ArrayList<>()).add(node);
+    }
+
+    public void addTarget(Node node) {
+        node.setParentId(this.runtimeId);
+        getChildren().computeIfAbsent(TARGET_SUB_NODE_NAME, k -> new ArrayList<>()).add(node);
+    }
+
+    public void addBefore(Node node) {
+        node.setParentId(this.runtimeId);
+        getChildren().computeIfAbsent(BEFORE_SUB_NODE_NAME, k -> new ArrayList<>()).add(node);
+    }
+
+    public void addAfter(Node node) {
+        node.setParentId(this.runtimeId);
+        getChildren().computeIfAbsent(AFTER_SUB_NODE_NAME, k -> new ArrayList<>()).add(node);
+    }
+
     Spliterator<Node> childSpliterator() {
-        boolean doSeedSkipsOnError = hasFlags(DRY_CHILDES_ON_ERROR);
-        return new NodeSpliterator(children.getOrDefault(CHILD_SUB_NODE_NAME, new ArrayList<>()), false, doSeedSkipsOnError);
+        boolean switchToDryOnError = hasFlags(SWITCH_TO_DRY_FOR_CHILD);
+        boolean dryChildrens = (isDry() && hasFlags(DRY_CHILDES_ON_DRY)) || (isError() && hasFlags(DRY_CHILDES_ON_ERROR));
+        return new NodeSpliterator(children.getOrDefault(CHILD_SUB_NODE_NAME, new ArrayList<>()), dryChildrens, switchToDryOnError);
     }
 
     Spliterator<Node> targetSpliterator() {
-        boolean skipTargets = (isDry() && hasFlags(DRY_TARGETS_ON_DRY)) || (isError() && hasFlags(DRY_TARGETS_ON_ERROR));
-        return new NodeSpliterator(children.getOrDefault(TARGET_SUB_NODE_NAME, new ArrayList<>()), skipTargets);
+        boolean switchToDryOnError = hasFlags(SWITCH_TO_DRY_FOR_TARGET);
+        boolean dryTargets = (isDry() && hasFlags(DRY_TARGETS_ON_DRY)) || (isError() && hasFlags(DRY_TARGETS_ON_ERROR));
+        return new NodeSpliterator(children.getOrDefault(TARGET_SUB_NODE_NAME, new ArrayList<>()), dryTargets, switchToDryOnError);
     }
 
     Spliterator<Node> beforeSpliterator() {
-        boolean skipBefores = (isDry() && hasFlags(DRY_BEFORES_ON_DRY)) || (isError() && hasFlags(DRY_BEFORES_ON_ERROR));
-        return new NodeSpliterator(children.getOrDefault(BEFORE_SUB_NODE_NAME, new ArrayList<>()), skipBefores);
+        boolean switchToDryOnError = hasFlags(SWITCH_TO_DRY_FOR_BEFORE);
+        boolean dryBefores = (isDry() && hasFlags(DRY_BEFORES_ON_DRY)) || (isError() && hasFlags(DRY_BEFORES_ON_ERROR));
+        return new NodeSpliterator(children.getOrDefault(BEFORE_SUB_NODE_NAME, new ArrayList<>()), dryBefores, switchToDryOnError);
     }
 
     Spliterator<Node> afterSpliterator() {
-        boolean skipAfters = (isDry() && hasFlags(DRY_AFTERS_ON_DRY)) || (isError() && hasFlags(DRY_AFTERS_ON_ERROR));
-        return new NodeSpliterator(children.getOrDefault(AFTER_SUB_NODE_NAME, new ArrayList<>()), skipAfters);
+        boolean switchToDryOnError = hasFlags(SWITCH_TO_DRY_FOR_AFTER);
+        boolean dryAfters = (isDry() && hasFlags(DRY_AFTERS_ON_DRY)) || (isError() && hasFlags(DRY_AFTERS_ON_ERROR));
+        return new NodeSpliterator(children.getOrDefault(AFTER_SUB_NODE_NAME, new ArrayList<>()), dryAfters, switchToDryOnError);
     }
 
     private boolean isDry() {
-        return Status.DRY.equals(status);
+        return status.hasStatusFlag(DRY_STATUS_VALUE);
     }
 
     private boolean isError() {
-        return Status.ERROR.equals(status);
+        return status.hasStatusFlag(ERROR_STATUS_VALUE);
     }
 
     static final String BEFORE_SUB_NODE_NAME = "before";
@@ -104,37 +135,53 @@ abstract class Node {
     }
 
     /**
-     * Seed all before sub nodes in SKIP state when the current node in the SKIP state
+     * Seed all before sub nodes in DRY state when the current node in the DRY state
      */
     public static final int DRY_BEFORES_ON_DRY = 0x00000001;
     /**
-     * Seed all after sub nodes in SKIP state when the current node in the SKIP state
+     * Seed all after sub nodes in DRY state when the current node in the DRY state
      */
     public static final int DRY_AFTERS_ON_DRY = 0x00000002;
     /**
-     * Seed all target sub nodes in SKIP state when the current node in the SKIP state
+     * Seed all target sub nodes in DRY state when the current node in the DRY state
      */
     public static final int DRY_TARGETS_ON_DRY = 0x00000004;
     /**
-     * Seed all child sub nodes in SKIP state when the current node in the SKIP state
+     * Seed all child sub nodes in DRY state when the current node in the DRY state
      */
     public static final int DRY_CHILDES_ON_DRY = 0x00000008;
     /**
-     * Seed all before sub nodes in SKIP state when the current node in the ERROR state
+     * Seed all before sub nodes in DRY state when the current node in the ERROR state
      */
     public static final int DRY_BEFORES_ON_ERROR = 0x00000010;
     /**
-     * Seed all after sub nodes in SKIP state when the current node in the ERROR state
+     * Seed all after sub nodes in DRY state when the current node in the ERROR state
      */
     public static final int DRY_AFTERS_ON_ERROR = 0x00000020;
     /**
-     * Seed all target sub nodes in SKIP state when the current node in the ERROR state
+     * Seed all target sub nodes in DRY state when the current node in the ERROR state
      */
     public static final int DRY_TARGETS_ON_ERROR = 0x00000040;
     /**
-     * Seed all child sub nodes in SKIP state when the current node in the ERROR state
+     * Seed all child sub nodes in DRY state when the current node in the ERROR state
      */
     public static final int DRY_CHILDES_ON_ERROR = 0x00000080;
+    /**
+     * Switch to DRY mode in case of error for BEFORE nodes
+     */
+    public static final int SWITCH_TO_DRY_FOR_BEFORE = 0x00000100;
+    /**
+     * Switch to DRY mode in case of error for AFTER nodes
+     */
+    public static final int SWITCH_TO_DRY_FOR_AFTER = 0x00000200;
+    /**
+     * Switch to DRY mode in case of error for TARGET nodes
+     */
+    public static final int SWITCH_TO_DRY_FOR_TARGET = 0x00000400;
+    /**
+     * Switch to DRY mode in case of error for BEFORE nodes
+     */
+    public static final int SWITCH_TO_DRY_FOR_CHILD = 0x00000800;
 
     public static final int READY_STATUS_VALUE = 0;
     public static final int COMPLETED_STATUS_VALUE = 1;
@@ -153,9 +200,9 @@ abstract class Node {
      * it is possible to extend each of this bits with extra information once needed along with new bits
      * with new statuses
      */
-    enum Status {
+    public enum Status {
         READY(READY_STATUS_VALUE), COMPLETED(COMPLETED_STATUS_VALUE), DRY(DRY_STATUS_VALUE | COMPLETED_STATUS_VALUE),
-        SKIP(SKIP_STATUS_VALUE | COMPLETED_STATUS_VALUE), ERROR(ERROR_STATUS_VALUE | COMPLETED_STATUS_VALUE),
+        SKIP(SKIP_STATUS_VALUE | DRY_STATUS_VALUE | COMPLETED_STATUS_VALUE), ERROR(ERROR_STATUS_VALUE | COMPLETED_STATUS_VALUE),
         PENDING(SKIP_STATUS_VALUE | FAILED_STATUS_VALUE),
         FAILED(ERROR_STATUS_VALUE | FAILED_STATUS_VALUE);
 
@@ -176,24 +223,37 @@ abstract class Node {
         public static Status valueOfCode(Integer code) {
             return BY_CODE.get(code);
         }
+
+        public boolean hasStatusFlag(int status) {
+            return (this.value & status) == status;
+        }
+
     }
 
+    /**
+     * The Node Spliterator with feedback.
+     * It aimed to walk through the underlain collection of sub nodes and emit one per iteration.
+     * The emited node can be in ready(active) or dry state.
+     * Feedback allows to switch the spliterator to dry mode depends on the node execution status.
+     * Spliterator can also be initialized in DRY mode - emitted nodes will be in DRY status
+     * regardless of the execution status.
+     */
     static class NodeSpliterator implements Spliterator<Node> {
 
-        boolean dryMode;
-        boolean seedSkippedNodesOnError;
-        final List<Node> source;
-        final Iterator<Node> iterator;
+        /**
+         * If true then spliterator will emit nodes in DRY status.
+         * Can be changed in runtime depends on Node status after apply
+         */
+        private boolean dryMode;
+        private final boolean switchToDryOnError;
+        private final List<Node> source;
+        private final Iterator<Node> iterator;
 
-        NodeSpliterator(List<Node> source, boolean dryMode, boolean seedSkippedNodesOnError) {
+        NodeSpliterator(List<Node> source, boolean dryMode, boolean switchToDryOnError) {
             this.source = source;
             this.dryMode = dryMode;
             this.iterator = source.iterator();
-            this.seedSkippedNodesOnError = seedSkippedNodesOnError;
-        }
-
-        NodeSpliterator(List<Node> source, boolean dryMode) {
-            this(source, dryMode, false);
+            this.switchToDryOnError = switchToDryOnError;
         }
 
         @Override
@@ -219,7 +279,7 @@ abstract class Node {
                 node.setStatus(Node.Status.DRY);
             }
             action.accept(node);
-            if (Node.Status.ERROR.equals(node.getStatus()) && seedSkippedNodesOnError) {
+            if (node.getStatus().hasStatusFlag(ERROR_STATUS_VALUE) && switchToDryOnError) {
                 dryMode = true;
             }
         }
@@ -241,7 +301,7 @@ abstract class Node {
     }
 
     @Data
-    static class ContainerNode extends Node {
+    public static class ContainerNode extends Node {
         public ContainerNode(String type) {
             super(type, 0);
         }
@@ -252,7 +312,7 @@ abstract class Node {
     }
 
     @Data
-    static class ExecutableNode extends Node {
+    public static class ExecutableNode extends Node {
         private Method method;
         private Throwable throwable;
         private Map<String, Object> parameters = new HashMap<>();
@@ -263,6 +323,23 @@ abstract class Node {
 
         public ExecutableNode(String type, int subNodesSkippingFlags) {
             super(type, subNodesSkippingFlags);
+        }
+    }
+
+    public static class Meta extends HashMap<String, List<String>> {
+
+        public void addMeta(Meta meta) {
+            this.putAll(meta);
+        }
+
+        public String getSingleValueOrEmpty(String key) {
+            return getSingleValueOrDefault(key, StringUtils.EMPTY);
+        }
+
+        public String getSingleValueOrDefault(String key, String defaultValue) {
+            return Optional.ofNullable(this.get(key))
+                    .map(list -> list.get(0))
+                    .orElse(defaultValue);
         }
     }
 }

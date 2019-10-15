@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.StepDefinition;
 import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleLocation;
 import gherkin.pickles.PickleTag;
@@ -36,6 +37,8 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.griddynamics.qa.sprimber.engine.Node.*;
+
 /**
  * @author fparamonov
  */
@@ -45,6 +48,7 @@ class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Pick
 
     public static final String BDD_TAGS_ATTRIBUTE_NAME = "bddTags";
     public static final String LOCATION_ATTRIBUTE_NAME = "location";
+
     private static final String TAG_SYMBOL = "@";
     private static final String TAG_VALUE_SEPARATOR = ":";
     private static final String VALUE_SEPARATOR = ",";
@@ -52,10 +56,36 @@ class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Pick
     private final PickleStepFactory pickleStepFactory;
     private final StandardFallbackStrategy fallbackStrategy = new StandardFallbackStrategy();
 
+    public Node bindTestNode(Pickle testCandidate) {
+        Node testNode = new Node.ContainerNode("test",DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
+        testNode.setName(testCandidate.getName());
+        testNode.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(testCandidate));
+        testNode.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(testCandidate));
+        testNode.getMeta().addMeta(getMetaFromPickle(testCandidate));
+
+        pickleStepFactory.provideBeforeTestHookNodes().forEach(testNode::addBefore);
+        pickleStepFactory.provideAfterTestHookNodes().forEach(testNode::addAfter);
+
+        testCandidate.getSteps().stream()
+                .map(pickleStepFactory::provideStepNode)
+                .map(this::bindStepContainerNode)
+                .forEach(testNode::addChild);
+
+        return testNode;
+    }
+
+    private Node bindStepContainerNode(Node targetNode) {
+        Node stepContainerNode = new Node.ContainerNode("stepContainer", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY);
+        stepContainerNode.addTarget(targetNode);
+        pickleStepFactory.provideBeforeStepHookNodes().forEach(stepContainerNode::addBefore);
+        pickleStepFactory.provideAfterStepHookNodes().forEach(stepContainerNode::addAfter);
+        return stepContainerNode;
+    }
+
     @Override
     public TestSuite.Test bind(Pickle testCandidate) {
         val test = new TestSuite.Test();
-        test.setMeta(getMetaFromPickle(testCandidate));
+//        test.setMeta(getMetaFromPickle(testCandidate));
         test.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(testCandidate));
         test.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(testCandidate));
         test.setName(testCandidate.getName());
@@ -81,14 +111,14 @@ class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Pick
                 .collect(Collectors.toList());
     }
 
-    private TestSuite.Test.Meta getMetaFromPickle(Pickle pickle) {
+    private Meta getMetaFromPickle(Pickle pickle) {
         return pickle.getTags().stream()
                 .map(PickleTag::getName)
                 .map(tag -> StringUtils.remove(tag, TAG_SYMBOL))
-                .collect(TestSuite.Test.Meta::new, this::convertValues, HashMap::putAll);
+                .collect(Meta::new, this::convertValues, HashMap::putAll);
     }
 
-    private void convertValues(TestSuite.Test.Meta meta, String s) {
+    private void convertValues(Meta meta, String s) {
         StringTokenizer stringTokenizer = new StringTokenizer(s, TAG_VALUE_SEPARATOR);
         String key = stringTokenizer.nextToken();
         if (stringTokenizer.hasMoreTokens()) {

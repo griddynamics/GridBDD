@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -32,6 +33,9 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.DigestUtils;
 
 import java.lang.reflect.Method;
+
+import static com.griddynamics.qa.sprimber.engine.Node.*;
+import static com.griddynamics.qa.sprimber.engine.Node.DRY_CHILDES_ON_ERROR;
 
 /**
  * @author fparamonov
@@ -41,6 +45,17 @@ import java.lang.reflect.Method;
 class ClassicTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Method> {
 
     private final ClassicStepFactory classicStepFactory;
+
+    public Node bindNode(Method testCandidate) {
+        Node testNode = new Node.ContainerNode("test",DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
+        TestMapping testMapping = AnnotationUtils.getAnnotation(testCandidate, TestMapping.class);
+        String testName = buildTestName(testCandidate, testMapping);
+        testNode.setName(testName);
+        testNode.setHistoryId(buildTestHistoryId(testCandidate));
+        testNode.setDescription(String.valueOf(AnnotationUtils.getValue(testMapping, "description")));
+        testNode.addChild(classicStepFactory.provideStepNode(testCandidate));
+        return testNode;
+    }
 
     @Override
     public TestSuite.Test bind(Method testCandidate) {

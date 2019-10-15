@@ -36,13 +36,16 @@ import org.springframework.boot.ApplicationRunner;
 
 @Slf4j
 @RequiredArgsConstructor
-public class CliExecutor implements ApplicationRunner {
+class CliExecutor implements ApplicationRunner {
 
     private final ExecutionContext executionContext;
     private final SuiteExecutor suiteExecutor;
+    private final TreeSuiteExecutor treeSuiteExecutor;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        executionContext.getTestSuites().forEach(suiteExecutor::executeTestSuite);
+//        treeSuiteExecutor.executeRoot(executionContext.getNodes().get(1));
+        executionContext.getNodes().forEach(treeSuiteExecutor::executeRoot);
+//        executionContext.getTestSuites().forEach(suiteExecutor::executeTestSuite);
     }
 }

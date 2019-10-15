@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.event;
 
 import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;
@@ -35,6 +36,46 @@ import org.springframework.context.ApplicationEvent;
  * @author fparamonov
  */
 class Events {
+
+    @Getter
+    static abstract class ContainerNodeEvent extends ApplicationEvent {
+
+        private Node.ContainerNode containerNode;
+
+        /**
+         * Create a new ApplicationEvent.
+         *
+         * @param source the object on which the event initially occurred (never {@code null})
+         */
+        public ContainerNodeEvent(Object source) {
+            super(source);
+        }
+
+        public ContainerNodeEvent(Object source, Node.ContainerNode containerNode) {
+            super(source);
+            this.containerNode = containerNode;
+        }
+    }
+
+    @Getter
+    static abstract class ExecutableNodeEvent extends ApplicationEvent {
+
+        private Node.ExecutableNode executableNode;
+
+        /**
+         * Create a new ApplicationEvent.
+         *
+         * @param source the object on which the event initially occurred (never {@code null})
+         */
+        public ExecutableNodeEvent(Object source) {
+            super(source);
+        }
+
+        public ExecutableNodeEvent(Object source, Node.ExecutableNode executableNode) {
+            super(source);
+            this.executableNode = executableNode;
+        }
+    }
 
     @Getter
     @Setter

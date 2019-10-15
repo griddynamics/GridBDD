@@ -39,12 +39,12 @@ Feature: This is a test feature for echo application
     When test when action
     Then test then action
 
-#  @echo
-#  @story:MultipleLabelValues,somethingElse
-#  Scenario: Simple scenario to check steps with DataTable arguments
-#    Given the next author exist:
-#      | name     | surname     | book     |
-#      | testName | testSurname | testBook |
+  @echo
+  @story:MultipleLabelValues,somethingElse
+  Scenario: Simple scenario to check steps with DataTable arguments
+    Given the next author exist:
+      | name     | surname     | book     |
+      | testName | testSurname | testBook |
 
   @echo
   @story:StoryThatLooksLikeAsAScenario

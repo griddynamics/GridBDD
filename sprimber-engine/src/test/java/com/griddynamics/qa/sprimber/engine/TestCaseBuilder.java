@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 
 import static com.griddynamics.qa.sprimber.engine.Node.*;
 
@@ -46,84 +45,84 @@ public class TestCaseBuilder {
 
     Node buildTestCase() {
         Node.ContainerNode testCaseNode = testCaseNode();
-        testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testCaseNode.addBefore(beforeNode());
+        testCaseNode.addAfter(afterNode());
         Node testNode = buildTestNodeWithOneSurroundStep();
-        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
+        testCaseNode.addChild(testNode);
         return testCaseNode;
     }
 
     Node buildTestCaseWithTestWithTwoStep() {
         Node.ContainerNode testCaseNode = testCaseNode();
-        testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testCaseNode.addBefore(beforeNode());
+        testCaseNode.addAfter(afterNode());
         Node testNode = buildTestNodeWithTwoSurroundStep();
-        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
+        testCaseNode.addChild(testNode);
         return testCaseNode;
     }
 
     Node buildTestCaseWithTwoTestWithTwoStep() {
         Node.ContainerNode testCaseNode = testCaseNode();
-        testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testCaseNode.addBefore(beforeNode());
+        testCaseNode.addAfter(afterNode());
         Node firstTestNode = buildTestNodeWithTwoSurroundStep();
         Node secondTestNode = buildTestNodeWithTwoSurroundStep();
-        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstTestNode);
-        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(secondTestNode);
+        testCaseNode.addChild(firstTestNode);
+        testCaseNode.addChild(secondTestNode);
         return testCaseNode;
     }
 
     Node buildTestCaseWithTestWithTwoStepDoubleHooks() {
         Node.ContainerNode testCaseNode = testCaseNode();
-        testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testCaseNode.addBefore(beforeNode());
+        testCaseNode.addAfter(afterNode());
         Node testNode = buildTestNodeWithTwoSurroundStepDoubleHooks();
-        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
+        testCaseNode.addChild(testNode);
         return testCaseNode;
     }
 
     Node buildTestCaseWithException() {
         Node.ContainerNode testCaseNode = testCaseNode();
-        testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testCaseNode.addBefore(beforeNode());
+        testCaseNode.addAfter(afterNode());
         Node testNode = buildTestWithRegularAndExceptionalSurroundStep();
-        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
+        testCaseNode.addChild(testNode);
         return testCaseNode;
     }
 
     Node buildTestCaseWithBeforeStepException() {
         Node.ContainerNode testCaseNode = testCaseNode();
-        testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testCaseNode.addBefore(beforeNode());
+        testCaseNode.addAfter(afterNode());
         Node testNode = buildTestWithTwoSurroundStepAndBeforeStepException();
-        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
+        testCaseNode.addChild(testNode);
         return testCaseNode;
     }
 
     Node buildTestCaseWithBeforeStepExceptionSkipOnError() {
         Node.ContainerNode testCaseNode = testCaseNode();
-        testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testCaseNode.addBefore(beforeNode());
+        testCaseNode.addAfter(afterNode());
         Node testNode = buildTestWithTwoSurroundStepAndBeforeStepExceptionSkipOnError();
-        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
+        testCaseNode.addChild(testNode);
         return testCaseNode;
     }
 
     Node buildTestCaseWithJustException() {
         Node.ContainerNode testCaseNode = testCaseNode();
-        testCaseNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testCaseNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testCaseNode.addBefore(beforeNode());
+        testCaseNode.addAfter(afterNode());
         Node testNode = buildTestWithJustExceptionalSurroundStep();
-        testCaseNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(testNode);
+        testCaseNode.addChild(testNode);
         return testCaseNode;
     }
 
     Node buildTestNodeWithOneSurroundStep() {
         Node testNode = testNode();
         Node stepNode = buildStepSurroundWithSingleHooks();
-        testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(stepNode);
-        testNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testNode.addBefore(beforeNode());
+        testNode.addChild(stepNode);
+        testNode.addAfter(afterNode());
         return testNode;
     }
 
@@ -131,10 +130,10 @@ public class TestCaseBuilder {
         Node testNode = testNode();
         Node firstStepNode = buildStepSurroundWithSingleHooks();
         Node secondStepNode = buildStepSurroundWithSingleHooks();
-        testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstStepNode);
+        testNode.addBefore(beforeNode());
+        testNode.addChild(firstStepNode);
         testNode.getChildren().get("child").add(secondStepNode);
-        testNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testNode.addAfter(afterNode());
         return testNode;
     }
 
@@ -142,10 +141,10 @@ public class TestCaseBuilder {
         Node testNode = testNode();
         Node firstStepNode = buildStepSurroundWithDoubleHooks();
         Node secondStepNode = buildStepSurroundWithDoubleHooks();
-        testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstStepNode);
-        testNode.getChildren().get("child").add(secondStepNode);
-        testNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testNode.addBefore(beforeNode());
+        testNode.addChild(firstStepNode);
+        testNode.addChild(secondStepNode);
+        testNode.addAfter(afterNode());
         return testNode;
     }
 
@@ -154,11 +153,11 @@ public class TestCaseBuilder {
         Node firstStepNode = buildStepSurroundWithSingleHooks();
         Node secondStepNode = buildExceptionalStepSurroundWithSingleHooks();
         Node thirdStepNode = buildStepSurroundWithDoubleHooks();
-        testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstStepNode);
-        testNode.getChildren().get("child").add(secondStepNode);
-        testNode.getChildren().get("child").add(thirdStepNode);
-        testNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testNode.addBefore(beforeNode());
+        testNode.addChild(firstStepNode);
+        testNode.addChild(secondStepNode);
+        testNode.addChild(thirdStepNode);
+        testNode.addAfter(afterNode());
         return testNode;
     }
 
@@ -167,11 +166,11 @@ public class TestCaseBuilder {
         Node firstStepNode = buildStepSurroundWithSingleHooks();
         Node secondStepNode = buildSurroundStepWithBeforeException();
         Node thirdStepNode = buildStepSurroundWithDoubleHooks();
-        testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstStepNode);
-        testNode.getChildren().get("child").add(secondStepNode);
-        testNode.getChildren().get("child").add(thirdStepNode);
-        testNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testNode.addBefore(beforeNode());
+        testNode.addChild(firstStepNode);
+        testNode.addChild(secondStepNode);
+        testNode.addChild(thirdStepNode);
+        testNode.addAfter(afterNode());
         return testNode;
     }
 
@@ -180,63 +179,63 @@ public class TestCaseBuilder {
         Node firstStepNode = buildStepSurroundWithSingleHooks();
         Node secondStepNode = buildSurroundStepWithBeforeExceptionDryOnError();
         Node thirdStepNode = buildStepSurroundWithDoubleHooks();
-        testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(firstStepNode);
-        testNode.getChildren().get("child").add(secondStepNode);
-        testNode.getChildren().get("child").add(thirdStepNode);
-        testNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testNode.addBefore(beforeNode());
+        testNode.addChild(firstStepNode);
+        testNode.addChild(secondStepNode);
+        testNode.addChild(thirdStepNode);
+        testNode.addAfter(afterNode());
         return testNode;
     }
 
     Node buildTestWithJustExceptionalSurroundStep() {
         Node testNode = testNode();
         Node stepNode = buildExceptionalStepSurroundWithSingleHooks();
-        testNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        testNode.getChildren().computeIfAbsent("child", k -> new ArrayList<>()).add(stepNode);
-        testNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        testNode.addBefore(beforeNode());
+        testNode.addChild(stepNode);
+        testNode.addAfter(afterNode());
         return testNode;
     }
 
     Node buildStepSurroundWithSingleHooks() {
         Node stepNode = stepNode();
-        stepNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        stepNode.getChildren().computeIfAbsent("target", k -> new ArrayList<>()).add(targetNode());
-        stepNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        stepNode.addBefore(beforeNode());
+        stepNode.addTarget(targetNode());
+        stepNode.addAfter(afterNode());
         return stepNode;
     }
 
     Node buildExceptionalStepSurroundWithSingleHooks() {
         Node stepNode = stepNode();
-        stepNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
-        stepNode.getChildren().computeIfAbsent("target", k -> new ArrayList<>()).add(exceptionalStepNode());
-        stepNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        stepNode.addBefore(beforeNode());
+        stepNode.addTarget(exceptionalStepNode());
+        stepNode.addAfter(afterNode());
         return stepNode;
     }
 
     Node buildSurroundStepWithBeforeException() {
         Node stepNode = stepNode();
-        stepNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(exceptionalStepNode());
+        stepNode.addBefore(exceptionalStepNode());
         stepNode.getChildren().get("before").add(beforeNode());
-        stepNode.getChildren().computeIfAbsent("target", k -> new ArrayList<>()).add(targetNode());
-        stepNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        stepNode.addTarget(targetNode());
+        stepNode.addAfter(afterNode());
         return stepNode;
     }
 
     Node buildSurroundStepWithBeforeExceptionDryOnError() {
         Node stepNode = stepNodeErrorPolicy();
-        stepNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(exceptionalStepNode());
+        stepNode.addBefore(exceptionalStepNode());
         stepNode.getChildren().get("before").add(beforeNode());
-        stepNode.getChildren().computeIfAbsent("target", k -> new ArrayList<>()).add(targetNode());
-        stepNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        stepNode.addTarget(targetNode());
+        stepNode.addAfter(afterNode());
         return stepNode;
     }
 
     Node buildStepSurroundWithDoubleHooks() {
         Node stepNode = stepNode();
-        stepNode.getChildren().computeIfAbsent("before", k -> new ArrayList<>()).add(beforeNode());
+        stepNode.addBefore(beforeNode());
         stepNode.getChildren().get("before").add(beforeNode());
-        stepNode.getChildren().computeIfAbsent("target", k -> new ArrayList<>()).add(targetNode());
-        stepNode.getChildren().computeIfAbsent("after", k -> new ArrayList<>()).add(afterNode());
+        stepNode.addTarget(targetNode());
+        stepNode.addAfter(afterNode());
         stepNode.getChildren().get("after").add(afterNode());
         return stepNode;
     }
@@ -265,8 +264,12 @@ public class TestCaseBuilder {
         return executableNode;
     }
 
+    private Node.ContainerNode testCaseNode() {
+        return new Node.ContainerNode("testCase");
+    }
+
     private Node.ContainerNode testNode() {
-        return new ContainerNode("test",DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY | DRY_CHILDES_ON_ERROR);
+        return new ContainerNode("test",DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
     }
 
     private Node.ContainerNode stepNode() {
@@ -274,11 +277,9 @@ public class TestCaseBuilder {
     }
 
     private Node.ContainerNode stepNodeErrorPolicy() {
-        return new ContainerNode("stepContainer", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY | DRY_CHILDES_ON_ERROR
-                | DRY_BEFORES_ON_ERROR | DRY_TARGETS_ON_ERROR | DRY_AFTERS_ON_ERROR);
-    }
-
-    private Node.ContainerNode testCaseNode() {
-        return new Node.ContainerNode("testCase");
+        return new ContainerNode("stepContainer", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY | DRY_CHILDES_ON_DRY |
+                DRY_CHILDES_ON_ERROR | DRY_BEFORES_ON_ERROR | DRY_TARGETS_ON_ERROR | DRY_AFTERS_ON_ERROR |
+                SWITCH_TO_DRY_FOR_BEFORE | SWITCH_TO_DRY_FOR_AFTER | SWITCH_TO_DRY_FOR_TARGET | SWITCH_TO_DRY_FOR_CHILD
+        );
     }
 }

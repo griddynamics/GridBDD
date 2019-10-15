@@ -55,7 +55,7 @@ public class NodeFallbackManager {
         if (throwable.getClass().equals(CompletionException.class)) {
             throwable = throwable.getCause();
         }
-        int statusValue = Node.COMPLETED_STATUS_VALUE;
+        int statusValue = Node.ERROR_STATUS_VALUE | Node.COMPLETED_STATUS_VALUE;
         if (isPendingException(throwable)) {
             statusValue = Node.SKIP_STATUS_VALUE | Node.PENDING_STATUS_VALUE;
         }
@@ -79,8 +79,12 @@ public class NodeFallbackManager {
     }
 
     public void conditionallyPrintStacktrace(Node.Status status, Throwable throwable) {
-        if (status.equals(Node.Status.ERROR) && Objects.nonNull(throwable)) {
-            throwable.printStackTrace();
+        if (!status.hasStatusFlag(Node.FAILED_STATUS_VALUE) && Objects.nonNull(throwable)) {
+            if (throwable.getClass().equals(CompletionException.class)) {
+                throwable.getCause().printStackTrace();
+            } else {
+                throwable.printStackTrace();
+            }
         }
     }
 
