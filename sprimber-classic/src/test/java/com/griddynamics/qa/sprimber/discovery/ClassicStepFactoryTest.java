@@ -24,8 +24,9 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.common.TestSuite;
+import com.griddynamics.qa.sprimber.engine.Node;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
@@ -37,8 +38,9 @@ public class ClassicStepFactoryTest {
 
     @Test
     public void testBasicFunctionality() {
-        ClassicStepFactory stepFactory = new ClassicStepFactory();
+        StepDefinitionsRegistry stepDefinitionsRegistry = Mockito.mock(StepDefinitionsRegistry.class);
+        ClassicStepFactory stepFactory = new ClassicStepFactory(stepDefinitionsRegistry);
         Method testMethod = ReflectionUtils.findMethod(ExampleTestController.class, "testMe");
-        TestSuite.Step step = stepFactory.provideStep(testMethod);
+        Node step = stepFactory.provideStepNode(testMethod);
     }
 }

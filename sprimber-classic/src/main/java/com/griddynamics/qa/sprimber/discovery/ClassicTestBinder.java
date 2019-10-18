@@ -24,18 +24,15 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.Node;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.DigestUtils;
 
 import java.lang.reflect.Method;
 
 import static com.griddynamics.qa.sprimber.engine.Node.*;
-import static com.griddynamics.qa.sprimber.engine.Node.DRY_CHILDES_ON_ERROR;
 
 /**
  * @author fparamonov
@@ -46,7 +43,8 @@ class ClassicTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Metho
 
     private final ClassicStepFactory classicStepFactory;
 
-    public Node bindNode(Method testCandidate) {
+    @Override
+    public Node bind(Method testCandidate) {
         Node testNode = new Node.ContainerNode("test",DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
         TestMapping testMapping = AnnotationUtils.getAnnotation(testCandidate, TestMapping.class);
         String testName = buildTestName(testCandidate, testMapping);
@@ -55,19 +53,6 @@ class ClassicTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Metho
         testNode.setDescription(String.valueOf(AnnotationUtils.getValue(testMapping, "description")));
         testNode.addChild(classicStepFactory.provideStepNode(testCandidate));
         return testNode;
-    }
-
-    @Override
-    public TestSuite.Test bind(Method testCandidate) {
-        TestMapping testMapping = AnnotationUtils.getAnnotation(testCandidate, TestMapping.class);
-        String testName = buildTestName(testCandidate, testMapping);
-        val test = new TestSuite.Test();
-        test.setName(testName);
-        test.setHistoryId(buildTestHistoryId(testCandidate));
-        test.setDescription(String.valueOf(AnnotationUtils.getValue(testMapping, "description")));
-        test.getSteps().add(classicStepFactory.provideStep(testCandidate));
-        test.getSteps().forEach(step -> step.setParentId(test.getRuntimeId()));
-        return test;
     }
 
     private String buildTestName(Method method, TestMapping testMapping) {

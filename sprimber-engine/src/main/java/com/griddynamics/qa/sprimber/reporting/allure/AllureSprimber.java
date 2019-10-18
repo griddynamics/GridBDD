@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting.allure;
 
-import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.Node;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import io.qameta.allure.AllureLifecycle;
@@ -196,24 +195,24 @@ public class AllureSprimber {
         return labels;
     }
 
-    @EventListener
-    public void codeStyleStepStarted(SprimberEventPublisher.UtilityStepStartedEvent utilityStepStartedEvent) {
-        StepResult stepResult = new StepResult();
-        stepResult.setName(utilityStepStartedEvent.getStep().getName());
-        lifecycle.startStep(utilityStepStartedEvent.getStep().getRuntimeId(), stepResult);
-    }
-
-    // TODO: 2019-10-17 handle the statuses transition
-    @EventListener
-    public void codeStyleStepFinished(SprimberEventPublisher.UtilityStepFinishedEvent utilityStepFinishedEvent) {
-        ExecutionResult result = utilityStepFinishedEvent.getStep().getExecutionResult();
-        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
-        lifecycle.updateStep(step -> {
-            step.setStatus(allureToSprimberStatusMapping.get(result.getStatus()));
-            statusDetails.ifPresent(step::setStatusDetails);
-        });
-        lifecycle.stopStep();
-    }
+//    @EventListener
+//    public void codeStyleStepStarted(SprimberEventPublisher.UtilityStepStartedEvent utilityStepStartedEvent) {
+//        StepResult stepResult = new StepResult();
+//        stepResult.setName(utilityStepStartedEvent.getStep().getName());
+//        lifecycle.startStep(utilityStepStartedEvent.getStep().getRuntimeId(), stepResult);
+//    }
+//
+//    // TODO: 2019-10-17 handle the statuses transition
+//    @EventListener
+//    public void codeStyleStepFinished(SprimberEventPublisher.UtilityStepFinishedEvent utilityStepFinishedEvent) {
+//        ExecutionResult result = utilityStepFinishedEvent.getStep().getExecutionResult();
+//        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(result.getOptionalError().orElse(null));
+//        lifecycle.updateStep(step -> {
+//            step.setStatus(allureToSprimberStatusMapping.get(result.getStatus()));
+//            statusDetails.ifPresent(step::setStatusDetails);
+//        });
+//        lifecycle.stopStep();
+//    }
 
     @EventListener
     public void targetNodeStarted(SprimberEventPublisher.TargetNodeStartedEvent startedEvent) {

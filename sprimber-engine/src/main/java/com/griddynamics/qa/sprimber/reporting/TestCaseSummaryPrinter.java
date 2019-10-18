@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting;
 
-import com.griddynamics.qa.sprimber.engine.ExecutionResult;
 import com.griddynamics.qa.sprimber.engine.Node;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import lombok.RequiredArgsConstructor;
@@ -47,13 +46,10 @@ import java.util.stream.IntStream;
  */
 
 @Slf4j
-@RequiredArgsConstructor
 public class TestCaseSummaryPrinter {
 
-    private static final String EMPTY_STRING = "";
-    private final StepDefinitionFormatter stepDefinitionFormatter;
-    private ThreadLocal<StringBuilder> reportBuilder = new NamedThreadLocal<>("Testcase report builder");
-    private ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
+    private final ThreadLocal<StringBuilder> reportBuilder = new NamedThreadLocal<>("Testcase report builder");
+    private final ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
 
     @EventListener
     public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
@@ -145,40 +141,6 @@ public class TestCaseSummaryPrinter {
         reportBuilder.remove();
     }
 
-    @EventListener
-    public void illuminateTestStart(SprimberEventPublisher.TestStartedEvent testStartedEvent) {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("\n\n");
-        stringBuilder.append(String.format("Test Completed: %s", testStartedEvent.getTest().getName()));
-        reportBuilder.set(stringBuilder);
-    }
-
-    @EventListener
-    public void illuminateTestFinish(SprimberEventPublisher.TestFinishedEvent testFinishedEvent) {
-        StringBuilder stringBuilder = reportBuilder.get();
-        stringBuilder.append("\n\n");
-        log.info(stringBuilder.toString());
-        reportBuilder.remove();
-    }
-
-    @EventListener
-    public void illuminateTestStepFinish(SprimberEventPublisher.StepFinishedEvent stepFinishedEvent) {
-        StringBuilder stringBuilder = reportBuilder.get();
-        stringBuilder.append("\n");
-        if (stepFinishedEvent.getStep().isHookStep()) {
-            stringBuilder.append(String.format(" %s of scope", stepFinishedEvent.getStep().getStepDefinition().getStepType()));
-            stringBuilder.append(String.format(" %s from:", stepFinishedEvent.getStep().getStepDefinition().getStepPhase()));
-            stringBuilder.append(String.format(" %s", stepFinishedEvent.getStep().getStepDefinition().getMethod()));
-            stringBuilder.append(String.format(" (%s) ", stepFinishedEvent.getStep().getExecutionResult().getStatus()));
-        } else {
-            stringBuilder.append(String.format("   %s", stepFinishedEvent.getStep().getStepDefinition().getStepType()));
-            stringBuilder.append(String.format(" %s", stepDefinitionFormatter.formatStepName(stepFinishedEvent.getStep())));
-            stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{stepFinishedEvent.getStep().getParameters().values()})));
-            stringBuilder.append(String.format(" (%s) ", stepFinishedEvent.getStep().getExecutionResult().getStatus()));
-            stringBuilder.append(String.format(" (%s) ", getExceptionMessageIfAny(stepFinishedEvent.getStep().getExecutionResult())));
-        }
-    }
-
     private String getIndents() {
         return IntStream.rangeClosed(0, depthLevelThreadLocal.get()).mapToObj(i -> "\t").collect(Collectors.joining());
     }
@@ -193,10 +155,6 @@ public class TestCaseSummaryPrinter {
         int currentLevel = Optional.ofNullable(depthLevelThreadLocal.get()).orElse(1);
         currentLevel--;
         depthLevelThreadLocal.set(currentLevel);
-    }
-
-    private String getExceptionMessageIfAny(ExecutionResult executionResult) {
-        return executionResult.getOptionalError().map(this::buildExceptionMessage).orElse(EMPTY_STRING);
     }
 
     private String buildExceptionMessage(Throwable throwable) {

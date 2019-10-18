@@ -24,14 +24,11 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.common.StepDefinition;
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.Node;
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleLocation;
 import gherkin.pickles.PickleTag;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
@@ -54,20 +51,26 @@ class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Pick
     private static final String VALUE_SEPARATOR = ",";
 
     private final PickleStepFactory pickleStepFactory;
-    private final StandardFallbackStrategy fallbackStrategy = new StandardFallbackStrategy();
+    private final StepDefinitionsRegistry stepDefinitionsRegistry;
 
-    public Node bindTestNode(Pickle testCandidate) {
-        Node testNode = new Node.ContainerNode("test",DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
+    @Override
+    public Node bind(Pickle testCandidate) {
+        Node testNode = new Node.ContainerNode("test", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
         testNode.setName(testCandidate.getName());
         testNode.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(testCandidate));
         testNode.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(testCandidate));
         testNode.getMeta().addMeta(getMetaFromPickle(testCandidate));
 
-        pickleStepFactory.provideBeforeTestHookNodes().forEach(testNode::addBefore);
-        pickleStepFactory.provideAfterTestHookNodes().forEach(testNode::addAfter);
+        stepDefinitionsRegistry.provideBeforeTestHookNodes()
+                .filter(pickleStepFactory.filterNodeByTags())
+                .forEach(testNode::addBefore);
+        stepDefinitionsRegistry.provideAfterTestHookNodes()
+                .filter(pickleStepFactory.filterNodeByTags())
+                .forEach(testNode::addAfter);
 
         testCandidate.getSteps().stream()
                 .map(pickleStepFactory::provideStepNode)
+                .filter(pickleStepFactory.filterNodeByTags())
                 .map(this::bindStepContainerNode)
                 .forEach(testNode::addChild);
 
@@ -77,27 +80,9 @@ class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Pick
     private Node bindStepContainerNode(Node targetNode) {
         Node stepContainerNode = new Node.ContainerNode("stepContainer", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY);
         stepContainerNode.addTarget(targetNode);
-        pickleStepFactory.provideBeforeStepHookNodes().forEach(stepContainerNode::addBefore);
-        pickleStepFactory.provideAfterStepHookNodes().forEach(stepContainerNode::addAfter);
+        stepDefinitionsRegistry.provideBeforeStepHookNodes().forEach(stepContainerNode::addBefore);
+        stepDefinitionsRegistry.provideAfterStepHookNodes().forEach(stepContainerNode::addAfter);
         return stepContainerNode;
-    }
-
-    @Override
-    public TestSuite.Test bind(Pickle testCandidate) {
-        val test = new TestSuite.Test();
-//        test.setMeta(getMetaFromPickle(testCandidate));
-        test.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(testCandidate));
-        test.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(testCandidate));
-        test.setName(testCandidate.getName());
-        test.getSteps().addAll(pickleStepFactory.provideBeforeTestHooks());
-        testCandidate.getSteps().stream()
-                .map(pickleStepFactory::provideStep)
-                .map(pickleStepFactory::wrapStepWithStepHooks)
-                .forEach(stepDefinitions -> test.getSteps().addAll(stepDefinitions));
-        test.getSteps().addAll(pickleStepFactory.provideAfterTestHooks());
-        test.setFallbackStrategy(fallbackStrategy);
-        test.getSteps().forEach(step -> step.setParentId(test.getRuntimeId()));
-        return test;
     }
 
     private String formatLocation(Pickle pickle) {
@@ -126,44 +111,6 @@ class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Pick
             meta.put(key, values);
         } else {
             meta.put(key, Collections.emptyList());
-        }
-    }
-
-    class StandardFallbackStrategy implements TestSuite.FallbackStrategy {
-
-        private int afterStepCounter = 0;
-        private List<StepDefinition.StepType> types;
-        private List<StepDefinition.StepPhase> phases;
-
-        StandardFallbackStrategy() {
-            this.types = Collections.singletonList(StepDefinition.StepType.AFTER);
-            this.phases = Arrays.asList(StepDefinition.StepPhase.STEP, StepDefinition.StepPhase.TEST);
-        }
-
-        @Override
-        public List<StepDefinition.StepType> allowedTypes() {
-            return this.types;
-        }
-
-        @Override
-        public List<StepDefinition.StepPhase> allowedPhases() {
-            return this.phases;
-        }
-
-        @Override
-        public void updateScope(TestSuite.Step executedStep) {
-            if (afterStepCounter > 0 && !executedStep.getStepDefinition().getStepType().equals(StepDefinition.StepType.AFTER)) {
-                afterStepCounter = -1;
-            }
-            if (afterStepCounter == 0 && !executedStep.getStepDefinition().getStepType().equals(StepDefinition.StepType.AFTER)) {
-                afterStepCounter++;
-            }
-            if (afterStepCounter > 0 && executedStep.getStepDefinition().getStepType().equals(StepDefinition.StepType.AFTER)) {
-                afterStepCounter++;
-            }
-            if (afterStepCounter < 0) {
-                this.phases = Collections.singletonList(StepDefinition.StepPhase.TEST);
-            }
         }
     }
 }

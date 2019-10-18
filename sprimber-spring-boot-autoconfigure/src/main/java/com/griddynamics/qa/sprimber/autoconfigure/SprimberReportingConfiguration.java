@@ -25,9 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.autoconfigure;
 
 import com.griddynamics.qa.sprimber.engine.Node;
-import com.griddynamics.qa.sprimber.reporting.StepDefinitionFormatter;
 import com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher;
-import com.griddynamics.qa.sprimber.reporting.TestCaseIlluminator;
 import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
 import com.griddynamics.qa.sprimber.reporting.allure.AllureSprimber;
 import cucumber.api.Pending;
@@ -52,14 +50,8 @@ public class SprimberReportingConfiguration {
     static class ClassicReporting {
         @Bean
         @ConditionalOnProperty(value = "reporting.summary.enable", prefix = "sprimber.configuration", havingValue = "true", matchIfMissing = true)
-        public TestCaseSummaryPrinter summaryPrinter(StepDefinitionFormatter stepDefinitionFormatter) {
-            return new TestCaseSummaryPrinter(stepDefinitionFormatter);
-        }
-
-        @Bean
-        @ConditionalOnProperty(value = "reporting.illuminator.enable", prefix = "sprimber.configuration", havingValue = "true", matchIfMissing = true)
-        public TestCaseIlluminator testCaseIlluminator() {
-            return new TestCaseIlluminator();
+        public TestCaseSummaryPrinter summaryPrinter() {
+            return new TestCaseSummaryPrinter();
         }
 
         @Bean
@@ -67,18 +59,12 @@ public class SprimberReportingConfiguration {
         public StepExecutionReportCatcher stepExecutionReportCatcher() {
             return new StepExecutionReportCatcher();
         }
-
-        @Bean
-        public StepDefinitionFormatter stepDefinitionFormatter() {
-            return new StepDefinitionFormatter();
-        }
     }
 
     @Configuration
     static class AllureReporting {
         @Bean
-        public AllureSprimber allureSprimber(Map<Node.Status, Status> allureToSprimberStatusMapping,
-                                             AllureLifecycle allureLifecycle, StepDefinitionFormatter stepDefinitionFormatter) {
+        public AllureSprimber allureSprimber(Map<Node.Status, Status> allureToSprimberStatusMapping, AllureLifecycle allureLifecycle) {
             return new AllureSprimber(allureToSprimberStatusMapping, allureLifecycle);
         }
 

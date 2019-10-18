@@ -24,10 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.event;
 
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.Node;
 import com.griddynamics.qa.sprimber.engine.NodeExecutionEventsPublisher;
-import com.griddynamics.qa.sprimber.event.Events.StepEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -39,68 +37,6 @@ import org.springframework.context.ApplicationEventPublisher;
 public class SprimberEventPublisher implements NodeExecutionEventsPublisher {
 
     private final ApplicationEventPublisher eventPublisher;
-
-    public void stepStarted(Object target, TestSuite.Step step) {
-        StepStartedEvent stepStartedEvent = new StepStartedEvent(target, step);
-        eventPublisher.publishEvent(stepStartedEvent);
-    }
-
-    public void stepFinished(Object target, TestSuite.Step step) {
-        StepFinishedEvent stepFinishedEvent = new StepFinishedEvent(target, step);
-        eventPublisher.publishEvent(stepFinishedEvent);
-    }
-
-    public void utilityStepStarted(Object target, TestSuite.Step step) {
-        UtilityStepStartedEvent stepStartedEvent = new UtilityStepStartedEvent(target, step);
-        eventPublisher.publishEvent(stepStartedEvent);
-    }
-
-    public void utilityStepFinished(Object target, TestSuite.Step step) {
-        UtilityStepFinishedEvent stepFinishedEvent = new UtilityStepFinishedEvent(target, step);
-        eventPublisher.publishEvent(stepFinishedEvent);
-    }
-
-    public void testStarted(Object target, TestSuite.Test test) {
-        if (test.getSteps().isEmpty()) {
-            return;
-        }
-        TestStartedEvent testStartedEvent = new TestStartedEvent(target, test);
-        eventPublisher.publishEvent(testStartedEvent);
-    }
-
-    public void testFinished(Object target, TestSuite.Test test) {
-        if (test.getSteps().isEmpty()) {
-            return;
-        }
-        TestFinishedEvent testFinishedEvent = new TestFinishedEvent(target, test);
-        eventPublisher.publishEvent(testFinishedEvent);
-    }
-
-    public void testCaseStarted(Object target, TestSuite.TestCase testCase) {
-        if (testCase.getTests().isEmpty()) {
-            return;
-        }
-        TestCaseStartedEvent testCaseStartedEvent = new TestCaseStartedEvent(target, testCase);
-        eventPublisher.publishEvent(testCaseStartedEvent);
-    }
-
-    public void testCaseFinished(Object target, TestSuite.TestCase testCase) {
-        if (testCase.getTests().isEmpty()) {
-            return;
-        }
-        TestCaseFinishedEvent testCaseFinishedEvent = new TestCaseFinishedEvent(target, testCase);
-        eventPublisher.publishEvent(testCaseFinishedEvent);
-    }
-
-    public void testSuiteStarted(Object target, TestSuite testSuite) {
-        TestSuiteStartedEvent testSuiteStartedEvent = new TestSuiteStartedEvent(target, testSuite);
-        eventPublisher.publishEvent(testSuiteStartedEvent);
-    }
-
-    public void testSuiteFinished(Object target, TestSuite testSuite) {
-        TestSuiteFinishedEvent testSuiteFinishedEvent = new TestSuiteFinishedEvent(target, testSuite);
-        eventPublisher.publishEvent(testSuiteFinishedEvent);
-    }
 
     @Override
     public void containerNodeStarted(Node node) {
@@ -292,111 +228,6 @@ public class SprimberEventPublisher implements NodeExecutionEventsPublisher {
 
         public AfterNodeErrorEvent(Object source, Node.ExecutableNode executableNode) {
             super(source, executableNode);
-        }
-    }
-
-    public class UtilityStepStartedEvent extends StepEvent {
-
-        UtilityStepStartedEvent(Object source) {
-            super(source);
-        }
-
-        UtilityStepStartedEvent(Object source, TestSuite.Step step) {
-            super(source, step);
-        }
-    }
-
-    public class UtilityStepFinishedEvent extends StepEvent {
-
-        UtilityStepFinishedEvent(Object source) {
-            super(source);
-        }
-
-        UtilityStepFinishedEvent(Object source, TestSuite.Step step) {
-            super(source, step);
-        }
-    }
-
-    public class StepStartedEvent extends StepEvent {
-
-        StepStartedEvent(Object source) {
-            super(source);
-        }
-
-        StepStartedEvent(Object source, TestSuite.Step step) {
-            super(source, step);
-        }
-    }
-
-    public class StepFinishedEvent extends StepEvent {
-
-        StepFinishedEvent(Object source) {
-            super(source);
-        }
-
-        StepFinishedEvent(Object source, TestSuite.Step step) {
-            super(source, step);
-        }
-    }
-
-    public class TestStartedEvent extends Events.TestEvent {
-        TestStartedEvent(Object source) {
-            super(source);
-        }
-
-        TestStartedEvent(Object source, TestSuite.Test test) {
-            super(source, test);
-        }
-    }
-
-    public class TestFinishedEvent extends Events.TestEvent {
-        TestFinishedEvent(Object source) {
-            super(source);
-        }
-
-        TestFinishedEvent(Object source, TestSuite.Test test) {
-            super(source, test);
-        }
-    }
-
-    public class TestCaseStartedEvent extends Events.TestCaseEvent {
-        TestCaseStartedEvent(Object source) {
-            super(source);
-        }
-
-        TestCaseStartedEvent(Object source, TestSuite.TestCase testCase) {
-            super(source, testCase);
-        }
-    }
-
-    public class TestCaseFinishedEvent extends Events.TestCaseEvent {
-
-        TestCaseFinishedEvent(Object source) {
-            super(source);
-        }
-
-        TestCaseFinishedEvent(Object source, TestSuite.TestCase testCase) {
-            super(source, testCase);
-        }
-    }
-
-    public class TestSuiteStartedEvent extends Events.TestSuiteEvent {
-        TestSuiteStartedEvent(Object source) {
-            super(source);
-        }
-
-        TestSuiteStartedEvent(Object source, TestSuite testSuite) {
-            super(source, testSuite);
-        }
-    }
-
-    public class TestSuiteFinishedEvent extends Events.TestSuiteEvent {
-        TestSuiteFinishedEvent(Object source) {
-            super(source);
-        }
-
-        TestSuiteFinishedEvent(Object source, TestSuite testSuite) {
-            super(source, testSuite);
         }
     }
 }
