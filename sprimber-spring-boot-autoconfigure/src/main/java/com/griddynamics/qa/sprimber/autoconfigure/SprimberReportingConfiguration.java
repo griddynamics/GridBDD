@@ -27,7 +27,7 @@ package com.griddynamics.qa.sprimber.autoconfigure;
 import com.griddynamics.qa.sprimber.engine.Node;
 import com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher;
 import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
-import com.griddynamics.qa.sprimber.reporting.allure.AllureSprimber;
+import com.griddynamics.qa.sprimber.reporting.AllureSprimber;
 import cucumber.api.Pending;
 import io.qameta.allure.AllureLifecycle;
 import io.qameta.allure.model.Status;

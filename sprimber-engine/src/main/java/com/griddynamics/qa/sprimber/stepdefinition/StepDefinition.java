@@ -22,7 +22,7 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.common;
+package com.griddynamics.qa.sprimber.stepdefinition;
 
 import lombok.Data;
 import org.springframework.util.DigestUtils;

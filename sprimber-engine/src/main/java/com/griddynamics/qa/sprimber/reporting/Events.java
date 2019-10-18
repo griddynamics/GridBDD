@@ -22,7 +22,7 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.event;
+package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.engine.Node;
 import lombok.Getter;

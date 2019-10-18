@@ -22,9 +22,9 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine;
+package com.griddynamics.qa.sprimber.runtime;
 
-import com.griddynamics.qa.sprimber.discovery.ExecutionContext;
+import com.griddynamics.qa.sprimber.engine.TreeExecutor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -39,7 +39,7 @@ import org.springframework.boot.ApplicationRunner;
 class CliExecutor implements ApplicationRunner {
 
     private final ExecutionContext executionContext;
-    private final TreeSuiteExecutor treeSuiteExecutor;
+    private final TreeExecutor treeSuiteExecutor;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {

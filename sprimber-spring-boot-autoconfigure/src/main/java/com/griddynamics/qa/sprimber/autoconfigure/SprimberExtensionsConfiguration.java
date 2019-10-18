@@ -25,6 +25,8 @@ $Id:
 package com.griddynamics.qa.sprimber.autoconfigure;
 
 import com.griddynamics.qa.sprimber.discovery.SprimberCucumberConfiguration;
+import com.griddynamics.qa.sprimber.stepdefinition.ClassicStepDefinitionConfiguration;
+import com.griddynamics.qa.sprimber.stepdefinition.CucumberStepDefinitionConfiguration;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
@@ -33,6 +35,7 @@ import org.springframework.context.annotation.Import;
  */
 
 @Configuration
-@Import({SprimberCucumberConfiguration.class, SprimberClassicConfiguration.class})
+@Import({SprimberCucumberConfiguration.class, CucumberStepDefinitionConfiguration.class,
+        SprimberClassicConfiguration.class, ClassicStepDefinitionConfiguration.class})
 public class SprimberExtensionsConfiguration {
 }

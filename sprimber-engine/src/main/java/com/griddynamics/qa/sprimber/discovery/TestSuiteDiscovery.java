@@ -29,7 +29,7 @@ import com.griddynamics.qa.sprimber.engine.Node;
 /**
  * @author fparamonov
  */
-interface TestSuiteDiscovery {
+public interface TestSuiteDiscovery {
 
     Node discover();
 

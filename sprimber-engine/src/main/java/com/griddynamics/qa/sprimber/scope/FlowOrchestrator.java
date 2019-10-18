@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.scope;
 
-import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
+import com.griddynamics.qa.sprimber.reporting.SprimberEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.support.AbstractBeanFactory;

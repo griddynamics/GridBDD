@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.common.SprimberProperties;
+import com.griddynamics.qa.sprimber.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.Node;
 import gherkin.Parser;
 import gherkin.TokenMatcher;

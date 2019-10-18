@@ -22,33 +22,24 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
+package com.griddynamics.qa.sprimber.stepdefinition;
 
-import com.griddynamics.qa.sprimber.common.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestController;
+import com.griddynamics.qa.sprimber.stepdefinition.SpringStepDefinitionsFactory;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author fparamonov
  */
-interface StepDefinitionsFactory {
 
-    /**
-     * Implementation should perform the search and find the required step definitions
-     *
-     * @return the collection of the step definitions keyed by step definition hash
-     */
-    Map<String, StepDefinition> getStepDefinitions();
+class SprimberClassMarkerProvider implements SpringStepDefinitionsFactory.MarkerAnnotationProvider {
 
-    interface StepDefinitionResolver {
-
-        boolean accept(Annotation annotation);
-
-        boolean accept(Method method);
-
-        List<StepDefinition> resolve(Method method);
+    @Override
+    public List<Class<? extends Annotation>> provide() {
+        return new ArrayList<>(Collections.singletonList(TestController.class));
     }
 }

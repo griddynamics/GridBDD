@@ -22,23 +22,17 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
+package com.griddynamics.qa.sprimber.stepdefinition;
 
-import org.springframework.stereotype.Component;
-
-import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 /**
  * @author fparamonov
  */
 
-@Component
-public class SprimberBddClassMarkerProvider implements SpringStepDefinitionsFactory.MarkerAnnotationProvider {
-    @Override
-    public List<Class<? extends Annotation>> provide() {
-        return new ArrayList<>(Collections.singletonList(StepController.class));
-    }
+@Configuration
+@Import({ClassicStepDefinitionResolver.class, SprimberClassMarkerProvider.class
+})
+public class ClassicStepDefinitionConfiguration {
 }

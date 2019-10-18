@@ -33,7 +33,7 @@ import java.lang.annotation.*;
  * Indicate that annotated class is a "Action" class - class that contains steps or hook definitions
  * for specific BDD framework.
  *
- * @deprecated please use {@link com.griddynamics.qa.sprimber.common.annotation.TestController} or
+ * @deprecated please use {@link com.griddynamics.qa.sprimber.configuration.annotation.TestController} or
  * {@link com.griddynamics.qa.sprimber.discovery.Actions} annotation from common package. WIll be removed by the end of 2019 year.
  * @author fparamonov
  */

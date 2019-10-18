@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.common.SprimberProperties;
+import com.griddynamics.qa.sprimber.configuration.SprimberProperties;
 import io.cucumber.tagexpressions.Expression;
 import io.cucumber.tagexpressions.TagExpressionParser;
 import lombok.AccessLevel;

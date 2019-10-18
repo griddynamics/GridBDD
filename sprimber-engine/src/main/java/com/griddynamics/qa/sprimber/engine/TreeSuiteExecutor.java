@@ -42,7 +42,7 @@ import static com.griddynamics.qa.sprimber.engine.Node.*;
  */
 
 @Slf4j
-class TreeSuiteExecutor {
+class TreeSuiteExecutor implements TreeExecutor {
 
     private static final String STARTED_EVENT_POSTFIX = "Started";
     private static final String COMPLETED_EVENT_POSTFIX = "Completed";
@@ -75,6 +75,7 @@ class TreeSuiteExecutor {
         eventsPublisherByName.put(AFTER_SUB_NODE_NAME + ERROR_EVENT_POSTFIX, eventsPublisher::afterNodeError);
     }
 
+    @Override
     public Status executeRoot(Node node) {
         node.setStatus(Status.READY);
         CompletableFuture<Status> rootStatus = CompletableFuture.supplyAsync(() -> executeContainerNode(node), Executors.newSingleThreadExecutor());

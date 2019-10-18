@@ -24,8 +24,9 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.common.StepDefinition;
 import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionsRegistry;
 import gherkin.pickles.PickleCell;
 import gherkin.pickles.PickleRow;
 import gherkin.pickles.PickleStep;
@@ -52,6 +53,8 @@ import java.util.stream.IntStream;
 
 @RequiredArgsConstructor
 class PickleStepFactory implements StepFactory<PickleStep> {
+
+    private static final String TAGS_ATTRIBUTE = "Tags";
 
     private final TagFilter tagFilter;
     private final StepMatcher stepMatcher;
@@ -88,7 +91,7 @@ class PickleStepFactory implements StepFactory<PickleStep> {
 
     Predicate<Node> filterNodeByTags() {
         return node ->
-                tagFilter.filter((String) node.getAttributes().get(CucumberStepDefinitionResolver.TAGS_ATTRIBUTE));
+                tagFilter.filter((String) node.getAttributes().get(TAGS_ATTRIBUTE));
     }
 
     private Map<String, Object> convertStepArguments(List<Argument> arguments, List<Type> methodParameters) {

@@ -22,26 +22,16 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
+package com.griddynamics.qa.sprimber.stepdefinition;
 
-import com.griddynamics.qa.sprimber.common.StepDefinition;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 /**
  * @author fparamonov
  */
 
-class ClassicStepDefinitionResolver extends StepDefinitionsAbstractResolver {
-
-    public ClassicStepDefinitionResolver() {
-        mapping.put(TestMapping.class, new ImmutablePair<>(StepDefinition.StepType.GENERAL, StepDefinition.StepPhase.STEP));
-    }
-
-    @Override
-    protected StepDefinition applyCustomTransformation(StepDefinition stepDefinition, Method method, Annotation annotation) {
-        return stepDefinition;
-    }
+@Configuration
+@Import({ClassicBddStepDefinitionResolver.class, SprimberBddClassMarkerProvider.class})
+public class BddStepDefinitionConfiguration {
 }
