@@ -22,23 +22,31 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.common;
+package com.griddynamics.qa.sprimber.stepdefinition;
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author fparamonov
  */
+public interface StepDefinitionsFactory {
 
-@Data
-@ConfigurationProperties("sprimber.configuration")
-public class SprimberProperties {
+    /**
+     * Implementation should perform the search and find the required step definitions
+     *
+     * @return the collection of the step definitions keyed by step definition hash
+     */
+    Map<String, StepDefinition> getStepDefinitions();
 
-    private String featurePath;
-    private List<String> tagFilters = new ArrayList<>();
+    interface StepDefinitionResolver {
+
+        boolean accept(Annotation annotation);
+
+        boolean accept(Method method);
+
+        List<StepDefinition> resolve(Method method);
+    }
 }

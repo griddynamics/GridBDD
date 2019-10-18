@@ -22,27 +22,26 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
+package com.griddynamics.qa.sprimber.stepdefinition;
 
-import com.griddynamics.qa.sprimber.engine.Node;
-import lombok.Getter;
+import com.griddynamics.qa.sprimber.discovery.TestController;
+import com.griddynamics.qa.sprimber.stepdefinition.SprimberClassMarkerProvider;
+import org.assertj.core.api.Assertions;
+import org.junit.Test;
 
-import java.util.ArrayList;
+import java.lang.annotation.Annotation;
 import java.util.List;
 
 /**
- * This is a parent super container that can hold all necessary Sprimber objects during execution
- * in one place with the ability to share and provide access from different places inside of the
- * framework
- *
  * @author fparamonov
  */
 
-@Getter
-public class ExecutionContext {
+public class SprimberClassMarkerProviderTest {
 
-    /**
-     * Convenient place to hold all root nodes that available at runtime
-     */
-    private final List<Node> nodes = new ArrayList<>();
+    @Test
+    public void testProvider() {
+        SprimberClassMarkerProvider sprimberClassMarkerProvider = new SprimberClassMarkerProvider();
+        List<Class<? extends Annotation>> markers = sprimberClassMarkerProvider.provide();
+        Assertions.assertThat(markers).containsOnly(TestController.class);
+    }
 }

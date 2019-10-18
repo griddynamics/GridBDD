@@ -22,9 +22,7 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
-
-import com.griddynamics.qa.sprimber.common.StepDefinition;
+package com.griddynamics.qa.sprimber.stepdefinition;
 
 import java.lang.reflect.Method;
 import java.util.Collection;

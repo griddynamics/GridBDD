@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.hook;
 
-import com.griddynamics.qa.sprimber.common.StepDefinition;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.StepMapping;
 import org.springframework.core.annotation.AliasFor;
 
