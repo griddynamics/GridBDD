@@ -24,7 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.common.TestSuite;
+
+import com.griddynamics.qa.sprimber.engine.Node;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.BDDMockito;
@@ -46,21 +47,18 @@ public class ClassicTestBinderTest {
     public void testSimpleBinding() {
         ClassicStepFactory stepFactoryMock = Mockito.mock(ClassicStepFactory.class);
         Method testMethod = ReflectionUtils.findMethod(ExampleTestController.class, "testMe");
-        BDDMockito.when(stepFactoryMock.provideStep(testMethod)).then(invocationOnMock -> buildStep());
+        BDDMockito.when(stepFactoryMock.provideStepNode(testMethod)).then(invocationOnMock -> buildStep());
         ClassicTestBinder classicTestBinder = new ClassicTestBinder(stepFactoryMock);
-        TestSuite.Test test = classicTestBinder.bind(testMethod);
+        Node test = classicTestBinder.bind(testMethod);
         Assertions.assertThat(test.getName()).isEqualTo(TEST_NAME);
         Assertions.assertThat(test.getDescription()).isEqualTo(TEST_DESCRIPTION);
         Assertions.assertThat(test.getHistoryId()).isEqualTo(DEFAULT_HISTORY_ID);
         Assertions.assertThat(test.getRuntimeId()).isNotEmpty();
-        Assertions.assertThat(test.getSteps()).hasSize(1);
-        Assertions.assertThat(test.getSteps().get(0).getName()).isEqualTo(TEST_STEP_NAME);
-        Assertions.assertThat(test.getSteps().get(0).getParentId()).isEqualTo(test.getRuntimeId());
     }
 
-    private TestSuite.Step buildStep() {
-        TestSuite.Step step = new TestSuite.Step();
-        step.setName(TEST_STEP_NAME);
-        return step;
+    private Node.ExecutableNode buildStep() {
+        Node.ExecutableNode executableNode = new Node.ExecutableNode("step");
+        executableNode.setName(TEST_STEP_NAME);
+        return executableNode;
     }
 }

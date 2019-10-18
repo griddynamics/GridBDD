@@ -25,12 +25,10 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.StepDefinition;
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.Node;
-import org.springframework.util.DigestUtils;
+import lombok.RequiredArgsConstructor;
 
 import java.lang.reflect.Method;
-import java.util.function.Predicate;
 
 import static com.griddynamics.qa.sprimber.engine.Node.*;
 
@@ -38,36 +36,21 @@ import static com.griddynamics.qa.sprimber.engine.Node.*;
  * @author fparamonov
  */
 
-class ClassicStepFactory extends AbstractStepFactory<Method> {
+@RequiredArgsConstructor
+class ClassicStepFactory implements StepFactory<Method> {
 
+    private final StepDefinitionsRegistry stepDefinitionsRegistry;
+
+    @Override
     public Node provideStepNode(Method method) {
         Node stepContainerNode = new Node.ContainerNode("stepContainer", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY);
         Node.ExecutableNode executableNode = new Node.ExecutableNode("step");
-        StepDefinition stepDefinition = getStepDefinitions().get(calculateId(method));
+        StepDefinition stepDefinition = stepDefinitionsRegistry.streamAllDefinitions()
+                .filter(sd -> method.equals(sd.getMethod()))
+                .findFirst().orElseThrow(() -> new RuntimeException("No methods found"));
         executableNode.setMethod(stepDefinition.getMethod());
         executableNode.setName(method.getName());
         stepContainerNode.addTarget(executableNode);
         return stepContainerNode;
-    }
-
-    @Override
-    public TestSuite.Step provideStep(Method method) {
-        TestSuite.Step step = new TestSuite.Step();
-        StepDefinition stepDefinition = getStepDefinitions().get(calculateId(method));
-        step.setStepDefinition(stepDefinition);
-        step.setName(method.getName());
-        return step;
-    }
-
-    private String calculateId(Method method) {
-        String uniqueName = method.getDeclaringClass().getCanonicalName() + "#" +
-                method.getName() + "#" +
-                method.getParameterCount();
-        return DigestUtils.md5DigestAsHex(uniqueName.getBytes());
-    }
-
-    @Override
-    protected Predicate<StepDefinition> hooksByAvailableTags() {
-        return stepDefinition -> true;
     }
 }

@@ -25,10 +25,8 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.StepDefinition;
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.Node;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 
 import java.util.HashMap;
@@ -45,6 +43,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContext> {
 
+    private final StepDefinitionsRegistry stepDefinitionsRegistry;
     private final List<TestSuiteDiscovery> testSuiteDiscoveries;
     private final List<StepDefinitionsFactory> stepDefinitionsDiscoveries;
 
@@ -56,31 +55,14 @@ public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContex
     @Override
     protected ExecutionContext createInstance() throws Exception {
         ExecutionContext executionContext = new ExecutionContext();
-        Map<String, StepDefinition> stepDefinitions = exploreStepDefinitions();
-        executionContext.getStepDefinitions().putAll(stepDefinitions);
-        ((ListableBeanFactory) getBeanFactory()).getBeansOfType(StepFactory.class)
-                .values().forEach(stepFactory -> stepFactory.setStepDefinitions(stepDefinitions));
-        setupHookOnlyStepFactory(executionContext, stepDefinitions);
-        executionContext.getTestSuites().addAll(exploreSuiteDefinitions());
+        stepDefinitionsRegistry.add(exploreStepDefinitions());
         executionContext.getNodes().addAll(exploreNodes());
         return executionContext;
-    }
-
-    private void setupHookOnlyStepFactory(ExecutionContext executionContext, Map<String, StepDefinition> stepDefinitions) {
-        ExecutionContext.HookOnlyStepFactory hookOnlyStepFactory = new ExecutionContext.HookOnlyStepFactory();
-        hookOnlyStepFactory.setStepDefinitions(stepDefinitions);
-        executionContext.setHookOnlyStepFactory(hookOnlyStepFactory);
     }
 
     private List<Node> exploreNodes() {
         return testSuiteDiscoveries.stream()
                 .map(TestSuiteDiscovery::discover)
-                .collect(Collectors.toList());
-    }
-
-    private List<TestSuite> exploreSuiteDefinitions() {
-        return testSuiteDiscoveries.stream()
-                .map(TestSuiteDiscovery::discoverOld)
                 .collect(Collectors.toList());
     }
 

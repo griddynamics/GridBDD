@@ -25,7 +25,6 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.StepDefinition;
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.Node;
 import gherkin.pickles.PickleCell;
 import gherkin.pickles.PickleRow;
@@ -52,13 +51,14 @@ import java.util.stream.IntStream;
  */
 
 @RequiredArgsConstructor
-class PickleStepFactory extends AbstractStepFactory<PickleStep> {
+class PickleStepFactory implements StepFactory<PickleStep> {
 
     private final TagFilter tagFilter;
     private final StepMatcher stepMatcher;
+    private final StepDefinitionsRegistry stepDefinitionsRegistry;
 
     public Node provideStepNode(PickleStep stepCandidate) {
-        List<Node.ExecutableNode> steps = getStepDefinitions().values().stream()
+        List<Node.ExecutableNode> steps = stepDefinitionsRegistry.streamAllDefinitions()
                 .filter(stepDefinition -> StringUtils.isNotBlank(stepDefinition.getBindingTextPattern()))
                 .map(stepDefinition ->
                         stepMatcher.matchAndGetArgumentsFrom(stepCandidate, stepDefinition, stepDefinition.getMethod().getParameterTypes())
@@ -76,26 +76,6 @@ class PickleStepFactory extends AbstractStepFactory<PickleStep> {
         return steps.get(0);
     }
 
-    @Override
-    public TestSuite.Step provideStep(PickleStep stepCandidate) {
-        List<TestSuite.Step> steps = getStepDefinitions().values().stream()
-                .filter(stepDefinition -> StringUtils.isNotBlank(stepDefinition.getBindingTextPattern()))
-                .map(stepDefinition ->
-                        stepMatcher.matchAndGetArgumentsFrom(stepCandidate, stepDefinition, stepDefinition.getMethod().getParameterTypes())
-                                .map(arguments -> buildStep(stepCandidate, stepDefinition, arguments))
-                )
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
-        if (steps.size() == 0) {
-            throw new StepNotFoundException(stepCandidate);
-        }
-        if (steps.size() > 1) {
-//            throw new ExtraMappingFoundException(steps, stepCandidate);
-        }
-        return steps.get(0);
-    }
-
     private Node.ExecutableNode buildStepNode(PickleStep stepCandidate, StepDefinition stepDefinition, List<Argument> arguments) {
         Node.ExecutableNode executableStepNode = new Node.ExecutableNode("step");
         executableStepNode.setMethod(stepDefinition.getMethod());
@@ -106,20 +86,9 @@ class PickleStepFactory extends AbstractStepFactory<PickleStep> {
         return executableStepNode;
     }
 
-    private TestSuite.Step buildStep(PickleStep stepCandidate, StepDefinition stepDefinition, List<Argument> arguments) {
-        TestSuite.Step step = new TestSuite.Step();
-        step.setStepDefinition(stepDefinition);
-        step.setName(stepCandidate.getText());
-        step.setResolvedTextPattern(stepCandidate.getText());
-        handleAdditionalStepData(stepCandidate)
-                .ifPresent(stepData -> step.getStepDefinition().getAttributes().put("stepData", stepData));
-        step.getParameters().putAll(convertStepArguments(arguments, Arrays.asList(stepDefinition.getMethod().getGenericParameterTypes())));
-        return step;
-    }
-
-    protected Predicate<StepDefinition> hooksByAvailableTags() {
-        return stepDefinition ->
-                tagFilter.filter((String) stepDefinition.getAttributes().get(CucumberStepDefinitionResolver.TAGS_ATTRIBUTE));
+    Predicate<Node> filterNodeByTags() {
+        return node ->
+                tagFilter.filter((String) node.getAttributes().get(CucumberStepDefinitionResolver.TAGS_ATTRIBUTE));
     }
 
     private Map<String, Object> convertStepArguments(List<Argument> arguments, List<Type> methodParameters) {

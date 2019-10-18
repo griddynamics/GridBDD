@@ -24,24 +24,18 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting;
 
-import com.griddynamics.qa.sprimber.common.StepDefinition;
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.discovery.SpringStepDefinitionsFactory;
-import com.griddynamics.qa.sprimber.engine.ErrorMapper;
-import com.griddynamics.qa.sprimber.engine.ExecutionResult;
+import com.griddynamics.qa.sprimber.engine.NodeFallbackManager;
 import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
-import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.DigestUtils;
 
 import java.lang.reflect.Method;
-
-import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 
 /**
  * @author fparamonov
@@ -52,7 +46,7 @@ import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.PASSED;
 public class StepExecutionReportCatcher {
 
     private static SprimberEventPublisher eventPublisher;
-    private static ErrorMapper errorMapper;
+    private static NodeFallbackManager nodeFallbackManager;
     private static SpringStepDefinitionsFactory stepDefinitionsFactory;
 
     @Autowired
@@ -61,8 +55,8 @@ public class StepExecutionReportCatcher {
     }
 
     @Autowired
-    public void setErrorMapper(ErrorMapper errorMapper) {
-        StepExecutionReportCatcher.errorMapper = errorMapper;
+    public void setErrorMapper(NodeFallbackManager nodeFallbackManager) {
+        StepExecutionReportCatcher.nodeFallbackManager = nodeFallbackManager;
     }
 
     @Autowired
@@ -71,30 +65,31 @@ public class StepExecutionReportCatcher {
     }
 
     @Around("stepMethodsExecution()")
-    public Object surroundStepExecution(ProceedingJoinPoint joinPoint) {
+    public Object surroundStepExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         Object result = null;
-        ExecutionResult executionResult = new ExecutionResult(PASSED);
-        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        StepDefinition stepDefinition = stepDefinitionsFactory.getStepDefinitions().get(buildHash(methodSignature.getMethod()));
-        TestSuite.Step step = new TestSuite.Step();
-        step.setStepDefinition(stepDefinition);
-        step.setName(stepDefinition.getName());
-        try {
-            log.info("Starting point");
-            StepExecutionReportCatcher.eventPublisher.utilityStepStarted(this, step);
-            result = joinPoint.proceed();
-            step.setExecutionResult(executionResult);
-            log.info("Point completed");
-        } catch (Throwable throwable) {
-            log.error("Some error here");
-            executionResult = errorMapper.parseThrowable(throwable);
-            executionResult.conditionallyPrintStacktrace();
-            step.setExecutionResult(executionResult);
-            log.trace(executionResult.getErrorMessage());
-            log.error(throwable.getLocalizedMessage());
-        } finally {
-            StepExecutionReportCatcher.eventPublisher.utilityStepFinished(this, step);
-        }
+        result = joinPoint.proceed();
+//        ExecutionResult executionResult = new ExecutionResult(PASSED);
+//        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+//        StepDefinition stepDefinition = stepDefinitionsFactory.getStepDefinitions().get(buildHash(methodSignature.getMethod()));
+//        TestSuite.Step step = new TestSuite.Step();
+//        step.setStepDefinition(stepDefinition);
+//        step.setName(stepDefinition.getName());
+//        try {
+//            log.info("Starting point");
+//            StepExecutionReportCatcher.eventPublisher.utilityStepStarted(this, step);
+//            result = joinPoint.proceed();
+//            step.setExecutionResult(executionResult);
+//            log.info("Point completed");
+//        } catch (Throwable throwable) {
+//            log.error("Some error here");
+//            executionResult = nodeFallbackManager.parseThrowable(throwable);
+//            executionResult.conditionallyPrintStacktrace();
+//            step.setExecutionResult(executionResult);
+//            log.trace(executionResult.getErrorMessage());
+//            log.error(throwable.getLocalizedMessage());
+//        } finally {
+//            StepExecutionReportCatcher.eventPublisher.utilityStepFinished(this, step);
+//        }
         return result;
     }
 

@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import static com.griddynamics.qa.sprimber.engine.ExecutionResult.Status.BROKEN;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -53,14 +52,11 @@ public class TreeSuiteExecutorTest {
 
     @Before
     public void setUp() throws Exception {
-        ErrorMapper errorMapper = Mockito.mock(ErrorMapper.class);
         NodeFallbackManager nodeFallbackManager = Mockito.mock(NodeFallbackManager.class);
         Map<String, Executor> childSubNodesExecutor = new HashMap<>();
 
         childSubNodesExecutor.put("testExecutor", Executors.newFixedThreadPool(3));
 
-
-        Mockito.when(errorMapper.parseThrowable(any(RuntimeException.class))).thenReturn(new ExecutionResult(BROKEN));
         Mockito.when(nodeFallbackManager.parseThrowable(any(RuntimeException.class))).thenReturn(Node.Status.ERROR);
         treeSuiteExecutor = Mockito.spy(
                 new TreeSuiteExecutor(stubbedNodeInvoker, nodeFallbackManager, childSubNodesExecutor, stubbedEventPublisher));
