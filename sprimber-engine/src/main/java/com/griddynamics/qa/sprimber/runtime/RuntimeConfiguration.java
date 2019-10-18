@@ -22,24 +22,16 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
+package com.griddynamics.qa.sprimber.runtime;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-
-import java.lang.annotation.Annotation;
-import java.util.List;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 /**
  * @author fparamonov
  */
 
-public class SprimberClassMarkerProviderTest {
-
-    @Test
-    public void testProvider() {
-        SprimberClassMarkerProvider sprimberClassMarkerProvider = new SprimberClassMarkerProvider();
-        List<Class<? extends Annotation>> markers = sprimberClassMarkerProvider.provide();
-        Assertions.assertThat(markers).containsOnly(TestController.class);
-    }
+@Configuration
+@Import({ExecutionContextFactory.class, CliExecutor.class})
+public class RuntimeConfiguration {
 }

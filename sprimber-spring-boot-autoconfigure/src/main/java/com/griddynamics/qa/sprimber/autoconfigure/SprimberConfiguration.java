@@ -24,14 +24,13 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
-import com.griddynamics.qa.sprimber.common.SprimberProperties;
-import com.griddynamics.qa.sprimber.discovery.ExecutionContextFactory;
-import com.griddynamics.qa.sprimber.discovery.SpringStepDefinitionsFactory;
-import com.griddynamics.qa.sprimber.discovery.StepDefinitionsRegistry;
+import com.griddynamics.qa.sprimber.configuration.SprimberProperties;
 import com.griddynamics.qa.sprimber.engine.EngineSpringConfiguration;
-import com.griddynamics.qa.sprimber.event.SprimberEventPublisher;
+import com.griddynamics.qa.sprimber.reporting.SprimberEventPublisher;
+import com.griddynamics.qa.sprimber.runtime.RuntimeConfiguration;
 import com.griddynamics.qa.sprimber.scope.FlowOrchestrator;
 import com.griddynamics.qa.sprimber.scope.TestCaseScope;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionSrpingConfiguration;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -79,13 +78,8 @@ public class SprimberConfiguration {
         }
 
         @Bean
-        public Executor sprimberTestExecutor() {
+        public Executor testExecutor() {
             return getDefaultExecutor("TestExecutor-");
-        }
-
-        @Bean
-        public Executor sprimberTestCaseExecutor() {
-            return getDefaultExecutor("TestCaseExecutor-");
         }
 
         private ThreadPoolTaskExecutor getDefaultExecutor(String s) {
@@ -99,12 +93,8 @@ public class SprimberConfiguration {
     }
 
     @Configuration
-    @Import({EngineSpringConfiguration.class, FlowOrchestrator.class, SprimberEventPublisher.class})
+    @Import({EngineSpringConfiguration.class, StepDefinitionSrpingConfiguration.class, RuntimeConfiguration.class,
+            FlowOrchestrator.class, SprimberEventPublisher.class})
     static class SprimberCore {
-    }
-
-    @Configuration
-    @Import({ExecutionContextFactory.class, SpringStepDefinitionsFactory.class, StepDefinitionsRegistry.class})
-    static class SprimberDiscovery {
     }
 }

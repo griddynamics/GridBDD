@@ -22,35 +22,12 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
-
-import com.griddynamics.qa.sprimber.stepdefinition.ClassicStepDefinitionConfiguration;
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionSrpingConfiguration;
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.test.context.junit4.SpringRunner;
+package com.griddynamics.qa.sprimber.engine;
 
 /**
  * @author fparamonov
  */
+public interface TreeExecutor {
 
-@RunWith(SpringRunner.class)
-public class ConfigurationTest {
-
-    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(ClassicDiscoveryConfiguration.class,
-                    StepDefinitionSrpingConfiguration.class,
-                    ClassicStepDefinitionConfiguration.class));
-
-    @Test
-    public void testRequiredBeans() {
-        this.contextRunner.run(context -> {
-            Assertions.assertThat(context).hasSingleBean(ClassicStepFactory.class);
-            Assertions.assertThat(context).hasSingleBean(ClassicSuiteDiscovery.class);
-            Assertions.assertThat(context).hasSingleBean(ClassicTestBinder.class);
-        });
-    }
+    Node.Status executeRoot(Node node);
 }

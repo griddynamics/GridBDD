@@ -22,35 +22,22 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
+package com.griddynamics.qa.sprimber.configuration;
 
-import com.griddynamics.qa.sprimber.stepdefinition.ClassicStepDefinitionConfiguration;
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionSrpingConfiguration;
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.test.context.junit4.SpringRunner;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author fparamonov
  */
 
-@RunWith(SpringRunner.class)
-public class ConfigurationTest {
+@Data
+@ConfigurationProperties("sprimber.configuration")
+public class SprimberProperties {
 
-    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(ClassicDiscoveryConfiguration.class,
-                    StepDefinitionSrpingConfiguration.class,
-                    ClassicStepDefinitionConfiguration.class));
-
-    @Test
-    public void testRequiredBeans() {
-        this.contextRunner.run(context -> {
-            Assertions.assertThat(context).hasSingleBean(ClassicStepFactory.class);
-            Assertions.assertThat(context).hasSingleBean(ClassicSuiteDiscovery.class);
-            Assertions.assertThat(context).hasSingleBean(ClassicTestBinder.class);
-        });
-    }
+    private String featurePath;
+    private List<String> tagFilters = new ArrayList<>();
 }

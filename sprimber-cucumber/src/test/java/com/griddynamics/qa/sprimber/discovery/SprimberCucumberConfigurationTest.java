@@ -24,14 +24,16 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.common.SprimberProperties;
+import com.griddynamics.qa.sprimber.configuration.SprimberProperties;
+import com.griddynamics.qa.sprimber.stepdefinition.CucumberStepDefinitionConfiguration;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionSrpingConfiguration;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 /**
@@ -42,22 +44,22 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class SprimberCucumberConfigurationTest {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(SprimberCucumberConfiguration.class));
+            .withConfiguration(AutoConfigurations.of(SprimberCucumberConfiguration.class,
+                    StepDefinitionSrpingConfiguration.class,
+                    CucumberStepDefinitionConfiguration.class));
 
     @Test
     public void testRequiredBeans() {
         this.contextRunner
                 .withUserConfiguration(InnerConfiguration.class)
                 .run(context -> {
-            Assertions.assertThat(context).hasSingleBean(CucumberClassMarkerProvider.class);
-            Assertions.assertThat(context).hasSingleBean(CucumberStepDefinitionResolver.class);
             Assertions.assertThat(context).hasSingleBean(CucumberSuiteDiscovery.class);
             Assertions.assertThat(context).hasSingleBean(CucumberTestBinder.class);
             Assertions.assertThat(context).hasSingleBean(PickleStepFactory.class);
         });
     }
 
-    @Configuration
+    @TestConfiguration
     @EnableConfigurationProperties(SprimberProperties.class)
     static class InnerConfiguration {}
 }

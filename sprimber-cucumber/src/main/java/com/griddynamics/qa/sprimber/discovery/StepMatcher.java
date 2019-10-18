@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.common.StepDefinition;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
 import gherkin.pickles.*;
 import io.cucumber.stepexpression.Argument;
 import io.cucumber.stepexpression.StepExpression;

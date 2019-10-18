@@ -22,35 +22,27 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
+package com.griddynamics.qa.sprimber.runtime;
 
-import com.griddynamics.qa.sprimber.stepdefinition.ClassicStepDefinitionConfiguration;
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionSrpingConfiguration;
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.test.context.junit4.SpringRunner;
+import com.griddynamics.qa.sprimber.engine.Node;
+import lombok.Getter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
+ * This is a parent super container that can hold all necessary Sprimber objects during execution
+ * in one place with the ability to share and provide access from different places inside of the
+ * framework
+ *
  * @author fparamonov
  */
 
-@RunWith(SpringRunner.class)
-public class ConfigurationTest {
+@Getter
+public class ExecutionContext {
 
-    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(ClassicDiscoveryConfiguration.class,
-                    StepDefinitionSrpingConfiguration.class,
-                    ClassicStepDefinitionConfiguration.class));
-
-    @Test
-    public void testRequiredBeans() {
-        this.contextRunner.run(context -> {
-            Assertions.assertThat(context).hasSingleBean(ClassicStepFactory.class);
-            Assertions.assertThat(context).hasSingleBean(ClassicSuiteDiscovery.class);
-            Assertions.assertThat(context).hasSingleBean(ClassicTestBinder.class);
-        });
-    }
+    /**
+     * Convenient place to hold all root nodes that available at runtime
+     */
+    private final List<Node> nodes = new ArrayList<>();
 }

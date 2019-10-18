@@ -22,9 +22,8 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
+package com.griddynamics.qa.sprimber.stepdefinition;
 
-import com.griddynamics.qa.sprimber.common.StepDefinition;
 import cucumber.api.java.After;
 import cucumber.api.java.AfterStep;
 import cucumber.api.java.Before;
@@ -47,7 +46,7 @@ import java.util.Map;
 
 class CucumberStepDefinitionResolver extends StepDefinitionsAbstractResolver {
 
-    public static final String TAGS_ATTRIBUTE = "Tags";
+    private static final String TAGS_ATTRIBUTE = "Tags";
     private static final String TIMEOUT_ATTRIBUTE = "Timeout";
     private static final String ORDER_ATTRIBUTE = "Order";
 

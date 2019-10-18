@@ -22,10 +22,13 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.discovery;
+package com.griddynamics.qa.sprimber.runtime;
 
-import com.griddynamics.qa.sprimber.common.StepDefinition;
+import com.griddynamics.qa.sprimber.discovery.TestSuiteDiscovery;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
 import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionsFactory;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionsRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 

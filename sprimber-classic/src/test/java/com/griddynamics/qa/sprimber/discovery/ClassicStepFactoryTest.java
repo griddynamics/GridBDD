@@ -25,11 +25,15 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionsRegistry;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
+import java.util.stream.Stream;
 
 /**
  * @author fparamonov
@@ -41,6 +45,21 @@ public class ClassicStepFactoryTest {
         StepDefinitionsRegistry stepDefinitionsRegistry = Mockito.mock(StepDefinitionsRegistry.class);
         ClassicStepFactory stepFactory = new ClassicStepFactory(stepDefinitionsRegistry);
         Method testMethod = ReflectionUtils.findMethod(ExampleTestController.class, "testMe");
+        Mockito.when(stepDefinitionsRegistry.streamAllDefinitions()).thenAnswer(invocation -> Stream.of(dummyStepDefinition(testMethod)));
         Node step = stepFactory.provideStepNode(testMethod);
+        Assertions.assertThat(step.getType()).isEqualTo("stepContainer");
+        Assertions.assertThat(step.getChildren()).hasSize(1);
+        Assertions.assertThat(step.getChildren()).containsOnlyKeys("target");
+        Assertions.assertThat(step.getChildren().get("target")).hasSize(1);
+        Assertions.assertThat(step.getChildren().get("target"))
+                .extracting("name")
+                .containsOnly("testMe");
+    }
+
+    private StepDefinition dummyStepDefinition(Method testMethod) {
+        StepDefinition stepDefinition = new StepDefinition();
+        stepDefinition.setMethod(testMethod);
+        stepDefinition.setName("Dummy name");
+        return stepDefinition;
     }
 }
