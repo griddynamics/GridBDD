@@ -24,10 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.event;
 
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.Node;
 import lombok.Getter;
-import lombok.Setter;
 import org.springframework.context.ApplicationEvent;
 
 /**
@@ -74,90 +72,6 @@ class Events {
         public ExecutableNodeEvent(Object source, Node.ExecutableNode executableNode) {
             super(source);
             this.executableNode = executableNode;
-        }
-    }
-
-    @Getter
-    @Setter
-    static abstract class StepEvent extends ApplicationEvent {
-
-        private TestSuite.Step step;
-
-        /**
-         * Create a new ApplicationEvent.
-         *
-         * @param source the object on which the event initially occurred (never {@code null})
-         */
-        StepEvent(Object source) {
-            super(source);
-        }
-
-        StepEvent(Object source, TestSuite.Step step) {
-            super(source);
-            this.step = step;
-        }
-    }
-
-    @Getter
-    @Setter
-    static abstract class TestEvent extends ApplicationEvent {
-
-        private TestSuite.Test test;
-
-        /**
-         * Create a new ApplicationEvent.
-         *
-         * @param source the object on which the event initially occurred (never {@code null})
-         */
-        TestEvent(Object source) {
-            super(source);
-        }
-
-        TestEvent(Object source, TestSuite.Test test) {
-            super(source);
-            this.test = test;
-        }
-    }
-
-    @Getter
-    @Setter
-    static abstract class TestCaseEvent extends ApplicationEvent {
-
-        private TestSuite.TestCase testCase;
-
-        /**
-         * Create a new ApplicationEvent.
-         *
-         * @param source the object on which the event initially occurred (never {@code null})
-         */
-        TestCaseEvent(Object source) {
-            super(source);
-        }
-
-        TestCaseEvent(Object source, TestSuite.TestCase testCase) {
-            super(source);
-            this.testCase = testCase;
-        }
-    }
-
-    @Getter
-    @Setter
-    static abstract class TestSuiteEvent extends ApplicationEvent {
-
-        private TestSuite testSuite;
-
-        /**
-         * Create a new ApplicationEvent.
-         *
-         * @param source the object on which the event initially occurred (never {@code null})
-         */
-        TestSuiteEvent(Object source) {
-            super(source);
-        }
-
-        TestSuiteEvent(Object source, TestSuite testSuite) {
-            super(source);
-            this.testSuite = testSuite;
         }
     }
 }

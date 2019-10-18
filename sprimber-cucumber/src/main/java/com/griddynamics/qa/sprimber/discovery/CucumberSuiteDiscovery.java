@@ -25,7 +25,6 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.SprimberProperties;
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.Node;
 import gherkin.Parser;
 import gherkin.TokenMatcher;
@@ -35,7 +34,6 @@ import gherkin.pickles.Compiler;
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleTag;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.util.DigestUtils;
@@ -69,37 +67,13 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
     private final TagFilter tagFilter;
 
     @Override
-    public TestSuite discoverOld() {
-        TestSuite testSuite = new TestSuite();
-        try {
-            Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()))
-                    .map(this::buildCucumberDocument)
-                    .map(this::testCaseDiscover)
-                    .forEach(testCase -> testSuite.getTestCases().add(testCase));
-        } catch (IOException e) {
-            // TODO: 2019-09-10 handle the exception from resource unavailability correctly
-            e.printStackTrace();
-        }
-        return testSuite;
-    }
-
-    @Override
     public Node discover() {
         Node testSuite = new Node.ContainerNode("testSuite", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
-        featuresResourcesStream()
+        featureResourcesStream()
                 .map(this::buildCucumberDocument)
                 .map(this::testCaseNodeDiscover)
                 .forEach(testSuite::addChild);
         return testSuite;
-    }
-
-    private Stream<Resource> featuresResourcesStream() {
-        try {
-            return Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()));
-        } catch (IOException e) {
-            // TODO: 2019-09-10 handle the exception from resource unavailability correctly
-            throw new RuntimeException(String.format("Could not find the resources by this path: %s", sprimberProperties.getFeaturePath()));
-        }
     }
 
     private Node testCaseNodeDiscover(CucumberDocument cucumberDocument) {
@@ -108,58 +82,26 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
         testCase.setDescription(cucumberDocument.getDocument().getFeature().getDescription());
         compiler.compile(cucumberDocument.getDocument()).stream()
                 .filter(pickleTagFilter())
-                .map(cucumberTestBinder::bindTestNode)
+                .map(cucumberTestBinder::bind)
                 .peek(node -> {
                     String description = getScenarioDescriptionByTestName(cucumberDocument, node)
                             .map(ScenarioDefinition::getDescription).orElse(node.getName());
                     node.setDescription(description);
                 })
                 .peek(node -> {
-                    String testLocation = String.valueOf(node.getAttributes().get(LOCATION_ATTRIBUTE_NAME));
-                    String uniqueName = cucumberDocument.getUrl().toString() + cucumberDocument.getDocument().getFeature().getLocation().getLine() + ":" +
-                            cucumberDocument.getDocument().getFeature().getLocation().getColumn() +
-                            cucumberDocument.getDocument().getFeature().getName() + testLocation + node.getName();
-                    node.getAttributes().put("testLocation", uniqueName);
-                    node.setHistoryId(DigestUtils.md5DigestAsHex(uniqueName.getBytes()));
+                    updateLocationAndHistoryId(cucumberDocument, node);
                 })
                 .forEach(testCase::addChild);
         return testCase;
     }
 
-    private TestSuite.TestCase testCaseDiscover(CucumberDocument cucumberDocument) {
-        val testCase = new TestSuite.TestCase();
-        testCase.setName(cucumberDocument.getDocument().getFeature().getName());
-        testCase.setDescription(cucumberDocument.getDocument().getFeature().getDescription());
-        compiler.compile(cucumberDocument.getDocument()).stream()
-                .filter(pickleTagFilter())
-                .forEach(pickle -> testCase.getTests().add(cucumberTestBinder.bind(pickle)));
-        postProcessTestDescription(cucumberDocument, testCase);
-        postProcessTestHistoryId(cucumberDocument, testCase);
-        postProcessParentId(testCase);
-        return testCase;
-    }
-
-    private void postProcessTestDescription(CucumberDocument cucumberDocument, TestSuite.TestCase testCase) {
-//        testCase.getTests().forEach(test -> {
-//            String description = getScenarioDescriptionByTestName(cucumberDocument, test)
-//                    .map(ScenarioDefinition::getDescription).orElse(test.getName());
-//            test.setDescription(description);
-//        });
-    }
-
-    private void postProcessTestHistoryId(CucumberDocument cucumberDocument, TestSuite.TestCase testCase) {
-//        testCase.getTests().forEach(test -> {
-//            String testLocation = String.valueOf(test.getAttributes().get(LOCATION_ATTRIBUTE_NAME));
-//            String uniqueName = cucumberDocument.getDocument().getFeature().getLocation().getLine() + ":" +
-//                    cucumberDocument.getDocument().getFeature().getLocation().getColumn() +
-//                    cucumberDocument.getUrl() +
-//                    cucumberDocument.getDocument().getFeature().getName() + testLocation + test.getName();
-//            test.setHistoryId(DigestUtils.md5DigestAsHex(uniqueName.getBytes()));
-//        });
-    }
-
-    private void postProcessParentId(TestSuite.TestCase testCase) {
-        testCase.getTests().forEach(test -> test.setParentId(testCase.getRuntimeId()));
+    private void updateLocationAndHistoryId(CucumberDocument cucumberDocument, Node node) {
+        String testLocation = String.valueOf(node.getAttributes().get(LOCATION_ATTRIBUTE_NAME));
+        String uniqueName = cucumberDocument.getUrl().toString() + cucumberDocument.getDocument().getFeature().getLocation().getLine() + ":" +
+                cucumberDocument.getDocument().getFeature().getLocation().getColumn() +
+                cucumberDocument.getDocument().getFeature().getName() + testLocation + node.getName();
+        node.getAttributes().put("testLocation", uniqueName);
+        node.setHistoryId(DigestUtils.md5DigestAsHex(uniqueName.getBytes()));
     }
 
     private Optional<ScenarioDefinition> getScenarioDescriptionByTestName(CucumberDocument cucumberDocument,
@@ -177,6 +119,15 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
         return pickle.getTags().stream()
                 .map(PickleTag::getName)
                 .collect(Collectors.toList());
+    }
+
+    private Stream<Resource> featureResourcesStream() {
+        try {
+            return Arrays.stream(applicationContext.getResources(sprimberProperties.getFeaturePath()));
+        } catch (IOException e) {
+            // TODO: 2019-09-10 handle the exception from resource unavailability correctly
+            throw new RuntimeException(String.format("Could not find the resources by this path: %s", sprimberProperties.getFeaturePath()));
+        }
     }
 
     private CucumberDocument buildCucumberDocument(Resource resource) {

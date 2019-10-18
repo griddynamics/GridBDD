@@ -24,15 +24,12 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.Node;
 
 /**
  * @author fparamonov
  */
 interface TestSuiteDiscovery {
-
-    TestSuite discoverOld();
 
     Node discover();
 
@@ -45,6 +42,6 @@ interface TestSuiteDiscovery {
      */
     interface TestDefinitionBinder<TC> {
 
-        TestSuite.Test bind(TC testCandidate);
+        Node bind(TC testCandidate);
     }
 }

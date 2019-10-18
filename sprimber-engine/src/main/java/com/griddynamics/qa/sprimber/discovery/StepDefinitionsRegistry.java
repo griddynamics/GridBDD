@@ -25,26 +25,29 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.common.StepDefinition;
-import com.griddynamics.qa.sprimber.common.TestSuite;
 import com.griddynamics.qa.sprimber.engine.Node;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * @author fparamonov
  */
-abstract class AbstractStepFactory<SC> implements StepFactory<SC> {
+public class StepDefinitionsRegistry {
 
-    private final Map<String, StepDefinition> stepDefinitions = new HashMap<>();
+    /**
+     * Collection that aimed to hold all available step definitions at runtime
+     * Without binding to any suite/case/test/step
+     */
+    private final Map<String, StepDefinition> stepDefinitionsByKey = new HashMap<>();
 
-    @Override
-    public void setStepDefinitions(Map<String, StepDefinition> stepDefinitions) {
-        this.stepDefinitions.putAll(stepDefinitions);
+    public void add(Map<String, StepDefinition> stepDefinitions) {
+        stepDefinitionsByKey.putAll(stepDefinitions);
+    }
+
+    public Stream<StepDefinition> streamAllDefinitions() {
+        return stepDefinitionsByKey.values().stream();
     }
 
     public Stream<Node> provideBeforeTestHookNodes() {
@@ -63,62 +66,14 @@ abstract class AbstractStepFactory<SC> implements StepFactory<SC> {
         return provideNodesForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.STEP);
     }
 
-    public List<TestSuite.Step> provideBeforeTestHooks() {
-        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.TEST);
-    }
-
-    public List<TestSuite.Step> provideAfterTestHooks() {
-        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.TEST);
-    }
-
-    public List<TestSuite.Step> provideBeforeTestCaseHooks() {
-        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.TESTCASE);
-    }
-
-    public List<TestSuite.Step> provideAfterTestCaseHooks() {
-        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.TESTCASE);
-    }
-
-    public List<TestSuite.Step> provideBeforeTestSuiteHooks() {
-        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.SUITE);
-    }
-
-    public List<TestSuite.Step> provideAfterTestSuiteHooks() {
-        return provideHooksForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.SUITE);
-    }
-
-    public List<TestSuite.Step> wrapStepWithStepHooks(TestSuite.Step step) {
-        List<TestSuite.Step> wrappedDefinition =
-                provideHooksForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.STEP);
-        wrappedDefinition.add(step);
-        List<TestSuite.Step> afterStepHooks =
-                provideHooksForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.STEP);
-        wrappedDefinition.addAll(afterStepHooks);
-        return wrappedDefinition;
-    }
-
-    protected abstract Predicate<StepDefinition> hooksByAvailableTags();
-
-    protected Map<String, StepDefinition> getStepDefinitions() {
-        return this.stepDefinitions;
-    }
-
-    private List<TestSuite.Step> provideHooksForTargetTypeAndPhase(StepDefinition.StepType stepType, StepDefinition.StepPhase stepPhase) {
-        return findStepHooksForCurrentStage(stepType, stepPhase)
-                .filter(hooksByAvailableTags())
-                .map(this::provideHookStep)
-                .collect(Collectors.toList());
-    }
-
     private Stream<Node> provideNodesForTargetTypeAndPhase(StepDefinition.StepType stepType, StepDefinition.StepPhase stepPhase) {
         return findStepHooksForCurrentStage(stepType, stepPhase)
-                .filter(hooksByAvailableTags())
                 .map(this::provideExecutableNode);
     }
 
     private Stream<StepDefinition> findStepHooksForCurrentStage(StepDefinition.StepType stepType,
                                                                 StepDefinition.StepPhase stepPhase) {
-        return getStepDefinitions().values().stream()
+        return stepDefinitionsByKey.values().stream()
                 .filter(stepDefinition -> stepDefinition.getStepType().equals(stepType))
                 .filter(stepDefinition -> stepDefinition.getStepPhase().equals(stepPhase));
     }
@@ -129,12 +84,5 @@ abstract class AbstractStepFactory<SC> implements StepFactory<SC> {
         executableNode.setMethod(stepDefinition.getMethod());
         executableNode.setName(stepDefinition.getMethod().getName());
         return executableNode;
-    }
-
-    private TestSuite.Step provideHookStep(StepDefinition stepDefinition) {
-        TestSuite.Step step = new TestSuite.Step();
-        step.setStepDefinition(stepDefinition);
-        step.setName(stepDefinition.getMethod().getName());
-        return step;
     }
 }

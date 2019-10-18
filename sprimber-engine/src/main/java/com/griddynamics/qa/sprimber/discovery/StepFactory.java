@@ -24,17 +24,12 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.common.StepDefinition;
-import com.griddynamics.qa.sprimber.common.TestSuite;
-
-import java.util.Map;
+import com.griddynamics.qa.sprimber.engine.Node;
 
 /**
  * @author fparamonov
  */
 interface StepFactory<SC> {
 
-    void setStepDefinitions(Map<String, StepDefinition> stepDefinitions);
-
-    TestSuite.Step provideStep(SC stepCandidate);
+    Node provideStepNode(SC stepCandidate);
 }
