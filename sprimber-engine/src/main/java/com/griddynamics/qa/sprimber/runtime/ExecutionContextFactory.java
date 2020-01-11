@@ -25,8 +25,8 @@ $Id:
 package com.griddynamics.qa.sprimber.runtime;
 
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDiscovery;
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
 import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
 import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionsFactory;
 import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionsRegistry;
 import lombok.RequiredArgsConstructor;

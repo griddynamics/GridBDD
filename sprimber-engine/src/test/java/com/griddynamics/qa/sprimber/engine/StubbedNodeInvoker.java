@@ -37,15 +37,13 @@ import java.util.concurrent.TimeUnit;
 public class StubbedNodeInvoker implements TreeSuiteExecutor.NodeInvoker {
 
     @Override
-    public Node.Status invoke(Node.ExecutableNode executableNode) {
-        ReflectionUtils.invokeMethod(executableNode.getMethod(), this);
-        return Node.Status.COMPLETED;
+    public boolean testCondition() {
+        return false;
     }
 
     @Override
-    public Node.Status dryInvoke(Node.ExecutableNode executableNode) {
-        skippedStep();
-        return Node.Status.SKIP;
+    public void invoke(Node executableNode) {
+        ReflectionUtils.invokeMethod(executableNode.getMethod(), this);
     }
 
     public void before() {

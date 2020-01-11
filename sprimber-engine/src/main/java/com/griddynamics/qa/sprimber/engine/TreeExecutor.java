@@ -29,5 +29,5 @@ package com.griddynamics.qa.sprimber.engine;
  */
 public interface TreeExecutor {
 
-    Node.Status executeRoot(Node node);
+    void executeRoot(Node node);
 }

@@ -40,64 +40,66 @@ public class StubbedEventPublisher implements NodeExecutionEventsPublisher {
     private ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
 
     @Override
-    public void containerNodeStarted(Node node) {
+    public void stageStarted(Node node) {
         int currentLevel = Optional.ofNullable(depthLevelThreadLocal.get()).orElse(1);
         currentLevel++;
+        log.info("{}(sub)stage with role '{}' started", getIndents(currentLevel), node.getRole());
+        currentLevel++;
         depthLevelThreadLocal.set(currentLevel);
-        log.info("{}{} Node Status before {}", getIndents(depthLevelThreadLocal.get()), node.getType(), node.getStatus());
     }
 
     @Override
-    public void containerNodeCompleted(Node node) {
-        log.info("{}{} Node Status after {}", getIndents(depthLevelThreadLocal.get()), node.getType(), node.getStatus());
+    public void stageFinished(Node node) {
         int currentLevel = Optional.ofNullable(depthLevelThreadLocal.get()).orElse(1);
+        currentLevel--;
+        log.info("{}(sub)stage with role '{}' completed with {}", getIndents(currentLevel), node.getRole(), node.getCurrentState());
         currentLevel--;
         depthLevelThreadLocal.set(currentLevel);
     }
 
     @Override
     public void beforeNodeStarted(Node node) {
-        log.info("{}Before Sub Node started {}", getIndents(depthLevelThreadLocal.get()), node.getStatus());
+        log.info("{}Before Sub Node started {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     @Override
     public void beforeNodeCompleted(Node node) {
-        log.info("{}Before Sub Node completed {}", getIndents(depthLevelThreadLocal.get()), node.getStatus());
+        log.info("{}Before Sub Node completed {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     @Override
     public void beforeNodeError(Node node) {
-        log.info("{}Before Sub Node completed exceptionally {}", getIndents(depthLevelThreadLocal.get()), node.getStatus());
+        log.info("{}Before Sub Node completed exceptionally {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     @Override
     public void targetNodeStarted(Node node) {
-        log.info("{}Target Sub Node started {}", getIndents(depthLevelThreadLocal.get()), node.getStatus());
+        log.info("{}Target Sub Node started {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     @Override
     public void targetNodeCompleted(Node node) {
-        log.info("{}Target Sub Node completed {}", getIndents(depthLevelThreadLocal.get()), node.getStatus());
+        log.info("{}Target Sub Node completed {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     @Override
     public void targetNodeError(Node node) {
-        log.info("{}Target Sub Node completed exceptionally {}", getIndents(depthLevelThreadLocal.get()), node.getStatus());
+        log.info("{}Target Sub Node completed exceptionally {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     @Override
     public void afterNodeStarted(Node node) {
-        log.info("{}After Sub Node started {}", getIndents(depthLevelThreadLocal.get()), node.getStatus());
+        log.info("{}After Sub Node started {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     @Override
     public void afterNodeCompleted(Node node) {
-        log.info("{}After Sub Node completed {}", getIndents(depthLevelThreadLocal.get()), node.getStatus());
+        log.info("{}After Sub Node completed {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     @Override
     public void afterNodeError(Node node) {
-        log.info("{}After Sub Node completed exceptionally {}", getIndents(depthLevelThreadLocal.get()), node.getStatus());
+        log.info("{}After Sub Node completed exceptionally {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     private String getIndents(int depthLevel) {
