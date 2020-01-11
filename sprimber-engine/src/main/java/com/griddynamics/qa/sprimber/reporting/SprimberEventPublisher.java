@@ -39,194 +39,194 @@ public class SprimberEventPublisher implements NodeExecutionEventsPublisher {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    public void containerNodeStarted(Node node) {
-        ContainerNodeStartedEvent containerNodeStartedEvent = new ContainerNodeStartedEvent(this, (Node.ContainerNode) node);
+    public void stageStarted(Node node) {
+        ContainerNodeStartedEvent containerNodeStartedEvent = new ContainerNodeStartedEvent(this, (Node) node);
         eventPublisher.publishEvent(containerNodeStartedEvent);
     }
 
     @Override
-    public void containerNodeCompleted(Node node) {
-        ContainerNodeFinishedEvent containerNodeFinishedEvent = new ContainerNodeFinishedEvent(this, (Node.ContainerNode) node);
+    public void stageFinished(Node node) {
+        ContainerNodeFinishedEvent containerNodeFinishedEvent = new ContainerNodeFinishedEvent(this, (Node) node);
         eventPublisher.publishEvent(containerNodeFinishedEvent);
     }
 
     @Override
     public void beforeNodeStarted(Node node) {
-        BeforeNodeStartedEvent beforeNodeStartedEvent = new BeforeNodeStartedEvent(this, (Node.ExecutableNode) node);
+        BeforeNodeStartedEvent beforeNodeStartedEvent = new BeforeNodeStartedEvent(this, (Node) node);
         eventPublisher.publishEvent(beforeNodeStartedEvent);
     }
 
     @Override
     public void beforeNodeCompleted(Node node) {
-        BeforeNodeCompletedEvent beforeNodeCompletedEvent = new BeforeNodeCompletedEvent(this, (Node.ExecutableNode) node);
+        BeforeNodeCompletedEvent beforeNodeCompletedEvent = new BeforeNodeCompletedEvent(this, (Node) node);
         eventPublisher.publishEvent(beforeNodeCompletedEvent);
     }
 
     @Override
     public void beforeNodeError(Node node) {
-        BeforeNodeErrorEvent beforeNodeErrorEvent = new BeforeNodeErrorEvent(this, (Node.ExecutableNode) node);
+        BeforeNodeErrorEvent beforeNodeErrorEvent = new BeforeNodeErrorEvent(this, (Node) node);
         eventPublisher.publishEvent(beforeNodeErrorEvent);
     }
 
     @Override
     public void targetNodeStarted(Node node) {
-        TargetNodeStartedEvent targetNodeStartedEvent = new TargetNodeStartedEvent(this, (Node.ExecutableNode) node);
+        TargetNodeStartedEvent targetNodeStartedEvent = new TargetNodeStartedEvent(this, (Node) node);
         eventPublisher.publishEvent(targetNodeStartedEvent);
     }
 
     @Override
     public void targetNodeCompleted(Node node) {
-        TargetNodeCompletedEvent targetNodeFinishedEvent = new TargetNodeCompletedEvent(this, (Node.ExecutableNode) node);
+        TargetNodeCompletedEvent targetNodeFinishedEvent = new TargetNodeCompletedEvent(this, (Node) node);
         eventPublisher.publishEvent(targetNodeFinishedEvent);
     }
 
     @Override
     public void targetNodeError(Node node) {
-        TargetNodeErrorEvent targetNodeFinishedEvent = new TargetNodeErrorEvent(this, (Node.ExecutableNode) node);
+        TargetNodeErrorEvent targetNodeFinishedEvent = new TargetNodeErrorEvent(this, (Node) node);
         eventPublisher.publishEvent(targetNodeFinishedEvent);
     }
 
     @Override
     public void afterNodeStarted(Node node) {
-        AfterNodeStartedEvent afterNodeStartedEvent = new AfterNodeStartedEvent(this, (Node.ExecutableNode) node);
+        AfterNodeStartedEvent afterNodeStartedEvent = new AfterNodeStartedEvent(this, (Node) node);
         eventPublisher.publishEvent(afterNodeStartedEvent);
     }
 
     @Override
     public void afterNodeCompleted(Node node) {
-        AfterNodeCompletedEvent afterNodeCompletedEvent = new AfterNodeCompletedEvent(this, (Node.ExecutableNode) node);
+        AfterNodeCompletedEvent afterNodeCompletedEvent = new AfterNodeCompletedEvent(this, (Node) node);
         eventPublisher.publishEvent(afterNodeCompletedEvent);
     }
 
     @Override
     public void afterNodeError(Node node) {
-        AfterNodeErrorEvent afterNodeErrorEvent = new AfterNodeErrorEvent(this, (Node.ExecutableNode) node);
+        AfterNodeErrorEvent afterNodeErrorEvent = new AfterNodeErrorEvent(this, (Node) node);
         eventPublisher.publishEvent(afterNodeErrorEvent);
     }
 
-    public class ContainerNodeStartedEvent extends Events.ContainerNodeEvent {
+    public class ContainerNodeStartedEvent extends Events.NodeEvent {
 
         public ContainerNodeStartedEvent(Object source) {
             super(source);
         }
 
-        public ContainerNodeStartedEvent(Object source, Node.ContainerNode containerNode) {
+        public ContainerNodeStartedEvent(Object source, Node containerNode) {
             super(source, containerNode);
         }
     }
 
-    public class ContainerNodeFinishedEvent extends Events.ContainerNodeEvent {
+    public class ContainerNodeFinishedEvent extends Events.NodeEvent {
 
         public ContainerNodeFinishedEvent(Object source) {
             super(source);
         }
 
-        public ContainerNodeFinishedEvent(Object source, Node.ContainerNode containerNode) {
+        public ContainerNodeFinishedEvent(Object source, Node containerNode) {
             super(source, containerNode);
         }
     }
 
     // Target node events
 
-    public class TargetNodeStartedEvent extends Events.ExecutableNodeEvent {
+    public class TargetNodeStartedEvent extends Events.NodeEvent {
 
         public TargetNodeStartedEvent(Object source) {
             super(source);
         }
 
-        public TargetNodeStartedEvent(Object source, Node.ExecutableNode executableNode) {
+        public TargetNodeStartedEvent(Object source, Node executableNode) {
             super(source, executableNode);
         }
     }
 
-    public class TargetNodeCompletedEvent extends Events.ExecutableNodeEvent {
+    public class TargetNodeCompletedEvent extends Events.NodeEvent {
 
         public TargetNodeCompletedEvent(Object source) {
             super(source);
         }
 
-        public TargetNodeCompletedEvent(Object source, Node.ExecutableNode executableNode) {
+        public TargetNodeCompletedEvent(Object source, Node executableNode) {
             super(source, executableNode);
         }
     }
 
-    public class TargetNodeErrorEvent extends Events.ExecutableNodeEvent {
+    public class TargetNodeErrorEvent extends Events.NodeEvent {
 
         public TargetNodeErrorEvent(Object source) {
             super(source);
         }
 
-        public TargetNodeErrorEvent(Object source, Node.ExecutableNode executableNode) {
+        public TargetNodeErrorEvent(Object source, Node executableNode) {
             super(source, executableNode);
         }
     }
 
     //Before node events
 
-    public class BeforeNodeStartedEvent extends Events.ExecutableNodeEvent {
+    public class BeforeNodeStartedEvent extends Events.NodeEvent {
 
         public BeforeNodeStartedEvent(Object source) {
             super(source);
         }
 
-        public BeforeNodeStartedEvent(Object source, Node.ExecutableNode executableNode) {
+        public BeforeNodeStartedEvent(Object source, Node executableNode) {
             super(source, executableNode);
         }
     }
 
-    public class BeforeNodeCompletedEvent extends Events.ExecutableNodeEvent {
+    public class BeforeNodeCompletedEvent extends Events.NodeEvent {
 
         public BeforeNodeCompletedEvent(Object source) {
             super(source);
         }
 
-        public BeforeNodeCompletedEvent(Object source, Node.ExecutableNode executableNode) {
+        public BeforeNodeCompletedEvent(Object source, Node executableNode) {
             super(source, executableNode);
         }
     }
 
-    public class BeforeNodeErrorEvent extends Events.ExecutableNodeEvent {
+    public class BeforeNodeErrorEvent extends Events.NodeEvent {
 
         public BeforeNodeErrorEvent(Object source) {
             super(source);
         }
 
-        public BeforeNodeErrorEvent(Object source, Node.ExecutableNode executableNode) {
+        public BeforeNodeErrorEvent(Object source, Node executableNode) {
             super(source, executableNode);
         }
     }
 
     // After node events
 
-    public class AfterNodeStartedEvent extends Events.ExecutableNodeEvent {
+    public class AfterNodeStartedEvent extends Events.NodeEvent {
 
         public AfterNodeStartedEvent(Object source) {
             super(source);
         }
 
-        public AfterNodeStartedEvent(Object source, Node.ExecutableNode executableNode) {
+        public AfterNodeStartedEvent(Object source, Node executableNode) {
             super(source, executableNode);
         }
     }
 
-    public class AfterNodeCompletedEvent extends Events.ExecutableNodeEvent {
+    public class AfterNodeCompletedEvent extends Events.NodeEvent {
 
         public AfterNodeCompletedEvent(Object source) {
             super(source);
         }
 
-        public AfterNodeCompletedEvent(Object source, Node.ExecutableNode executableNode) {
+        public AfterNodeCompletedEvent(Object source, Node executableNode) {
             super(source, executableNode);
         }
     }
 
-    public class AfterNodeErrorEvent extends Events.ExecutableNodeEvent {
+    public class AfterNodeErrorEvent extends Events.NodeEvent {
 
         public AfterNodeErrorEvent(Object source) {
             super(source);
         }
 
-        public AfterNodeErrorEvent(Object source, Node.ExecutableNode executableNode) {
+        public AfterNodeErrorEvent(Object source, Node executableNode) {
             super(source, executableNode);
         }
     }

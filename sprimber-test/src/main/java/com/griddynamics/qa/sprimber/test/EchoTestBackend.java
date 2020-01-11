@@ -30,7 +30,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * @author fparamonov
  */
-@SpringBootApplication
+@SpringBootApplication()
 public class EchoTestBackend {
 
     public static void main(String[] args) throws Exception {

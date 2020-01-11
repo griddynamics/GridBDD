@@ -40,12 +40,16 @@ class SpringNodeInvoker implements TreeSuiteExecutor.NodeInvoker {
     private final ApplicationContext applicationContext;
 
     @Override
-    public Node.Status invoke(Node.ExecutableNode executableNode) {
-        Method testMethod = executableNode.getMethod();
+    public boolean testCondition() {
+        return false;
+    }
+
+    @Override
+    public void invoke(Node node) {
+        Method testMethod = node.getMethod();
         Object target = applicationContext.getBean(testMethod.getDeclaringClass());
-        Object[] args = executableNode.getParameters().isEmpty() ?
-                new Object[0] : executableNode.getParameters().values().toArray();
+        Object[] args = node.getMethodParameters().isEmpty() ?
+                new Object[0] : node.getMethodParameters().values().toArray();
         ReflectionUtils.invokeMethod(testMethod, target, args);
-        return Node.Status.COMPLETED;
     }
 }

@@ -52,16 +52,16 @@ public class TestCaseSummaryPrinter {
     @EventListener
     public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
         increaseDepthLevel();
-        if ("test".equals(startedEvent.getContainerNode().getType())) {
-            doWithTestStart(startedEvent.getContainerNode());
+        if ("test".equals(startedEvent.getNode().getRole())) {
+            doWithTestStart(startedEvent.getNode());
         }
     }
 
     @EventListener
     public void containerNodeFinished(SprimberEventPublisher.ContainerNodeFinishedEvent finishedEvent) {
         decreaseDepthLevel();
-        if ("test".equals(finishedEvent.getContainerNode().getType())) {
-            doWithTestFinish(finishedEvent.getContainerNode());
+        if ("test".equals(finishedEvent.getNode().getRole())) {
+            doWithTestFinish(finishedEvent.getNode());
         }
     }
 
@@ -70,9 +70,9 @@ public class TestCaseSummaryPrinter {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
         stringBuilder.append(getIndents() + "\t");
-        stringBuilder.append(String.format(" %s", completedEvent.getExecutableNode().getName()));
-        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getExecutableNode().getParameters().values()})));
-        stringBuilder.append(String.format(" (%s) ", completedEvent.getExecutableNode().getStatus()));
+        stringBuilder.append(String.format(" %s", completedEvent.getNode().getName()));
+        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getNode().getMethodParameters().values()})));
+        stringBuilder.append(String.format(" (%s) ", completedEvent.getNode().getCurrentState()));
     }
 
     @EventListener
@@ -80,8 +80,8 @@ public class TestCaseSummaryPrinter {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
         stringBuilder.append(getIndents() + "\t");
-        stringBuilder.append(String.format(" %s", errorEvent.getExecutableNode().getName()));
-        stringBuilder.append(String.format(" (%s) ", errorEvent.getExecutableNode().getStatus()));
+        stringBuilder.append(String.format(" %s", errorEvent.getNode().getName()));
+        stringBuilder.append(String.format(" (%s) ", errorEvent.getNode().getCurrentState()));
     }
 
     @EventListener
@@ -89,9 +89,9 @@ public class TestCaseSummaryPrinter {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
         stringBuilder.append(getIndents());
-        stringBuilder.append(String.format(" %s", completedEvent.getExecutableNode().getName()));
-        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getExecutableNode().getParameters().values()})));
-        stringBuilder.append(String.format(" (%s) ", completedEvent.getExecutableNode().getStatus()));
+        stringBuilder.append(String.format(" %s", completedEvent.getNode().getName()));
+        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getNode().getMethodParameters().values()})));
+        stringBuilder.append(String.format(" (%s) ", completedEvent.getNode().getCurrentState()));
     }
 
     @EventListener
@@ -99,8 +99,8 @@ public class TestCaseSummaryPrinter {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
         stringBuilder.append(getIndents());
-        stringBuilder.append(String.format(" %s", errorEvent.getExecutableNode().getName()));
-        stringBuilder.append(String.format(" (%s) ", errorEvent.getExecutableNode().getStatus()));
+        stringBuilder.append(String.format(" %s", errorEvent.getNode().getName()));
+        stringBuilder.append(String.format(" (%s) ", errorEvent.getNode().getCurrentState()));
     }
 
     @EventListener
@@ -108,9 +108,9 @@ public class TestCaseSummaryPrinter {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
         stringBuilder.append(getIndents());
-        stringBuilder.append(String.format(" %s", completedEvent.getExecutableNode().getName()));
-        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getExecutableNode().getParameters().values()})));
-        stringBuilder.append(String.format(" (%s) ", completedEvent.getExecutableNode().getStatus()));
+        stringBuilder.append(String.format(" %s", completedEvent.getNode().getName()));
+        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getNode().getMethodParameters().values()})));
+        stringBuilder.append(String.format(" (%s) ", completedEvent.getNode().getCurrentState()));
     }
 
     @EventListener
@@ -118,11 +118,11 @@ public class TestCaseSummaryPrinter {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
         stringBuilder.append(getIndents());
-        stringBuilder.append(String.format(" %s", errorEvent.getExecutableNode().getName()));
-        stringBuilder.append(String.format(" (%s) ", errorEvent.getExecutableNode().getStatus()));
+        stringBuilder.append(String.format(" %s", errorEvent.getNode().getName()));
+        stringBuilder.append(String.format(" (%s) ", errorEvent.getNode().getCurrentState()));
     }
 
-    private void doWithTestStart(Node.ContainerNode containerNode) {
+    private void doWithTestStart(Node containerNode) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n\n");
         stringBuilder.append(String.format("Test Completed: %s", containerNode.getName()));
@@ -130,11 +130,11 @@ public class TestCaseSummaryPrinter {
         reportBuilder.set(stringBuilder);
     }
 
-    private void doWithTestFinish(Node.ContainerNode containerNode) {
+    private void doWithTestFinish(Node containerNode) {
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n\n");
         String summaryRaw = stringBuilder.toString();
-        String summary = summaryRaw.replaceFirst("\\{STATUS}", containerNode.getStatus().name());
+        String summary = summaryRaw.replaceFirst("\\{STATUS}", String.valueOf(containerNode.getCurrentState()));
         log.info(summary);
         reportBuilder.remove();
     }

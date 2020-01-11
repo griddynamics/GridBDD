@@ -50,7 +50,7 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
 
     @Override
     public Node discover() {
-        Node testSuite = new Node.ContainerNode("testSuite", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
+        Node testSuite = new Node.ContainerNode("testSuite", BYPASS_BEFORE_WHEN_BYPASS_MODE | DRY_AFTERS_ON_DRY | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
         applicationContext.getBeansWithAnnotation(TestController.class).values().stream()
                 .map(this::testCaseNodeDiscover)
                 .forEach(testSuite::addChild);
@@ -58,7 +58,7 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
     }
 
     private Node testCaseNodeDiscover(Object testController) {
-        Node testCase = new Node.ContainerNode("testCase", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
+        Node testCase = new Node.ContainerNode("testCase", BYPASS_BEFORE_WHEN_BYPASS_MODE | DRY_AFTERS_ON_DRY | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
         TestController controller = testController.getClass().getAnnotation(TestController.class);
         testCase.setName(String.valueOf(AnnotationUtils.getValue(controller, NAME_ATTRIBUTE_NAME)));
         testCase.setDescription(String.valueOf(AnnotationUtils.getValue(controller, DESCRIPTION_ATTRIBUTE_NAME)));
