@@ -30,7 +30,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.annotation.Annotation;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
@@ -55,17 +54,18 @@ public class NodeFallbackManager {
         if (throwable.getClass().equals(CompletionException.class)) {
             throwable = throwable.getCause();
         }
-        int statusValue = Node.ERROR_STATUS_VALUE | Node.COMPLETED_STATUS_VALUE;
-        if (isPendingException(throwable)) {
-            statusValue = Node.SKIP_STATUS_VALUE | Node.PENDING_STATUS_VALUE;
-        }
-        if (skippedExceptionNames.contains(throwable.getClass().getName())) {
-            statusValue = Node.SKIP_STATUS_VALUE;
-        }
-        if (failedExceptionNames.contains(throwable.getClass().getName())) {
-            statusValue = Node.ERROR_STATUS_VALUE | Node.FAILED_STATUS_VALUE;
-        }
-        return Node.Status.valueOfCode(statusValue);
+//        int statusValue = Node.ERROR_STATUS_VALUE | Node.COMPLETED_STATUS_VALUE;
+//        if (isPendingException(throwable)) {
+//            statusValue = Node.SKIP_STATUS_VALUE | Node.PENDING_STATUS_VALUE;
+//        }
+//        if (skippedExceptionNames.contains(throwable.getClass().getName())) {
+//            statusValue = Node.SKIP_STATUS_VALUE;
+//        }
+//        if (failedExceptionNames.contains(throwable.getClass().getName())) {
+//            statusValue = Node.ERROR_STATUS_VALUE | Node.FAILED_STATUS_VALUE;
+//        }
+//        return Node.Status.valueOfCode(statusValue);
+        return Node.Status.ERROR;
     }
 
     /**
@@ -79,13 +79,13 @@ public class NodeFallbackManager {
     }
 
     public void conditionallyPrintStacktrace(Node.Status status, Throwable throwable) {
-        if (!status.hasStatusFlag(Node.FAILED_STATUS_VALUE) && Objects.nonNull(throwable)) {
-            if (throwable.getClass().equals(CompletionException.class)) {
-                throwable.getCause().printStackTrace();
-            } else {
-                throwable.printStackTrace();
-            }
-        }
+//        if (!status.hasStatusFlag(Node.FAILED_STATUS_VALUE) && Objects.nonNull(throwable)) {
+//            if (throwable.getClass().equals(CompletionException.class)) {
+//                throwable.getCause().printStackTrace();
+//            } else {
+//                throwable.printStackTrace();
+//            }
+//        }
     }
 
     public String getErrorMessage(Throwable throwable) {

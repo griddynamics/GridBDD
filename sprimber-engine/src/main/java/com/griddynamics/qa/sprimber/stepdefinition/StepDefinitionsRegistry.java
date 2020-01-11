@@ -78,10 +78,10 @@ public class StepDefinitionsRegistry {
     }
 
     private Node provideExecutableNode(StepDefinition stepDefinition) {
-        Node.ExecutableNode executableNode = new Node.ExecutableNode("step");
-        executableNode.setName(stepDefinition.getName());
-        executableNode.setMethod(stepDefinition.getMethod());
-        executableNode.setName(stepDefinition.getMethod().getName());
-        return executableNode;
+//        Node.ExecutableNode executableNode = new Node.ExecutableNode("step");
+//        executableNode.setName(stepDefinition.getName());
+//        executableNode.setMethod(stepDefinition.getMethod());
+//        executableNode.setName(stepDefinition.getMethod().getName());
+        return null;
     }
 }

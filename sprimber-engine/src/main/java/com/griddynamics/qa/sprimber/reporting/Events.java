@@ -36,42 +36,42 @@ import org.springframework.context.ApplicationEvent;
 class Events {
 
     @Getter
-    static abstract class ContainerNodeEvent extends ApplicationEvent {
+    static abstract class NodeEvent extends ApplicationEvent {
 
-        private Node.ContainerNode containerNode;
-
-        /**
-         * Create a new ApplicationEvent.
-         *
-         * @param source the object on which the event initially occurred (never {@code null})
-         */
-        public ContainerNodeEvent(Object source) {
-            super(source);
-        }
-
-        public ContainerNodeEvent(Object source, Node.ContainerNode containerNode) {
-            super(source);
-            this.containerNode = containerNode;
-        }
-    }
-
-    @Getter
-    static abstract class ExecutableNodeEvent extends ApplicationEvent {
-
-        private Node.ExecutableNode executableNode;
+        private Node node;
 
         /**
          * Create a new ApplicationEvent.
          *
          * @param source the object on which the event initially occurred (never {@code null})
          */
-        public ExecutableNodeEvent(Object source) {
+        public NodeEvent(Object source) {
             super(source);
         }
 
-        public ExecutableNodeEvent(Object source, Node.ExecutableNode executableNode) {
+        public NodeEvent(Object source, Node node) {
             super(source);
-            this.executableNode = executableNode;
+            this.node = node;
         }
     }
+
+//    @Getter
+//    static abstract class ExecutableNodeEvent extends ApplicationEvent {
+//
+//        private Node.ExecutableNode executableNode;
+//
+//        /**
+//         * Create a new ApplicationEvent.
+//         *
+//         * @param source the object on which the event initially occurred (never {@code null})
+//         */
+//        public ExecutableNodeEvent(Object source) {
+//            super(source);
+//        }
+//
+//        public ExecutableNodeEvent(Object source, Node.ExecutableNode executableNode) {
+//            super(source);
+//            this.executableNode = executableNode;
+//        }
+//    }
 }

@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -35,9 +34,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 /**
  * @author fparamonov
@@ -47,153 +44,91 @@ public class TreeSuiteExecutorTest {
 
     private TreeSuiteExecutor treeSuiteExecutor;
     private final TestCaseBuilder testCaseBuilder = new TestCaseBuilder();
+    private final TreeExecutorContext context = new TreeExecutorContext();
     private final StubbedEventPublisher stubbedEventPublisher = Mockito.spy(new StubbedEventPublisher());
     private final StubbedNodeInvoker stubbedNodeInvoker = Mockito.spy(new StubbedNodeInvoker());
 
     @Before
     public void setUp() throws Exception {
-        NodeFallbackManager nodeFallbackManager = Mockito.mock(NodeFallbackManager.class);
         Map<String, Executor> childSubNodesExecutor = new HashMap<>();
 
         childSubNodesExecutor.put("testExecutor", Executors.newFixedThreadPool(3));
 
-        Mockito.when(nodeFallbackManager.parseThrowable(any(RuntimeException.class))).thenReturn(Node.Status.ERROR);
         treeSuiteExecutor = Mockito.spy(
-                new TreeSuiteExecutor(stubbedNodeInvoker, nodeFallbackManager, childSubNodesExecutor, stubbedEventPublisher));
+                new TreeSuiteExecutor(stubbedNodeInvoker, childSubNodesExecutor, context, stubbedEventPublisher));
     }
 
     @Test
-    public void smoke() {
-        Node testCase = testCaseBuilder.buildTestCase();
+    public void singleStepNode() {
+        Node singleStepNode = testCaseBuilder.buildSingleStep();
         InOrder inOrder = Mockito.inOrder(stubbedNodeInvoker);
-        treeSuiteExecutor.executeRoot(testCase);
-        inOrder.verify(stubbedNodeInvoker, times(3)).before();
+        treeSuiteExecutor.executeRoot(singleStepNode);
         inOrder.verify(stubbedNodeInvoker, times(1)).step();
-        inOrder.verify(stubbedNodeInvoker, times(3)).after();
     }
 
     @Test
-    public void smokeTwoSteps() {
-        Node testCase = testCaseBuilder.buildTestCaseWithTestWithTwoStep();
+    public void singleWrappedStep() {
+        Node singleStepNode = testCaseBuilder.buildSingleWrappedStep();
         InOrder inOrder = Mockito.inOrder(stubbedNodeInvoker);
-        treeSuiteExecutor.executeRoot(testCase);
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).step();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).step();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).after();
+        treeSuiteExecutor.executeRoot(singleStepNode);
+        inOrder.verify(stubbedNodeInvoker, times(1)).before();
+        inOrder.verify(stubbedNodeInvoker, times(1)).step();
+        inOrder.verify(stubbedNodeInvoker, times(1)).after();
     }
 
     @Test
-    public void smokeTwoTestWithTwoStep() {
-        Node testCase = testCaseBuilder.buildTestCaseWithTwoTestWithTwoStep();
-//        InOrder inOrder = Mockito.inOrder(stubbedNodeInvoker);
-        treeSuiteExecutor.executeRoot(testCase);
-        verify(stubbedNodeInvoker, times(7)).before();
-        verify(stubbedNodeInvoker, times(4)).step();
-        verify(stubbedNodeInvoker, times(7)).after();
-    }
-
-    @Test
-    public void smokeTwoStepsDoubleHooks() {
-        Node testCase = testCaseBuilder.buildTestCaseWithTestWithTwoStepDoubleHooks();
+    public void regularAndExceptionalStep() {
+        Node testNode = testCaseBuilder.buildTestWithRegularAndExceptionalWrappedStep();
         InOrder inOrder = Mockito.inOrder(stubbedNodeInvoker);
-        treeSuiteExecutor.executeRoot(testCase);
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).step();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).step();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).after();
+        treeSuiteExecutor.executeRoot(testNode);
+        inOrder.verify(stubbedNodeInvoker, times(1)).before();
+        inOrder.verify(stubbedNodeInvoker, times(1)).exceptionalStep();
+        inOrder.verify(stubbedNodeInvoker, times(1)).after();
     }
 
     @Test
-    public void justException() {
-        Node testCase = testCaseBuilder.buildTestCaseWithJustException();
+    public void singleWrappedStepWithExceptionalBefore() {
+        Node stepNode = testCaseBuilder.buildSingleWrappedStepWithExceptionalBefore();
         InOrder inOrder = Mockito.inOrder(stubbedNodeInvoker);
-        Node.Status result = treeSuiteExecutor.executeRoot(testCase);
-        Assertions.assertThat(result).isEqualTo(Node.Status.ERROR);
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).exceptionalStep();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).after();
-    }
-
-    @Test
-    public void smokeException() {
-        Node testCase = testCaseBuilder.buildTestCaseWithException();
-        InOrder inOrder = Mockito.inOrder(stubbedNodeInvoker);
-        Node.Status result = treeSuiteExecutor.executeRoot(testCase);
-        Assertions.assertThat(result).isEqualTo(Node.Status.ERROR);
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).step();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).exceptionalStep();
-        inOrder.verify(stubbedNodeInvoker).after();
+        treeSuiteExecutor.executeRoot(stepNode);
+        inOrder.verify(stubbedNodeInvoker, times(1)).before();
+        inOrder.verify(stubbedNodeInvoker, times(1)).exceptionalStep();
         inOrder.verify(stubbedNodeInvoker, times(0)).before();
-        inOrder.verify(stubbedNodeInvoker, times(0)).step();
-        inOrder.verify(stubbedNodeInvoker, times(5)).skippedStep();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).after();
+        inOrder.verify(stubbedNodeInvoker, times(1)).step();
+        inOrder.verify(stubbedNodeInvoker, times(1)).after();
     }
 
     @Test
-    public void exceptionInBeforeHook() {
-        Node testCase = testCaseBuilder.buildTestCaseWithBeforeStepException();
+    public void singleWrappedStepWithErrorOnBeforeSkipTarget() {
+        Node stepNode = testCaseBuilder.buildSingleWrappedStepWithExceptionalBeforeSkipTarget();
         InOrder inOrder = Mockito.inOrder(stubbedNodeInvoker);
-        Node.Status result = treeSuiteExecutor.executeRoot(testCase);
-        Assertions.assertThat(result).isEqualTo(Node.Status.ERROR);
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).step();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).exceptionalStep();
-        inOrder.verify(stubbedNodeInvoker).step();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker, times(0)).before();
+        treeSuiteExecutor.executeRoot(stepNode);
+        inOrder.verify(stubbedNodeInvoker, times(1)).before();
+        inOrder.verify(stubbedNodeInvoker, times(1)).exceptionalStep();
         inOrder.verify(stubbedNodeInvoker, times(0)).step();
-        inOrder.verify(stubbedNodeInvoker, times(5)).skippedStep();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).after();
+        inOrder.verify(stubbedNodeInvoker, times(1)).after();
     }
 
     @Test
-    public void exceptionInBeforeHookSkipOnError() {
-        Node testCase = testCaseBuilder.buildTestCaseWithBeforeStepExceptionSkipOnError();
+    public void singleWrappedStepWithErrorOnBeforeSkipTargetAndAfter() {
+        Node stepNode = testCaseBuilder.buildSingleWrappedStepWithExceptionalBeforeSkipTargetAndAfter();
         InOrder inOrder = Mockito.inOrder(stubbedNodeInvoker);
-        Node.Status result = treeSuiteExecutor.executeRoot(testCase);
-        Assertions.assertThat(result).isEqualTo(Node.Status.ERROR);
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).before();
-        inOrder.verify(stubbedNodeInvoker).step();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).exceptionalStep();
+        treeSuiteExecutor.executeRoot(stepNode);
+        inOrder.verify(stubbedNodeInvoker, times(1)).before();
+        inOrder.verify(stubbedNodeInvoker, times(1)).exceptionalStep();
         inOrder.verify(stubbedNodeInvoker, times(0)).step();
-        inOrder.verify(stubbedNodeInvoker, times(0)).before();
-        inOrder.verify(stubbedNodeInvoker, times(0)).step();
-        inOrder.verify(stubbedNodeInvoker, times(8)).skippedStep();
-        inOrder.verify(stubbedNodeInvoker).after();
-        inOrder.verify(stubbedNodeInvoker).after();
+        inOrder.verify(stubbedNodeInvoker, times(0)).after();
+    }
+
+    @Test
+    public void singleWrappedStepWithExceptionalAfter() {
+        Node stepNode = testCaseBuilder.buildSingleWrappedStepWithExceptionalAfter();
+        InOrder inOrder = Mockito.inOrder(stubbedNodeInvoker);
+        treeSuiteExecutor.executeRoot(stepNode);
+        inOrder.verify(stubbedNodeInvoker, times(1)).before();
+        inOrder.verify(stubbedNodeInvoker, times(1)).step();
+        inOrder.verify(stubbedNodeInvoker, times(1)).after();
+        inOrder.verify(stubbedNodeInvoker, times(1)).exceptionalStep();
+        inOrder.verify(stubbedNodeInvoker, times(0)).after();
     }
 }

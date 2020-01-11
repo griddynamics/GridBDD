@@ -44,14 +44,14 @@ public class FlowOrchestrator {
 
     @EventListener
     public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
-        if ("test".equals(startedEvent.getContainerNode().getType())) {
-            TestCaseContextHolder.setupNewContext(startedEvent.getContainerNode().getRuntimeId());
+        if ("test".equals(startedEvent.getNode().getRole())) {
+            TestCaseContextHolder.setupNewContext(startedEvent.getNode().getRuntimeId().toString());
         }
     }
 
     @EventListener
     public void containerNodeFinished(SprimberEventPublisher.ContainerNodeFinishedEvent finishedEvent) {
-        if ("test".equals(finishedEvent.getContainerNode().getType())) {
+        if ("test".equals(finishedEvent.getNode().getRole())) {
             TestCaseContextHolder.cleanContext(beanFactory);
         }
     }

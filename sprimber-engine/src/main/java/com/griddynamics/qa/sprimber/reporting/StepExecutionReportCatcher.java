@@ -24,8 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting;
 
-import com.griddynamics.qa.sprimber.stepdefinition.SpringStepDefinitionsFactory;
 import com.griddynamics.qa.sprimber.engine.NodeFallbackManager;
+import com.griddynamics.qa.sprimber.stepdefinition.SpringStepDefinitionsFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
