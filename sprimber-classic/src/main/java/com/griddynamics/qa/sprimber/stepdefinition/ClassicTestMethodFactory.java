@@ -24,47 +24,28 @@ $Id:
 
 package com.griddynamics.qa.sprimber.stepdefinition;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationContext;
+import com.griddynamics.qa.sprimber.discovery.TestMapping;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author fparamonov
  */
 
-@Slf4j
-@RequiredArgsConstructor
-public final class SpringStepDefinitionsFactory extends StepDefinitionsAbstractFactory {
+class ClassicTestMethodFactory extends TestMethodAbstractFactory {
 
-    private final ApplicationContext applicationContext;
-    private final List<StepDefinitionResolver> resolvers;
-    private final List<MarkerAnnotationProvider> markerAnnotationProviders;
-
-    @Override
-    List<Method> getMethodCandidates() {
-        Map<String, Object> targetBeans = new HashMap<>();
-        List<Class<? extends Annotation>> allMarkerAnnotations = markerAnnotationProviders.stream()
-                .map(MarkerAnnotationProvider::provide)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
-        allMarkerAnnotations.forEach(aClass -> targetBeans.putAll(applicationContext.getBeansWithAnnotation(aClass)));
-        return targetBeans.values().stream()
-                .flatMap(bean -> Arrays.stream(bean.getClass().getDeclaredMethods()))
-                .collect(Collectors.toList());
+    public ClassicTestMethodFactory() {
+        mapping.put(TestMapping.class, "Generic Test");
     }
 
     @Override
-    List<StepDefinitionResolver> resolvers() {
-        return resolvers;
+    protected TestMethod build(Method method, Annotation annotation) {
+        String name = buildName(method);
+        return new TestMethod(name, mapping.get(annotation.annotationType()), name, method);
     }
 
-    interface MarkerAnnotationProvider {
-
-        List<Class<? extends Annotation>> provide();
+    private String buildName(Method method) {
+        return method.getDeclaringClass().getCanonicalName() + "#" + method.getName();
     }
 }

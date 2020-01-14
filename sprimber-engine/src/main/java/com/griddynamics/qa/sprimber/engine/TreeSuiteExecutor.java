@@ -55,7 +55,8 @@ class TreeSuiteExecutor implements TreeExecutor {
     private final Map<String, Consumer<Node>> eventsPublisherByName = new HashMap<>();
 
     public TreeSuiteExecutor(NodeInvoker nodeInvoker,
-                             Map<String, Executor> childExecutors, TreeExecutorContext context,
+                             Map<String, Executor> childExecutors,
+                             TreeExecutorContext context,
                              NodeExecutionEventsPublisher eventsPublisher) {
         this.nodeInvoker = nodeInvoker;
         this.context = context;

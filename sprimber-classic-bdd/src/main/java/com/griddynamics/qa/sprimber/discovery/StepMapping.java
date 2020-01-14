@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
 import org.springframework.core.annotation.AliasFor;
 
 import java.lang.annotation.*;
@@ -61,7 +60,7 @@ public @interface StepMapping {
      *
      * @return the one of the supported step types
      */
-    StepDefinition.StepType stepType();
+//    StepDefinition.StepType stepType();
 
     /**
      * The execution phase of annotated step-method. Note that multiple phases work better for "hidden" steps
@@ -70,5 +69,5 @@ public @interface StepMapping {
      *
      * @return one or several phases where this step can be used
      */
-    StepDefinition.StepPhase[] stepPhase() default StepDefinition.StepPhase.STEP;
+//    StepDefinition.StepPhase[] stepPhase() default StepDefinition.StepPhase.STEP;
 }

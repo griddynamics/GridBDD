@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.step;
 
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.StepMapping;
 import org.springframework.core.annotation.AliasFor;
 
@@ -37,7 +36,7 @@ import java.lang.annotation.*;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@StepMapping(stepType = StepDefinition.StepType.WHEN)
+//@StepMapping(stepType = StepDefinition.StepType.WHEN)
 public @interface WhenMapping {
 
     /**
@@ -52,9 +51,9 @@ public @interface WhenMapping {
     @AliasFor(annotation = StepMapping.class)
     String name() default "";
 
-    /**
-     * Alias for {@link StepMapping#stepPhase}.
-     */
-    @AliasFor(annotation = StepMapping.class)
-    StepDefinition.StepPhase[] stepPhase() default StepDefinition.StepPhase.STEP;
+//    /**
+//     * Alias for {@link StepMapping#stepPhase}.
+//     */
+//    @AliasFor(annotation = StepMapping.class)
+//    StepDefinition.StepPhase[] stepPhase() default StepDefinition.StepPhase.STEP;
 }

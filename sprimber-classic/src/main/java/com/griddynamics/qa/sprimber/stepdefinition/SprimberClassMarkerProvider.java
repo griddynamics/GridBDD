@@ -25,7 +25,6 @@ $Id:
 package com.griddynamics.qa.sprimber.stepdefinition;
 
 import com.griddynamics.qa.sprimber.discovery.TestController;
-import com.griddynamics.qa.sprimber.stepdefinition.SpringStepDefinitionsFactory;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -36,7 +35,7 @@ import java.util.List;
  * @author fparamonov
  */
 
-class SprimberClassMarkerProvider implements SpringStepDefinitionsFactory.MarkerAnnotationProvider {
+class SprimberClassMarkerProvider implements StepClassAnnotationsProvider {
 
     @Override
     public List<Class<? extends Annotation>> provide() {

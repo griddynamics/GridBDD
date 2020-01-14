@@ -32,6 +32,6 @@ import org.springframework.context.annotation.Import;
  */
 
 @Configuration
-@Import({CucumberClassMarkerProvider.class, CucumberStepDefinitionResolver.class})
+@Import({CucumberClassMarkerProvider.class, CucumberTestMethodFactory.class})
 public class CucumberStepDefinitionConfiguration {
 }

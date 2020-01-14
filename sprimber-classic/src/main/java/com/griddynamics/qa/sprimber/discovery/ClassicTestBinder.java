@@ -25,6 +25,8 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.stepdefinition.TestMethod;
+import com.griddynamics.qa.sprimber.stepdefinition.TestMethodRegistry;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -39,20 +41,33 @@ import static com.griddynamics.qa.sprimber.engine.Node.*;
  */
 
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-class ClassicTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Method> {
+class ClassicTestBinder {
 
-    private final ClassicStepFactory classicStepFactory;
+    private final TestMethodRegistry testMethodRegistry;
 
-    @Override
-    public Node bind(Method testCandidate) {
-        Node testNode = new Node.ContainerNode("test",DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
+    void bind(Node parentNode, Method testCandidate) {
         TestMapping testMapping = AnnotationUtils.getAnnotation(testCandidate, TestMapping.class);
         String testName = buildTestName(testCandidate, testMapping);
-        testNode.setName(testName);
-        testNode.setHistoryId(buildTestHistoryId(testCandidate));
-        testNode.setDescription(String.valueOf(AnnotationUtils.getValue(testMapping, "description")));
-        testNode.addChild(classicStepFactory.provideStepNode(testCandidate));
-        return testNode;
+        Builder builder = new Builder()
+                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR)
+                .withRole("test")
+                .withName(testName)
+                .withDescription(String.valueOf(AnnotationUtils.getValue(testMapping, "description")))
+                .withHistoryId(buildTestHistoryId(testCandidate));
+        Node test = parentNode.addChild(builder);
+        provideStepNode(test, testCandidate);
+    }
+
+    private void provideStepNode(Node parentNode, Method method) {
+        TestMethod testMethod = testMethodRegistry.streamAllTestMethods()
+                .filter(tm -> method.equals(tm.getMethod()))
+                .findFirst().orElseThrow(() -> new RuntimeException("No methods found"));
+        Builder builder = new Builder()
+                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR)
+                .withRole("step")
+                .withName(method.getName())
+                .withMethod(testMethod.getMethod());
+        parentNode.addTarget(builder);
     }
 
     private String buildTestName(Method method, TestMapping testMapping) {

@@ -41,7 +41,7 @@ import java.util.concurrent.CompletionException;
 public class NodeFallbackManager {
 
     private final Set<String> skippedExceptionNames;
-    private final Set<String> failedExceptionNames;
+    private final Set<String> nonPrintableExceptions;
     private final List<Class<? extends Annotation>> pendingExceptionAnnotations;
 
     /**

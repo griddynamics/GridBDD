@@ -17,19 +17,49 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.configuration.SprimberProperties;
+import io.cucumber.tagexpressions.Expression;
+import io.cucumber.tagexpressions.TagExpressionParser;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
+
+import javax.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author fparamonov
  */
-interface StepFactory<SC> {
 
-    Node provideStepNode(SC stepCandidate);
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+class CucumberTagFilter implements TagFilter {
+
+    private final SprimberProperties sprimberProperties;
+    private List<Expression> expressions = new ArrayList<>();
+
+    @PostConstruct
+    void initExpressions() {
+        TagExpressionParser tagExpressionParser = new TagExpressionParser();
+        expressions.addAll(sprimberProperties.getTagFilters().stream().map(tagExpressionParser::parse).collect(Collectors.toList()));
+    }
+
+    @Override
+    public boolean filter(List<String> tags) {
+        return expressions.stream().allMatch(expression -> expression.evaluate(tags));
+    }
+
+    boolean filter(String tagsAsCsv) {
+        List<String> tags = Arrays.asList(StringUtils.tokenizeToStringArray(tagsAsCsv, ","));
+        return tags.isEmpty() || filter(tags);
+    }
 }

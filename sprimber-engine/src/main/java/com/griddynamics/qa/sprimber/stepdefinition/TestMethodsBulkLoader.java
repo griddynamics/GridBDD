@@ -17,22 +17,42 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
 package com.griddynamics.qa.sprimber.stepdefinition;
 
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import lombok.RequiredArgsConstructor;
+
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * @author fparamonov
  */
 
-@Configuration
-@Import({ClassicTestMethodFactory.class, SprimberClassMarkerProvider.class
-})
-public class ClassicStepDefinitionConfiguration {
+@RequiredArgsConstructor
+public class TestMethodsBulkLoader {
+
+    private final List<TestMethodFactory> factories;
+    private final TestMethodRegistry testMethodRegistry;
+
+    /**
+     * Method will apply all available step definition resolvers into all applicable methods
+     * and each factory register final test method in common test method factory
+     * <p>
+     * the collection of the step definitions keyed by step definition hash
+     */
+    public void load(Stream<Method> methodStream) {
+        methodStream
+                .flatMap(method -> factories.stream()
+                        .filter(factory -> factory.accept(method))
+                        .map(factory -> factory.build(method))
+                        .flatMap(Collection::stream))
+                .forEach(testMethod -> testMethodRegistry.registerTestMethod(testMethod, TestMethod.IdBuilder.calculateUniqueId(testMethod)));
+    }
 }
