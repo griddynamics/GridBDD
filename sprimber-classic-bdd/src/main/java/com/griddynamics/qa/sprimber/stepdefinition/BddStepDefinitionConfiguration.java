@@ -32,6 +32,6 @@ import org.springframework.context.annotation.Import;
  */
 
 @Configuration
-@Import({ClassicBddStepDefinitionResolver.class, SprimberBddClassMarkerProvider.class})
+@Import({ClassicBddTestMethodFactory.class, SprimberBddClassMarkerProvider.class})
 public class BddStepDefinitionConfiguration {
 }

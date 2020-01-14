@@ -32,6 +32,6 @@ import org.springframework.context.annotation.Import;
  */
 
 @Configuration
-@Import({ClassicStepFactory.class, ClassicSuiteDiscovery.class, ClassicTestBinder.class})
+@Import({ClassicSuiteDiscovery.class, ClassicTestBinder.class})
 public class ClassicDiscoveryConfiguration {
 }

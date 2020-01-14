@@ -24,7 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
+import com.griddynamics.qa.sprimber.stepdefinition.TestMethod;
 import gherkin.pickles.*;
 import io.cucumber.stepexpression.Argument;
 import io.cucumber.stepexpression.StepExpression;
@@ -54,13 +54,13 @@ class StepMatcher {
      * If arguments present(not null) then step match the pattern
      *
      * @param pickleStep - candidate for match
-     * @param stepDefinition - holder for pattern
+     * @param testMethod - prepared test methods that hold all required information
      * @param types - target arguments parameters
      * @return - optional of arguments - that mean once present then match.
      */
-    Optional<List<Argument>> matchAndGetArgumentsFrom(PickleStep pickleStep, StepDefinition stepDefinition, Type... types) {
+    Optional<List<Argument>> matchAndGetArgumentsFrom(PickleStep pickleStep, TestMethod testMethod, Type... types) {
         StepExpression stepExpression = stepExpressionsByBindingPattern
-                .computeIfAbsent(stepDefinition.getBindingTextPattern(), stepExpressionFactory::createExpression);
+                .computeIfAbsent(testMethod.getTextPattern(), stepExpressionFactory::createExpression);
 
         if (pickleStep.getArgument().isEmpty()) {
             return Optional.ofNullable(stepExpression.match(pickleStep.getText(), types));

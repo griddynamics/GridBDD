@@ -54,24 +54,4 @@ class Events {
             this.node = node;
         }
     }
-
-//    @Getter
-//    static abstract class ExecutableNodeEvent extends ApplicationEvent {
-//
-//        private Node.ExecutableNode executableNode;
-//
-//        /**
-//         * Create a new ApplicationEvent.
-//         *
-//         * @param source the object on which the event initially occurred (never {@code null})
-//         */
-//        public ExecutableNodeEvent(Object source) {
-//            super(source);
-//        }
-//
-//        public ExecutableNodeEvent(Object source, Node.ExecutableNode executableNode) {
-//            super(source);
-//            this.executableNode = executableNode;
-//        }
-//    }
 }

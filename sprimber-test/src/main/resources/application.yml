@@ -9,4 +9,4 @@ sprimber:
       printer:
         enable: true
     tagFilters:
-      - "@scope or @echo or @labels"
+      - "@scope or @echo or @labels or @code_style"

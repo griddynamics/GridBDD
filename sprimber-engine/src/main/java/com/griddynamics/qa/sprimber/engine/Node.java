@@ -40,7 +40,6 @@ public class Node {
     private String description;
     private String historyId;
     private final String role;
-    private final Meta meta = new Meta();
     private final Map<String, Object> attributes = new HashMap<>();
 
     // core related properties
@@ -78,6 +77,19 @@ public class Node {
         this.phase = Phase.CREATED;
     }
 
+    private Node(Builder builder, UUID parentId, Type type) {
+        this.type = type;
+        this.parentId = parentId;
+        this.role = builder.role;
+        this.name = builder.name;
+        this.description = builder.description;
+        this.historyId = builder.historyId;
+        this.subNodeExecutionModes = builder.subNodeExecutionModes;
+        this.method = builder.method;
+        this.parameters.putAll(builder.parameters);
+        this.attributes.putAll(builder.attributes);
+    }
+
     public static Node createRootNode(String role, int subNodesSkippingFlags) {
         return new Node(UUID.randomUUID(), Type.HOLDER, role, null, subNodesSkippingFlags);
     }
@@ -95,7 +107,7 @@ public class Node {
     }
 
     public String getCurrentState() {
-        return "[ Is bypassed: '" + isBypassed + "'; Status: '" + status + "'; Phase: '" + phase + "' ]";
+        return "[ Status: '" + status + "'; Phase: '" + phase + "'; Is bypassed: '" + isBypassed + "'; ]";
     }
 
     public String getName() {
@@ -108,6 +120,10 @@ public class Node {
 
     public Map<String, Object> getMethodParameters() {
         return new HashMap<>(parameters);
+    }
+
+    public Optional<Throwable> getThrowable() {
+        return Optional.ofNullable(throwable);
     }
 
     public boolean isReadyForInvoke() {
@@ -155,9 +171,21 @@ public class Node {
         return Phase.COMPLETED.equals(phase) && Status.ERROR.equals(status);
     }
 
+    public Node addChild(Builder builder) {
+        Node node = new Node(builder, this.runtimeId, Type.HOLDER);
+        this.children.computeIfAbsent(Relation.CHILD, k -> new ArrayList<>()).add(node);
+        return node;
+    }
+
     public Node addChild(String role, int subNodesSkippingFlags) {
         Node node = new Node(this.runtimeId, Type.HOLDER, role, null, subNodesSkippingFlags);
         this.children.computeIfAbsent(Relation.CHILD, k -> new ArrayList<>()).add(node);
+        return node;
+    }
+
+    public Node addTarget(Builder builder) {
+        Node node = new Node(builder, this.runtimeId, Type.INVOKABLE);
+        this.children.computeIfAbsent(Relation.TARGET, k -> new ArrayList<>()).add(node);
         return node;
     }
 
@@ -167,9 +195,21 @@ public class Node {
         return node;
     }
 
+    public Node addBefore(Builder builder) {
+        Node node = new Node(builder, this.runtimeId, Type.INVOKABLE);
+        this.children.computeIfAbsent(Relation.BEFORE, k -> new ArrayList<>()).add(node);
+        return node;
+    }
+
     public Node addBefore(String role, Method method) {
         Node node = new Node(this.runtimeId, Type.INVOKABLE, role, method, 0);
         this.children.computeIfAbsent(Relation.BEFORE, k -> new ArrayList<>()).add(node);
+        return node;
+    }
+
+    public Node addAfter(Builder builder) {
+        Node node = new Node(builder, this.runtimeId, Type.INVOKABLE);
+        this.children.computeIfAbsent(Relation.AFTER, k -> new ArrayList<>()).add(node);
         return node;
     }
 
@@ -387,6 +427,61 @@ public class Node {
             return Optional.ofNullable(this.get(key))
                     .map(list -> list.get(0))
                     .orElse(defaultValue);
+        }
+    }
+
+    public static final class Builder {
+
+        private int subNodeExecutionModes;
+        private String name;
+        private String description;
+        private String historyId;
+        private String role;
+        private Method method;
+        private final Map<String, Object> attributes = new HashMap<>();
+        private final Map<String, Object> parameters = new HashMap<>();
+
+        public Builder() {
+        }
+
+        public Builder withName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder withDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder withHistoryId(String historyId) {
+            this.historyId = historyId;
+            return this;
+        }
+
+        public Builder withRole(String role) {
+            this.role = role;
+            return this;
+        }
+
+        public Builder withSubNodeModes(int subNodeExecutionModes) {
+            this.subNodeExecutionModes = subNodeExecutionModes;
+            return this;
+        }
+
+        public Builder withAttribute(String attributeName, Object attributeValue) {
+            this.attributes.put(attributeName, attributeValue);
+            return this;
+        }
+
+        public Builder withParameters(Map<String, Object> methodParameters) {
+            this.parameters.putAll(methodParameters);
+            return this;
+        }
+
+        public Builder withMethod(Method method) {
+            this.method = method;
+            return this;
         }
     }
 }

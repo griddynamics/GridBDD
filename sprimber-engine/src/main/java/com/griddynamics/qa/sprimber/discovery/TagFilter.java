@@ -24,34 +24,13 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
-import com.griddynamics.qa.sprimber.engine.Node;
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionsRegistry;
-import lombok.RequiredArgsConstructor;
-
-import java.lang.reflect.Method;
-
-import static com.griddynamics.qa.sprimber.engine.Node.*;
+import java.util.List;
 
 /**
  * @author fparamonov
  */
 
-@RequiredArgsConstructor
-class ClassicStepFactory implements StepFactory<Method> {
+public interface TagFilter {
 
-    private final StepDefinitionsRegistry stepDefinitionsRegistry;
-
-    @Override
-    public Node provideStepNode(Method method) {
-        Node stepContainerNode = new Node.ContainerNode("stepContainer", BYPASS_BEFORE_WHEN_BYPASS_MODE | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY);
-        Node.ExecutableNode executableNode = new Node.ExecutableNode("step");
-        StepDefinition stepDefinition = stepDefinitionsRegistry.streamAllDefinitions()
-                .filter(sd -> method.equals(sd.getMethod()))
-                .findFirst().orElseThrow(() -> new RuntimeException("No methods found"));
-        executableNode.setMethod(stepDefinition.getMethod());
-        executableNode.setName(method.getName());
-        stepContainerNode.addTarget(executableNode);
-        return stepContainerNode;
-    }
+    boolean filter(List<String> tags);
 }

@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.stepdefinition;
 
-import lombok.Data;
 import org.springframework.util.DigestUtils;
 
 import java.lang.reflect.Method;
@@ -32,30 +31,59 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The step definition presents the referenced Java method along with the binding text pattern
- * In Sprimber there is no actual difference between hooks and steps, hooks treated as "hidden" steps
+ * The sort of wrapper of regular Java method with additional information that can be extracted from
+ * available method annotations and stored inside
  *
  * @author fparamonov
  */
 
-@Data
-public class StepDefinition {
+public class TestMethod {
 
-    private String name;
-    private String bindingTextPattern;
-    private Method method;
-    private StepType stepType;
-    private StepPhase stepPhase;
-    private Map<String, Object> attributes = new HashMap<>();
+    private final String name;
+    private final String style;
+    private final String textPattern;
+    private final Method method;
+    private final Map<String, Object> attributes = new HashMap<>();
 
-    public StepDefinition() {
+    public TestMethod(String name, String style, String textPattern, Method method) {
+        this.name = name;
+        this.style = style;
+        this.textPattern = textPattern;
+        this.method = method;
     }
 
-    public String getHash() {
-        String uniqueName = method.getDeclaringClass().getCanonicalName() + "#" +
-                method.getName() + "#" +
-                method.getParameterCount();
-        return DigestUtils.md5DigestAsHex(uniqueName.getBytes());
+    public Object getAttribute(String attributeName) {
+        return this.attributes.get(attributeName);
+    }
+
+    public void addAttribute(String attributeName, Object attributeValue) {
+        this.attributes.put(attributeName, attributeValue);
+    }
+
+    public String getTextPattern() {
+        return this.textPattern;
+    }
+
+    public String getStyle() {
+        return style;
+    }
+
+    public Method getMethod() {
+        return this.method;
+    }
+
+    public static class IdBuilder {
+
+        /**
+         * Method that helps to calculate unique id, executions independent
+         * @return string that represent unique id.
+         */
+        public static String calculateUniqueId(TestMethod testMethod) {
+            String uniqueName = testMethod.getMethod().getDeclaringClass().getCanonicalName() + "#" +
+                    testMethod.getMethod().getName() + "#" +
+                    testMethod.getMethod().getParameterCount();
+            return DigestUtils.md5DigestAsHex(uniqueName.getBytes());
+        }
     }
 
     /**

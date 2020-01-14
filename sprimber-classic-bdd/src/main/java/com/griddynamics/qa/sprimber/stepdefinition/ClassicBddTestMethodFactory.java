@@ -30,9 +30,10 @@ import java.lang.reflect.Method;
 /**
  * @author fparamonov
  */
-public class ClassicBddStepDefinitionResolver extends StepDefinitionsAbstractResolver {
+public class ClassicBddTestMethodFactory extends TestMethodAbstractFactory {
+
     @Override
-    protected StepDefinition applyCustomTransformation(StepDefinition stepDefinition, Method method, Annotation annotation) {
-        return stepDefinition;
+    protected TestMethod build(Method method, Annotation annotation) {
+        return new TestMethod("method", "generic step", "generic step", method);
     }
 }

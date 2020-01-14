@@ -32,6 +32,6 @@ import org.springframework.context.annotation.Import;
  */
 
 @Configuration
-@Import({SpringNodeInvoker.class, NodeFallbackManager.class, TreeSuiteExecutor.class})
+@Import({SpringNodeInvoker.class, TreeSuiteExecutor.class, TreeExecutorContext.class})
 public class EngineSpringConfiguration {
 }

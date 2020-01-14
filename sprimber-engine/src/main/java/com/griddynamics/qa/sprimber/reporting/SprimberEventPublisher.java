@@ -39,69 +39,102 @@ public class SprimberEventPublisher implements NodeExecutionEventsPublisher {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
+    public void stageFiltered(Node node) {
+        NodeFilteredEvent nodeFilteredEvent = new NodeFilteredEvent(this, node);
+        eventPublisher.publishEvent(nodeFilteredEvent);
+    }
+
+    @Override
+    public void stagePrepared(Node node) {
+        NodePreparationDoneEvent nodePreparationDoneEvent = new NodePreparationDoneEvent(this, node);
+        eventPublisher.publishEvent(nodePreparationDoneEvent);
+    }
+
+    @Override
     public void stageStarted(Node node) {
-        ContainerNodeStartedEvent containerNodeStartedEvent = new ContainerNodeStartedEvent(this, (Node) node);
+        ContainerNodeStartedEvent containerNodeStartedEvent = new ContainerNodeStartedEvent(this,  node);
         eventPublisher.publishEvent(containerNodeStartedEvent);
     }
 
     @Override
     public void stageFinished(Node node) {
-        ContainerNodeFinishedEvent containerNodeFinishedEvent = new ContainerNodeFinishedEvent(this, (Node) node);
+        ContainerNodeFinishedEvent containerNodeFinishedEvent = new ContainerNodeFinishedEvent(this,  node);
         eventPublisher.publishEvent(containerNodeFinishedEvent);
     }
 
     @Override
     public void beforeNodeStarted(Node node) {
-        BeforeNodeStartedEvent beforeNodeStartedEvent = new BeforeNodeStartedEvent(this, (Node) node);
+        BeforeNodeStartedEvent beforeNodeStartedEvent = new BeforeNodeStartedEvent(this,  node);
         eventPublisher.publishEvent(beforeNodeStartedEvent);
     }
 
     @Override
     public void beforeNodeCompleted(Node node) {
-        BeforeNodeCompletedEvent beforeNodeCompletedEvent = new BeforeNodeCompletedEvent(this, (Node) node);
+        BeforeNodeCompletedEvent beforeNodeCompletedEvent = new BeforeNodeCompletedEvent(this,  node);
         eventPublisher.publishEvent(beforeNodeCompletedEvent);
     }
 
     @Override
     public void beforeNodeError(Node node) {
-        BeforeNodeErrorEvent beforeNodeErrorEvent = new BeforeNodeErrorEvent(this, (Node) node);
+        BeforeNodeErrorEvent beforeNodeErrorEvent = new BeforeNodeErrorEvent(this,  node);
         eventPublisher.publishEvent(beforeNodeErrorEvent);
     }
 
     @Override
     public void targetNodeStarted(Node node) {
-        TargetNodeStartedEvent targetNodeStartedEvent = new TargetNodeStartedEvent(this, (Node) node);
+        TargetNodeStartedEvent targetNodeStartedEvent = new TargetNodeStartedEvent(this,  node);
         eventPublisher.publishEvent(targetNodeStartedEvent);
     }
 
     @Override
     public void targetNodeCompleted(Node node) {
-        TargetNodeCompletedEvent targetNodeFinishedEvent = new TargetNodeCompletedEvent(this, (Node) node);
+        TargetNodeCompletedEvent targetNodeFinishedEvent = new TargetNodeCompletedEvent(this,  node);
         eventPublisher.publishEvent(targetNodeFinishedEvent);
     }
 
     @Override
     public void targetNodeError(Node node) {
-        TargetNodeErrorEvent targetNodeFinishedEvent = new TargetNodeErrorEvent(this, (Node) node);
+        TargetNodeErrorEvent targetNodeFinishedEvent = new TargetNodeErrorEvent(this,  node);
         eventPublisher.publishEvent(targetNodeFinishedEvent);
     }
 
     @Override
     public void afterNodeStarted(Node node) {
-        AfterNodeStartedEvent afterNodeStartedEvent = new AfterNodeStartedEvent(this, (Node) node);
+        AfterNodeStartedEvent afterNodeStartedEvent = new AfterNodeStartedEvent(this,  node);
         eventPublisher.publishEvent(afterNodeStartedEvent);
     }
 
     @Override
     public void afterNodeCompleted(Node node) {
-        AfterNodeCompletedEvent afterNodeCompletedEvent = new AfterNodeCompletedEvent(this, (Node) node);
+        AfterNodeCompletedEvent afterNodeCompletedEvent = new AfterNodeCompletedEvent(this,  node);
         eventPublisher.publishEvent(afterNodeCompletedEvent);
     }
 
     @Override
     public void afterNodeError(Node node) {
-        AfterNodeErrorEvent afterNodeErrorEvent = new AfterNodeErrorEvent(this, (Node) node);
+        AfterNodeErrorEvent afterNodeErrorEvent = new AfterNodeErrorEvent(this,  node);
         eventPublisher.publishEvent(afterNodeErrorEvent);
+    }
+
+    public class NodeFilteredEvent extends Events.NodeEvent {
+        public NodeFilteredEvent(Object source) {
+            super(source);
+        }
+
+        public NodeFilteredEvent(Object source, Node node) {
+            super(source, node);
+        }
+    }
+
+    public class NodePreparationDoneEvent extends Events.NodeEvent {
+
+        public NodePreparationDoneEvent(Object source) {
+            super(source);
+        }
+
+        public NodePreparationDoneEvent(Object source, Node node) {
+            super(source, node);
+        }
     }
 
     public class ContainerNodeStartedEvent extends Events.NodeEvent {

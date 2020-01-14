@@ -48,5 +48,5 @@ public @interface TestMapping {
 
     String description() default "";
 
-    String tags() default "";
+    String[] tags() default {};
 }

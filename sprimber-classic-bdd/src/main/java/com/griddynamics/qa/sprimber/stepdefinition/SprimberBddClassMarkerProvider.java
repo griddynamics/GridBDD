@@ -37,7 +37,7 @@ import java.util.List;
  */
 
 @Component
-public class SprimberBddClassMarkerProvider implements SpringStepDefinitionsFactory.MarkerAnnotationProvider {
+public class SprimberBddClassMarkerProvider implements StepClassAnnotationsProvider {
     @Override
     public List<Class<? extends Annotation>> provide() {
         return new ArrayList<>(Collections.singletonList(StepController.class));

@@ -25,28 +25,12 @@ $Id:
 package com.griddynamics.qa.sprimber.stepdefinition;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author fparamonov
  */
-public interface StepDefinitionsFactory {
+public interface StepClassAnnotationsProvider {
 
-    /**
-     * Implementation should perform the search and find the required step definitions
-     *
-     * @return the collection of the step definitions keyed by step definition hash
-     */
-    Map<String, StepDefinition> getStepDefinitions();
-
-    interface StepDefinitionResolver {
-
-        boolean accept(Annotation annotation);
-
-        boolean accept(Method method);
-
-        List<StepDefinition> resolve(Method method);
-    }
+    List<Class<? extends Annotation>> provide();
 }

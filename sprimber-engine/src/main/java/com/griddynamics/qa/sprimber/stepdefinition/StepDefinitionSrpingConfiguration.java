@@ -32,6 +32,6 @@ import org.springframework.context.annotation.Import;
  */
 
 @Configuration
-@Import({StepDefinitionsRegistry.class, SpringStepDefinitionsFactory.class})
+@Import({TestMethodRegistry.class, TestMethodsBulkLoader.class})
 public class StepDefinitionSrpingConfiguration {
 }

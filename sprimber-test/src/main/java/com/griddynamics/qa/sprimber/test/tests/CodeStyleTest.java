@@ -41,7 +41,7 @@ public class CodeStyleTest {
         this.baseEchoSteps = baseEchoSteps;
     }
 
-    @TestMapping(name = "Some simple test", description = "Some test that uses BDD steps")
+    @TestMapping(name = "Some simple test", description = "Some test that uses BDD steps", tags = "@code_style")
     public void myFirstTest() {
         baseEchoSteps.given();
         baseEchoSteps.when();

@@ -29,26 +29,22 @@ import com.griddynamics.qa.sprimber.engine.Node;
 import gherkin.Parser;
 import gherkin.TokenMatcher;
 import gherkin.ast.GherkinDocument;
-import gherkin.ast.ScenarioDefinition;
 import gherkin.pickles.Compiler;
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleTag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.Resource;
-import org.springframework.util.DigestUtils;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.griddynamics.qa.sprimber.discovery.CucumberTestBinder.LOCATION_ATTRIBUTE_NAME;
 import static com.griddynamics.qa.sprimber.engine.Node.*;
 
 /**
@@ -64,51 +60,27 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
     private final SprimberProperties sprimberProperties;
     private final Parser<GherkinDocument> gherkinParser;
     private final ApplicationContext applicationContext;
-    private final TagFilter tagFilter;
+    private final CucumberTagFilter tagFilter;
 
     @Override
     public Node discover() {
         Node testSuite = Node.createRootNode("testSuite", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
         featureResourcesStream()
                 .map(this::buildCucumberDocument)
-                .map(this::testCaseNodeDiscover)
-                .forEach(testSuite::addChild);
+                .forEach(cucumberDocument -> testCaseNodeDiscover(testSuite, cucumberDocument));
         return testSuite;
     }
 
-    private Node testCaseNodeDiscover(CucumberDocument cucumberDocument) {
-        Node testCase = new Node.ContainerNode("testCase", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
-        testCase.setName(cucumberDocument.getDocument().getFeature().getName());
-        testCase.setDescription(cucumberDocument.getDocument().getFeature().getDescription());
+    private void testCaseNodeDiscover(Node parentNode, CucumberDocument cucumberDocument) {
+        Builder builder = new Builder()
+                .withDescription(cucumberDocument.getDocument().getFeature().getDescription())
+                .withName(cucumberDocument.getDocument().getFeature().getName())
+                .withRole("testCase")
+                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
+        Node testCase = parentNode.addChild(builder);
         compiler.compile(cucumberDocument.getDocument()).stream()
                 .filter(pickleTagFilter())
-                .map(cucumberTestBinder::bind)
-                .peek(node -> {
-                    String description = getScenarioDescriptionByTestName(cucumberDocument, node)
-                            .map(ScenarioDefinition::getDescription).orElse(node.getName());
-                    node.setDescription(description);
-                })
-                .peek(node -> {
-                    updateLocationAndHistoryId(cucumberDocument, node);
-                })
-                .forEach(testCase::addChild);
-        return testCase;
-    }
-
-    private void updateLocationAndHistoryId(CucumberDocument cucumberDocument, Node node) {
-        String testLocation = String.valueOf(node.getAttributes().get(LOCATION_ATTRIBUTE_NAME));
-        String uniqueName = cucumberDocument.getUrl().toString() + cucumberDocument.getDocument().getFeature().getLocation().getLine() + ":" +
-                cucumberDocument.getDocument().getFeature().getLocation().getColumn() +
-                cucumberDocument.getDocument().getFeature().getName() + testLocation + node.getName();
-        node.getAttributes().put("testLocation", uniqueName);
-        node.setHistoryId(DigestUtils.md5DigestAsHex(uniqueName.getBytes()));
-    }
-
-    private Optional<ScenarioDefinition> getScenarioDescriptionByTestName(CucumberDocument cucumberDocument,
-                                                                          Node node) {
-        return cucumberDocument.getDocument().getFeature().getChildren().stream()
-                .filter(scenarioDefinition -> node.getName().equals(scenarioDefinition.getName()))
-                .findFirst();
+                .forEach(pickle -> cucumberTestBinder.buildAndAddTestNode(testCase, pickle, cucumberDocument));
     }
 
     private Predicate<Pickle> pickleTagFilter() {
