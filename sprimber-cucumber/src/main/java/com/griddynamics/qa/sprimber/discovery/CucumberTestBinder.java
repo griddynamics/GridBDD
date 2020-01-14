@@ -25,12 +25,15 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.engine.Node;
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionsRegistry;
+import com.griddynamics.qa.sprimber.engine.NodeExecutionEventsPublisher;
+import com.griddynamics.qa.sprimber.stepdefinition.TestMethodRegistry;
+import gherkin.ast.ScenarioDefinition;
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleLocation;
 import gherkin.pickles.PickleTag;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.DigestUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,48 +45,72 @@ import static com.griddynamics.qa.sprimber.engine.Node.*;
  */
 
 @RequiredArgsConstructor
-class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Pickle> {
+class CucumberTestBinder {
 
     public static final String BDD_TAGS_ATTRIBUTE_NAME = "bddTags";
     public static final String LOCATION_ATTRIBUTE_NAME = "location";
+    public static final String META_ATTRIBUTE_NAME = "meta";
 
     private static final String TAG_SYMBOL = "@";
     private static final String TAG_VALUE_SEPARATOR = ":";
     private static final String VALUE_SEPARATOR = ",";
+    public static final String TEST_LOCATION_ATTRIBUTE_NAME = "testLocation";
 
     private final PickleStepFactory pickleStepFactory;
-    private final StepDefinitionsRegistry stepDefinitionsRegistry;
+    private final TestMethodRegistry testMethodRegistry;
+    private final NodeExecutionEventsPublisher eventsPublisher;
 
-    @Override
-    public Node bind(Pickle testCandidate) {
-        Node testNode = new Node.ContainerNode("test", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | SWITCH_TO_DRY_FOR_CHILD);
-        testNode.setName(testCandidate.getName());
-        testNode.getAttributes().put(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(testCandidate));
-        testNode.getAttributes().put(LOCATION_ATTRIBUTE_NAME, formatLocation(testCandidate));
-        testNode.getMeta().addMeta(getMetaFromPickle(testCandidate));
+    void buildAndAddTestNode(Node parentNode, Pickle testCandidate, CucumberSuiteDiscovery.CucumberDocument cucumberDocument) {
+        String description = getScenarioDescriptionByTestName(cucumberDocument, testCandidate.getName())
+                .map(ScenarioDefinition::getDescription).orElse(testCandidate.getName());
+        String testLocation = formatLocation(testCandidate);
+        String uniqueName = cucumberDocument.getUrl().toString() + cucumberDocument.getDocument().getFeature().getLocation().getLine() + ":" +
+                cucumberDocument.getDocument().getFeature().getLocation().getColumn() +
+                cucumberDocument.getDocument().getFeature().getName() + testLocation + testCandidate.getName();
+        Builder builder = new Builder()
+                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR)
+                .withRole("test")
+                .withName(testCandidate.getName())
+                .withDescription(description)
+                .withHistoryId(DigestUtils.md5DigestAsHex(uniqueName.getBytes()))
+                .withAttribute(BDD_TAGS_ATTRIBUTE_NAME, getTagsFromPickle(testCandidate))
+                .withAttribute(LOCATION_ATTRIBUTE_NAME, testLocation)
+                .withAttribute(META_ATTRIBUTE_NAME, getMetaFromPickle(testCandidate))
+                .withAttribute(TEST_LOCATION_ATTRIBUTE_NAME, uniqueName);
+        Node testNode = parentNode.addChild(builder);
 
-        stepDefinitionsRegistry.provideBeforeTestHookNodes()
-                .filter(pickleStepFactory.filterNodeByTags())
-                .forEach(testNode::addBefore);
-        stepDefinitionsRegistry.provideAfterTestHookNodes()
-                .filter(pickleStepFactory.filterNodeByTags())
-                .forEach(testNode::addAfter);
+        fillPreConditions("Before Test", testNode);
+        fillPostConditions("After Test", testNode);
 
         testCandidate.getSteps().stream()
-                .map(pickleStepFactory::provideStepNode)
-                .filter(pickleStepFactory.filterNodeByTags())
-                .map(this::bindStepContainerNode)
-                .forEach(testNode::addChild);
-
-        return testNode;
+                .map(pickleStep -> pickleStepFactory.addStepContainerNode(testNode, pickleStep))
+                .forEach(this::fillStepBeforeAndAfter);
+        eventsPublisher.stagePrepared(testNode);
     }
 
-    private Node bindStepContainerNode(Node targetNode) {
-        Node stepContainerNode = new Node.ContainerNode("stepContainer", DRY_BEFORES_ON_DRY | DRY_AFTERS_ON_DRY | DRY_TARGETS_ON_DRY);
-        stepContainerNode.addTarget(targetNode);
-        stepDefinitionsRegistry.provideBeforeStepHookNodes().forEach(stepContainerNode::addBefore);
-        stepDefinitionsRegistry.provideAfterStepHookNodes().forEach(stepContainerNode::addAfter);
-        return stepContainerNode;
+    private void fillStepBeforeAndAfter(Node stepContainerNode) {
+        fillPreConditions("Before Step", stepContainerNode);
+        fillPostConditions("After Step", stepContainerNode);
+    }
+
+    private void fillPreConditions(String style, Node containerNode) {
+        testMethodRegistry.streamByStyle(style)
+                .filter(pickleStepFactory.filterTestMethodByTags())
+                .map(testMethod -> new Builder()
+                        .withRole(style)
+                        .withName(testMethod.getStyle())
+                        .withMethod(testMethod.getMethod()))
+                .forEach(containerNode::addBefore);
+    }
+
+    private void fillPostConditions(String style, Node containerNode) {
+        testMethodRegistry.streamByStyle(style)
+                .filter(pickleStepFactory.filterTestMethodByTags())
+                .map(testMethod -> new Builder()
+                        .withRole(style)
+                        .withName(testMethod.getStyle())
+                        .withMethod(testMethod.getMethod()))
+                .forEach(containerNode::addAfter);
     }
 
     private String formatLocation(Pickle pickle) {
@@ -113,5 +140,12 @@ class CucumberTestBinder implements TestSuiteDiscovery.TestDefinitionBinder<Pick
         } else {
             meta.put(key, Collections.emptyList());
         }
+    }
+
+    private Optional<ScenarioDefinition> getScenarioDescriptionByTestName(CucumberSuiteDiscovery.CucumberDocument cucumberDocument,
+                                                                          String name) {
+        return cucumberDocument.getDocument().getFeature().getChildren().stream()
+                .filter(scenarioDefinition -> name.equals(scenarioDefinition.getName()))
+                .findFirst();
     }
 }

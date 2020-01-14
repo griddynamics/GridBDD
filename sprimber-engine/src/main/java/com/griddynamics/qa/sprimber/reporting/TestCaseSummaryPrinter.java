@@ -32,6 +32,7 @@ import org.springframework.core.NamedThreadLocal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -48,6 +49,15 @@ public class TestCaseSummaryPrinter {
 
     private final ThreadLocal<StringBuilder> reportBuilder = new NamedThreadLocal<>("Testcase report builder");
     private final ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
+    private final AtomicInteger totalCount = new AtomicInteger(0);
+    private final AtomicInteger executedCount = new AtomicInteger(0);
+
+    @EventListener
+    public void nodePrepared(SprimberEventPublisher.NodePreparationDoneEvent nodePreparationDoneEvent) {
+        if ("test".equals(nodePreparationDoneEvent.getNode().getRole())) {
+            totalCount.incrementAndGet();
+        }
+    }
 
     @EventListener
     public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
@@ -81,7 +91,8 @@ public class TestCaseSummaryPrinter {
         stringBuilder.append("\n");
         stringBuilder.append(getIndents() + "\t");
         stringBuilder.append(String.format(" %s", errorEvent.getNode().getName()));
-        stringBuilder.append(String.format(" (%s) ", errorEvent.getNode().getCurrentState()));
+        stringBuilder.append(String.format(" (%s) \n", errorEvent.getNode().getCurrentState()));
+        errorEvent.getNode().getThrowable().ifPresent(throwable -> stringBuilder.append(String.format("Description: %s ", throwable.getLocalizedMessage())));
     }
 
     @EventListener
@@ -125,13 +136,16 @@ public class TestCaseSummaryPrinter {
     private void doWithTestStart(Node containerNode) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n\n");
-        stringBuilder.append(String.format("Test Completed: %s", containerNode.getName()));
+        stringBuilder.append(String.format("Test # Completed: '%s'", containerNode.getName()));
         stringBuilder.append(" with status {STATUS}");
         reportBuilder.set(stringBuilder);
     }
 
     private void doWithTestFinish(Node containerNode) {
+        executedCount.incrementAndGet();
         StringBuilder stringBuilder = reportBuilder.get();
+        stringBuilder.append("\n")
+                .append(String.format("Executed '%d' out of '%d'", executedCount.get(), totalCount.get()));
         stringBuilder.append("\n\n");
         String summaryRaw = stringBuilder.toString();
         String summary = summaryRaw.replaceFirst("\\{STATUS}", String.valueOf(containerNode.getCurrentState()));

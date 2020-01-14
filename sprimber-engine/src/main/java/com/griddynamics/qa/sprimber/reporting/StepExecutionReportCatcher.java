@@ -25,7 +25,6 @@ $Id:
 package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.engine.NodeFallbackManager;
-import com.griddynamics.qa.sprimber.stepdefinition.SpringStepDefinitionsFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -46,7 +45,7 @@ public class StepExecutionReportCatcher {
 
     private static SprimberEventPublisher eventPublisher;
     private static NodeFallbackManager nodeFallbackManager;
-    private static SpringStepDefinitionsFactory stepDefinitionsFactory;
+//    private static SpringTestMethodsLoader stepDefinitionsFactory;
 
     @Autowired
     public void setEventPublisher(SprimberEventPublisher eventPublisher) {
@@ -58,10 +57,10 @@ public class StepExecutionReportCatcher {
         StepExecutionReportCatcher.nodeFallbackManager = nodeFallbackManager;
     }
 
-    @Autowired
-    public void setStepDefinitionsFactory(SpringStepDefinitionsFactory stepDefinitionsFactory) {
-        StepExecutionReportCatcher.stepDefinitionsFactory = stepDefinitionsFactory;
-    }
+//    @Autowired
+//    public void setStepDefinitionsFactory(SpringTestMethodsLoader stepDefinitionsFactory) {
+//        StepExecutionReportCatcher.stepDefinitionsFactory = stepDefinitionsFactory;
+//    }
 
     @Around("stepMethodsExecution()")
     public Object surroundStepExecution(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -69,7 +68,7 @@ public class StepExecutionReportCatcher {
         result = joinPoint.proceed();
 //        ExecutionResult executionResult = new ExecutionResult(PASSED);
 //        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-//        StepDefinition stepDefinition = stepDefinitionsFactory.getStepDefinitions().get(buildHash(methodSignature.getMethod()));
+//        StepDefinition stepDefinition = stepDefinitionsFactory.load().get(buildHash(methodSignature.getMethod()));
 //        TestSuite.Step step = new TestSuite.Step();
 //        step.setStepDefinition(stepDefinition);
 //        step.setName(stepDefinition.getName());

@@ -25,8 +25,8 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.engine.Node;
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionsRegistry;
+import com.griddynamics.qa.sprimber.stepdefinition.TestMethod;
+import com.griddynamics.qa.sprimber.stepdefinition.TestMethodRegistry;
 import gherkin.pickles.PickleCell;
 import gherkin.pickles.PickleRow;
 import gherkin.pickles.PickleStep;
@@ -47,51 +47,60 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.griddynamics.qa.sprimber.engine.Node.*;
+
 /**
  * @author fparamonov
  */
 
 @RequiredArgsConstructor
-class PickleStepFactory implements StepFactory<PickleStep> {
+class PickleStepFactory {
 
     private static final String TAGS_ATTRIBUTE = "Tags";
 
-    private final TagFilter tagFilter;
+    private final CucumberTagFilter tagFilter;
     private final StepMatcher stepMatcher;
-    private final StepDefinitionsRegistry stepDefinitionsRegistry;
+    private final TestMethodRegistry testMethodRegistry;
 
-    public Node provideStepNode(PickleStep stepCandidate) {
-        List<Node.ExecutableNode> steps = stepDefinitionsRegistry.streamAllDefinitions()
-                .filter(stepDefinition -> StringUtils.isNotBlank(stepDefinition.getBindingTextPattern()))
-                .map(stepDefinition ->
-                        stepMatcher.matchAndGetArgumentsFrom(stepCandidate, stepDefinition, stepDefinition.getMethod().getParameterTypes())
-                                .map(arguments -> buildStepNode(stepCandidate, stepDefinition, arguments))
+    Node addStepContainerNode(Node parentNode, PickleStep stepCandidate) {
+        Node.Builder builder = new Node.Builder()
+                .withRole("stepContainer")
+                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_TARGET_WHEN_BYPASS_MODE);
+        Node stepContainerNode = parentNode.addChild(builder);
+
+        List<Node> testMethods = testMethodRegistry.streamAllTestMethods()
+                .filter(testMethod -> StringUtils.isNotBlank(testMethod.getTextPattern()))
+                .filter(filterTestMethodByTags())
+                .map(testMethod ->
+                        stepMatcher.matchAndGetArgumentsFrom(stepCandidate, testMethod, testMethod.getMethod().getParameterTypes())
+                                .map(arguments -> addStepContainerNode(stepContainerNode, stepCandidate, testMethod, arguments))
                 )
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
-        if (steps.size() == 0) {
+        if (testMethods.size() == 0) {
             throw new StepNotFoundException(stepCandidate);
         }
-        if (steps.size() > 1) {
-            throw new ExtraMappingFoundException(steps, stepCandidate);
+        if (testMethods.size() > 1) {
+            throw new ExtraMappingFoundException(testMethods, stepCandidate);
         }
-        return steps.get(0);
+        return stepContainerNode;
     }
 
-    private Node.ExecutableNode buildStepNode(PickleStep stepCandidate, StepDefinition stepDefinition, List<Argument> arguments) {
-        Node.ExecutableNode executableStepNode = new Node.ExecutableNode("step");
-        executableStepNode.setMethod(stepDefinition.getMethod());
-        executableStepNode.setName(stepDefinition.getStepType() + " " + stepCandidate.getText());
+    private Node addStepContainerNode(Node parentNode, PickleStep stepCandidate, TestMethod testMethod, List<Argument> arguments) {
+        Node.Builder builder = new Node.Builder()
+                .withRole("step")
+                .withName(testMethod.getStyle() + " " + stepCandidate.getText())
+                .withMethod(testMethod.getMethod())
+                .withParameters(convertStepArguments(arguments, Arrays.asList(testMethod.getMethod().getGenericParameterTypes())));
         handleAdditionalStepData(stepCandidate)
-                .ifPresent(stepData -> executableStepNode.getAttributes().put("stepData", stepData));
-        executableStepNode.getParameters().putAll(convertStepArguments(arguments, Arrays.asList(stepDefinition.getMethod().getGenericParameterTypes())));
-        return executableStepNode;
+                .ifPresent(stepData -> builder.withAttribute("stepData", stepData));
+        return parentNode.addTarget(builder);
     }
 
-    Predicate<Node> filterNodeByTags() {
-        return node ->
-                tagFilter.filter((String) node.getAttributes().get(TAGS_ATTRIBUTE));
+    Predicate<TestMethod> filterTestMethodByTags() {
+        return testMethod ->
+                tagFilter.filter((String) testMethod.getAttribute(TAGS_ATTRIBUTE));
     }
 
     private Map<String, Object> convertStepArguments(List<Argument> arguments, List<Type> methodParameters) {
@@ -140,11 +149,11 @@ class PickleStepFactory implements StepFactory<PickleStep> {
 
     class ExtraMappingFoundException extends RuntimeException {
 
-        ExtraMappingFoundException(List<Node.ExecutableNode> executableNodes, PickleStep pickleStep) {
+        ExtraMappingFoundException(List<Node> nodeList, PickleStep pickleStep) {
             super(String.format("Step '%s' mapped to next methods '%s'!",
                     pickleStep.getText(),
-                    executableNodes.stream()
-                            .map(Node.ExecutableNode::getMethod)
+                    nodeList.stream()
+                            .map(Node::getMethod)
                             .map(Method::toString)
                             .collect(Collectors.joining(","))
             ));

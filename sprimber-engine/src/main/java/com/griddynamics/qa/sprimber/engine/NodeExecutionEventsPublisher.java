@@ -29,6 +29,10 @@ package com.griddynamics.qa.sprimber.engine;
  */
 public interface NodeExecutionEventsPublisher {
 
+    void stageFiltered(Node node);
+
+    void stagePrepared(Node node);
+
     void stageStarted(Node node);
 
     void stageFinished(Node node);

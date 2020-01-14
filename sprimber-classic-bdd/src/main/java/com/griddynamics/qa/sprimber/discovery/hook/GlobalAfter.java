@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery.hook;
 
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
 import com.griddynamics.qa.sprimber.discovery.StepMapping;
 import org.springframework.core.annotation.AliasFor;
 
@@ -37,7 +36,7 @@ import java.lang.annotation.*;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@StepMapping(stepType = StepDefinition.StepType.AFTER, stepPhase = StepDefinition.StepPhase.GLOBAL)
+//@StepMapping(stepType = StepDefinition.StepType.AFTER, stepPhase = StepDefinition.StepPhase.GLOBAL)
 public @interface GlobalAfter {
 
     /**

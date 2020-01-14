@@ -31,7 +31,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.annotation.AnnotationUtils;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.griddynamics.qa.sprimber.engine.Node.*;
 
@@ -47,26 +50,36 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
     private static final String DESCRIPTION_ATTRIBUTE_NAME = "description";
     private final ClassicTestBinder classicTestBinder;
     private final ApplicationContext applicationContext;
+    private final TagFilter tagFilter;
 
     @Override
     public Node discover() {
-        Node testSuite = new Node.ContainerNode("testSuite", BYPASS_BEFORE_WHEN_BYPASS_MODE | DRY_AFTERS_ON_DRY | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
-        applicationContext.getBeansWithAnnotation(TestController.class).values().stream()
-                .map(this::testCaseNodeDiscover)
-                .forEach(testSuite::addChild);
+        Node testSuite = Node.createRootNode("testSuite", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
+        applicationContext.getBeansWithAnnotation(TestController.class).values()
+                .forEach(testController -> testCaseNodeDiscover(testSuite, testController));
         return testSuite;
     }
 
-    private Node testCaseNodeDiscover(Object testController) {
-        Node testCase = new Node.ContainerNode("testCase", BYPASS_BEFORE_WHEN_BYPASS_MODE | DRY_AFTERS_ON_DRY | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
+    private void testCaseNodeDiscover(Node parentNode, Object testController) {
         TestController controller = testController.getClass().getAnnotation(TestController.class);
-        testCase.setName(String.valueOf(AnnotationUtils.getValue(controller, NAME_ATTRIBUTE_NAME)));
-        testCase.setDescription(String.valueOf(AnnotationUtils.getValue(controller, DESCRIPTION_ATTRIBUTE_NAME)));
+        Builder builder = new Builder()
+                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR)
+                .withRole("testCase")
+                .withName(String.valueOf(AnnotationUtils.getValue(controller, NAME_ATTRIBUTE_NAME)))
+                .withDescription(String.valueOf(AnnotationUtils.getValue(controller, DESCRIPTION_ATTRIBUTE_NAME)));
+        Node testCase = parentNode.addChild(builder);
 
         Arrays.stream(testController.getClass().getDeclaredMethods())
                 .filter(method -> method.isAnnotationPresent(TestMapping.class))
-                .map(classicTestBinder::bind)
-                .forEach(testCase::addChild);
-        return testCase;
+                .filter(this::filterTests)
+                .forEach(method -> classicTestBinder.bind(testCase, method));
+    }
+
+    private boolean filterTests(Method method) {
+        TestMapping testMapping = AnnotationUtils.getAnnotation(method, TestMapping.class);
+        List<String> tags = Arrays.stream((Object[]) AnnotationUtils.getValue(testMapping, "tags"))
+                .map(o -> (String) o)
+                .collect(Collectors.toList());
+        return tagFilter.filter(tags);
     }
 }

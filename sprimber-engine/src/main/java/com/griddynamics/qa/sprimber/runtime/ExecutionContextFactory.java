@@ -26,16 +26,17 @@ package com.griddynamics.qa.sprimber.runtime;
 
 import com.griddynamics.qa.sprimber.discovery.TestSuiteDiscovery;
 import com.griddynamics.qa.sprimber.engine.Node;
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinition;
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionsFactory;
-import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionsRegistry;
+import com.griddynamics.qa.sprimber.stepdefinition.StepClassAnnotationsProvider;
+import com.griddynamics.qa.sprimber.stepdefinition.TestMethodsBulkLoader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
+import org.springframework.context.ApplicationContext;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class used to instantiate {@link ExecutionContext} with custom pre-initialised runtime objects
@@ -46,9 +47,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContext> {
 
-    private final StepDefinitionsRegistry stepDefinitionsRegistry;
+    private final ApplicationContext applicationContext;
+    private final TestMethodsBulkLoader bulkLoader;
+    private final List<StepClassAnnotationsProvider> stepClassAnnotationsProviders;
     private final List<TestSuiteDiscovery> testSuiteDiscoveries;
-    private final List<StepDefinitionsFactory> stepDefinitionsDiscoveries;
 
     @Override
     public Class<?> getObjectType() {
@@ -58,20 +60,25 @@ public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContex
     @Override
     protected ExecutionContext createInstance() throws Exception {
         ExecutionContext executionContext = new ExecutionContext();
-        stepDefinitionsRegistry.add(exploreStepDefinitions());
+        bulkLoader.load(getMethodCandidates());
         executionContext.getNodes().addAll(exploreNodes());
         return executionContext;
+    }
+
+    private Stream<Method> getMethodCandidates() {
+        Map<String, Object> targetBeans = new HashMap<>();
+        List<Class<? extends Annotation>> allMarkerAnnotations = stepClassAnnotationsProviders.stream()
+                .map(StepClassAnnotationsProvider::provide)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+        allMarkerAnnotations.forEach(aClass -> targetBeans.putAll(applicationContext.getBeansWithAnnotation(aClass)));
+        return targetBeans.values().stream()
+                .flatMap(bean -> Arrays.stream(bean.getClass().getDeclaredMethods()));
     }
 
     private List<Node> exploreNodes() {
         return testSuiteDiscoveries.stream()
                 .map(TestSuiteDiscovery::discover)
                 .collect(Collectors.toList());
-    }
-
-    private Map<String, StepDefinition> exploreStepDefinitions() {
-        return stepDefinitionsDiscoveries.stream()
-                .map(StepDefinitionsFactory::getStepDefinitions)
-                .collect(HashMap::new, (m, e) -> e.forEach(m::put), Map::putAll);
     }
 }

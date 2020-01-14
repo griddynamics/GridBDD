@@ -25,6 +25,8 @@
 Feature: This is a show case feature for Sprimber scopes usage
 
   @scope
+  @test_me
+
   Scenario Outline: Simple scenario to check scenario scope
     Given put to the step context value '<value>'
     Then step context contains value '<value>'

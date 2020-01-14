@@ -47,7 +47,7 @@ import java.util.Locale;
 public class SprimberCucumberConfiguration {
 
     @Configuration
-    @Import({CucumberSuiteDiscovery.class, CucumberTestBinder.class, PickleStepFactory.class, TagFilter.class, StepMatcher.class})
+    @Import({CucumberSuiteDiscovery.class, CucumberTestBinder.class, PickleStepFactory.class, CucumberTagFilter.class, StepMatcher.class})
     static class DiscoveryConfiguration {
     }
 

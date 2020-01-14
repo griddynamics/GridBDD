@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.autoconfigure;
 
 import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.reporting.ConditionalErrorPrinter;
 import com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher;
 import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
 import com.griddynamics.qa.sprimber.reporting.AllureSprimber;
@@ -55,6 +56,12 @@ public class SprimberReportingConfiguration {
         }
 
         @Bean
+        @ConditionalOnProperty(value = "reporting.error.enable", prefix = "sprimber.configuration", havingValue = "true", matchIfMissing = true)
+        public ConditionalErrorPrinter errorPrinter(Set<String> nonPrintableExceptions) {
+            return new ConditionalErrorPrinter(nonPrintableExceptions);
+        }
+
+        @Bean
         @ConditionalOnProperty(value = "reporting.aspect.enable", prefix = "sprimber.configuration", havingValue = "true")
         public StepExecutionReportCatcher stepExecutionReportCatcher() {
             return new StepExecutionReportCatcher();
@@ -63,9 +70,16 @@ public class SprimberReportingConfiguration {
 
     @Configuration
     static class AllureReporting {
+//        @Bean
+//        public AllureSprimber allureSprimber(Map<Node.Status, Status> allureToSprimberStatusMapping, AllureLifecycle allureLifecycle) {
+//            return new AllureSprimber(allureToSprimberStatusMapping, allureLifecycle);
+//        }
+
         @Bean
-        public AllureSprimber allureSprimber(Map<Node.Status, Status> allureToSprimberStatusMapping, AllureLifecycle allureLifecycle) {
-            return new AllureSprimber(allureToSprimberStatusMapping, allureLifecycle);
+        public Set<String> nonPrintableExceptions() {
+            Set<String> failedExceptions = new HashSet<>();
+            failedExceptions.add("java.lang.AssertionError");
+            return failedExceptions;
         }
 
         @Bean
@@ -74,17 +88,17 @@ public class SprimberReportingConfiguration {
             return new AllureLifecycle();
         }
 
-        @Bean
-        public Map<Node.Status, Status> allureToSprimberStatusMapping() {
-            HashMap<Node.Status, Status> statusMapping = new HashMap<>();
-            statusMapping.put(Node.Status.COMPLETED, Status.PASSED);
-            statusMapping.put(Node.Status.SKIP, Status.SKIPPED);
-            statusMapping.put(Node.Status.FAILED, Status.FAILED);
-            statusMapping.put(Node.Status.PENDING, Status.BROKEN);
-            statusMapping.put(Node.Status.ERROR, Status.BROKEN);
-            statusMapping.put(Node.Status.DRY, Status.SKIPPED);
-            return statusMapping;
-        }
+//        @Bean
+//        public Map<Node.Status, Status> allureToSprimberStatusMapping() {
+//            HashMap<Node.Status, Status> statusMapping = new HashMap<>();
+//            statusMapping.put(Node.Status.COMPLETED, Status.PASSED);
+//            statusMapping.put(Node.Status.SKIP, Status.SKIPPED);
+//            statusMapping.put(Node.Status.FAILED, Status.FAILED);
+//            statusMapping.put(Node.Status.PENDING, Status.BROKEN);
+//            statusMapping.put(Node.Status.ERROR, Status.BROKEN);
+//            statusMapping.put(Node.Status.DRY, Status.SKIPPED);
+//            return statusMapping;
+//        }
 
         @Bean
         public Set<String> skippedExceptionNames() {
@@ -93,13 +107,6 @@ public class SprimberReportingConfiguration {
             skippedExceptions.add("org.junit.internal.AssumptionViolatedException");
             skippedExceptions.add("org.testng.SkipException");
             return skippedExceptions;
-        }
-
-        @Bean
-        public Set<String> failedExceptionNames() {
-            Set<String> failedExceptions = new HashSet<>();
-            failedExceptions.add("java.lang.AssertionError");
-            return failedExceptions;
         }
 
         @Bean
