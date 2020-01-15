@@ -29,6 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * @author fparamonov
@@ -98,15 +99,31 @@ public class Node {
     }
 
     public UUID getRuntimeId() {
-        return runtimeId;
+        return this.runtimeId;
     }
 
     public UUID getParentId() {
-        return parentId;
+        return this.parentId;
+    }
+
+    public String getHistoryId() {
+        return this.historyId;
+    }
+
+    public String getDescription() {
+        return this.description;
+    }
+
+    public Optional<Object> getAttribute(String name) {
+        return Optional.ofNullable(this.attributes.get(name));
+    }
+
+    public Stream<Map.Entry<String, Object>> attributesStream() {
+        return this.attributes.entrySet().stream();
     }
 
     public String getRole() {
-        return role;
+        return this.role;
     }
 
     public String getCurrentState() {
@@ -176,6 +193,14 @@ public class Node {
 
     public boolean isCompletedExceptionally() {
         return Phase.COMPLETED.equals(phase) && Status.ERROR.equals(status);
+    }
+
+    public boolean isCompletedSuccessfully() {
+        return Phase.COMPLETED.equals(phase) && Status.SUCCESS.equals(status);
+    }
+
+    public boolean isCompletedWithSkip() {
+        return Phase.COMPLETED.equals(phase) && Status.SKIP.equals(status);
     }
 
     public Node addChild(Builder builder) {
