@@ -34,6 +34,7 @@ import cucumber.api.java.BeforeStep;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
 import org.assertj.core.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,10 +74,22 @@ public class BaseEchoSteps {
         Assertions.assertThat(authors).extracting("name").contains("testName");
     }
 
+    @Given("the next raw data table present")
+    public void givenRawDataTable(DataTable dataTable) {
+        LOGGER.info("Hey, I'm given action for author {}", dataTable.cell(0,0));
+    }
+
     @Given("the next author long consumed '{long}'")
     public void givenLong(Long dummyNumber) {
         LOGGER.info("Hey, I'm given action with long param {}", dummyNumber);
         Assertions.assertThat(dummyNumber).isEqualTo(123L);
+    }
+
+    @Given("the next author long consumed '{long}' and '{long}'")
+    public void givenTwoLong(Long dummyNumber, Long secondNumber) {
+        LOGGER.info("Hey, I'm given action with long param {} and {}", dummyNumber, secondNumber);
+        Assertions.assertThat(dummyNumber).isEqualTo(123L);
+        Assertions.assertThat(secondNumber).isEqualTo(321L);
     }
 
     @When("^test when action$")

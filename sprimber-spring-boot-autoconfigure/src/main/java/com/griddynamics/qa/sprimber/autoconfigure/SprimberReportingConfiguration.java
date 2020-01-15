@@ -24,22 +24,23 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
-import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.reporting.AllureSprimber;
 import com.griddynamics.qa.sprimber.reporting.ConditionalErrorPrinter;
 import com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher;
 import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
-import com.griddynamics.qa.sprimber.reporting.AllureSprimber;
 import com.griddynamics.qa.sprimber.runtime.ExecutionContext;
 import cucumber.api.Pending;
 import io.qameta.allure.AllureLifecycle;
-import io.qameta.allure.model.Status;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.lang.annotation.Annotation;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author fparamonov
@@ -72,8 +73,8 @@ public class SprimberReportingConfiguration {
     @Configuration
     static class AllureReporting {
         @Bean
-        public AllureSprimber allureSprimber(AllureLifecycle allureLifecycle) {
-            return new AllureSprimber(allureLifecycle);
+        public AllureSprimber allureSprimber(AllureLifecycle allureLifecycle, Set<String> nonPrintableExceptions) {
+            return new AllureSprimber(allureLifecycle, nonPrintableExceptions);
         }
 
         @Bean
@@ -88,18 +89,6 @@ public class SprimberReportingConfiguration {
         public AllureLifecycle allureLifecycle() {
             return new AllureLifecycle();
         }
-
-//        @Bean
-//        public Map<Node.Status, Status> allureToSprimberStatusMapping() {
-//            HashMap<Node.Status, Status> statusMapping = new HashMap<>();
-//            statusMapping.put(Node.Status.COMPLETED, Status.PASSED);
-//            statusMapping.put(Node.Status.SKIP, Status.SKIPPED);
-//            statusMapping.put(Node.Status.FAILED, Status.FAILED);
-//            statusMapping.put(Node.Status.PENDING, Status.BROKEN);
-//            statusMapping.put(Node.Status.ERROR, Status.BROKEN);
-//            statusMapping.put(Node.Status.DRY, Status.SKIPPED);
-//            return statusMapping;
-//        }
 
         @Bean
         public Set<String> skippedExceptionNames() {

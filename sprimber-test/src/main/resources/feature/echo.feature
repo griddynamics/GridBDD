@@ -36,8 +36,15 @@ Feature: This is a test feature for echo application
 
   @echo
   @Story=positive
-  Scenario: Simple scenario to check steps with DataTable arguments
+  Scenario: Simple scenario to check steps with converted DataTable arguments
     Given the next author exist:
+      | name     | surname     | book     |
+      | testName | testSurname | testBook |
+
+  @echo
+  @Story=positive
+  Scenario: Simple scenario to check steps with DataTable arguments
+    Given the next raw data table present
       | name     | surname     | book     |
       | testName | testSurname | testBook |
 
@@ -45,6 +52,11 @@ Feature: This is a test feature for echo application
   @Story=positive
   Scenario: Simple scenario to check steps arguments
     Given the next author long consumed '123'
+
+  @echo
+  @Story=positive
+  Scenario: Simple scenario to check multiple steps arguments
+    Given the next author long consumed '123' and '321'
 
   @echo
   @Story=negative

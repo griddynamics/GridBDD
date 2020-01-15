@@ -26,10 +26,7 @@ package com.griddynamics.qa.sprimber.engine;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Spliterator;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -92,7 +89,7 @@ class TreeSuiteExecutor implements TreeExecutor {
         invokeSubStage(node.afterSpliterator(context.hasStageException(node)), AFTER_SUB_NODE_NAME);
         subStageFuture.join();
         if (context.hasStageException(node)) {
-            node.completeExceptionally(null);
+            node.completeExceptionally(context.getStageException(node));
             context.reportStageException(node);
         } else {
             node.completeSuccessfully();
@@ -135,18 +132,6 @@ class TreeSuiteExecutor implements TreeExecutor {
         return Optional.ofNullable(childExecutors.get(node.getRole() + EXECUTOR_NAME_SUFFIX))
                 .map(executor -> CompletableFuture.runAsync(() -> processStage(node), executor))
                 .orElseGet(() -> CompletableFuture.allOf().thenRun(() -> processStage(node)));
-    }
-
-    static class StageStatus {
-        private boolean hasExceptions;
-
-        boolean hasExceptions() {
-            return hasExceptions;
-        }
-
-        void setHasExceptions(boolean hasExceptions) {
-            this.hasExceptions = hasExceptions;
-        }
     }
 
     /**
