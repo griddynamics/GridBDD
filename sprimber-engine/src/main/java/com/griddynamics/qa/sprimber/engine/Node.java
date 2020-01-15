@@ -60,6 +60,7 @@ public class Node {
      * the result of seed flags represented as ORed values from constants below.
      */
     private final int subNodeExecutionModes;
+    private final Condition condition;
     private final UUID parentId;
     private final UUID runtimeId = UUID.randomUUID();
     private final Map<Relation, List<Node>> children = new EnumMap<>(Relation.class);
@@ -75,6 +76,7 @@ public class Node {
         this.subNodeExecutionModes = subNodeExecutionModes;
         this.method = method;
         this.phase = Phase.CREATED;
+        this.condition = null;
     }
 
     private Node(Builder builder, UUID parentId, Type type) {
@@ -85,6 +87,7 @@ public class Node {
         this.description = builder.description;
         this.historyId = builder.historyId;
         this.subNodeExecutionModes = builder.subNodeExecutionModes;
+        this.condition = builder.condition;
         this.method = builder.method;
         this.parameters.putAll(builder.parameters);
         this.attributes.putAll(builder.attributes);
@@ -124,6 +127,10 @@ public class Node {
 
     public Optional<Throwable> getThrowable() {
         return Optional.ofNullable(throwable);
+    }
+
+    public Optional<Condition> getCondition() {
+        return Optional.ofNullable(this.condition);
     }
 
     public boolean isReadyForInvoke() {
@@ -430,6 +437,13 @@ public class Node {
         }
     }
 
+    public interface Condition {
+
+        Object getTriggerType();
+
+        boolean match(Object actualValue);
+    }
+
     public static final class Builder {
 
         private int subNodeExecutionModes;
@@ -437,6 +451,7 @@ public class Node {
         private String description;
         private String historyId;
         private String role;
+        private Condition condition;
         private Method method;
         private final Map<String, Object> attributes = new HashMap<>();
         private final Map<String, Object> parameters = new HashMap<>();
@@ -466,6 +481,11 @@ public class Node {
 
         public Builder withSubNodeModes(int subNodeExecutionModes) {
             this.subNodeExecutionModes = subNodeExecutionModes;
+            return this;
+        }
+
+        public Builder withCondition(Condition condition) {
+            this.condition = condition;
             return this;
         }
 

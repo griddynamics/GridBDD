@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.engine;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
@@ -38,10 +39,12 @@ import java.lang.reflect.Method;
 class SpringNodeInvoker implements TreeSuiteExecutor.NodeInvoker {
 
     private final ApplicationContext applicationContext;
+    private final Environment environment;
 
     @Override
-    public boolean testCondition() {
-        return false;
+    public boolean shouldSkip(Node.Condition condition) {
+        String triggerValue = environment.getProperty(String.valueOf(condition.getTriggerType()));
+        return condition.match(triggerValue);
     }
 
     @Override

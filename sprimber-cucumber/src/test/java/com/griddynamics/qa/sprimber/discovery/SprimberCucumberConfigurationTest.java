@@ -25,19 +25,15 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.configuration.SprimberProperties;
-import com.griddynamics.qa.sprimber.engine.NodeExecutionEventsPublisher;
 import com.griddynamics.qa.sprimber.stepdefinition.CucumberStepDefinitionConfiguration;
 import com.griddynamics.qa.sprimber.stepdefinition.StepDefinitionSrpingConfiguration;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 /**
@@ -57,19 +53,14 @@ public class SprimberCucumberConfigurationTest {
         this.contextRunner
                 .withUserConfiguration(InnerConfiguration.class)
                 .run(context -> {
-            Assertions.assertThat(context).hasSingleBean(CucumberSuiteDiscovery.class);
-            Assertions.assertThat(context).hasSingleBean(CucumberTestBinder.class);
-            Assertions.assertThat(context).hasSingleBean(PickleStepFactory.class);
-        });
+                    Assertions.assertThat(context).hasSingleBean(CucumberSuiteDiscovery.class);
+                    Assertions.assertThat(context).hasSingleBean(CucumberTestBinder.class);
+                    Assertions.assertThat(context).hasSingleBean(PickleStepFactory.class);
+                });
     }
 
     @TestConfiguration
     @EnableConfigurationProperties(SprimberProperties.class)
     static class InnerConfiguration {
-
-        @Bean
-        public NodeExecutionEventsPublisher nodeExecutionEventsPublisher() {
-            return Mockito.mock(NodeExecutionEventsPublisher.class);
-        }
     }
 }
