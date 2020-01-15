@@ -24,6 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.test.steps;
 
+import com.griddynamics.qa.sprimber.condition.SkipOnProperty;
 import com.griddynamics.qa.sprimber.engine.model.action.Actions;
 import com.griddynamics.qa.sprimber.test.model.Author;
 import cucumber.api.java.After;
@@ -86,6 +87,12 @@ public class BaseEchoSteps {
     @When("some when action with param '{word}'")
     public void whenWithParameters(String word) {
         LOGGER.info("Hey, I'm when action with param {}", word);
+    }
+
+    @SkipOnProperty(value = "skip.me.when.you.want", havingValue = "skip")
+    @When("conditional action")
+    public void whenThatMayBeSkipped() {
+        LOGGER.info("I'm step that can be conditionally skipped");
     }
 
     @Then("test then action")

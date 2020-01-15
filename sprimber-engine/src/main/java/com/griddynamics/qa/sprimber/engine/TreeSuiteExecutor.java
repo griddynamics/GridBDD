@@ -106,7 +106,7 @@ class TreeSuiteExecutor implements TreeExecutor {
                 .forEach(subNode -> {
                     subNode.prepareExecution();
                     eventsPublisherByName.get(stageName + STARTED_EVENT_POSTFIX).accept(subNode);
-                    boolean skippedByCondition = nodeInvoker.testCondition();
+                    boolean skippedByCondition = subNode.getCondition().map(nodeInvoker::shouldSkip).orElse(false);
                     if (subNode.isReadyForInvoke() && !skippedByCondition) {
                         try {
                             nodeInvoker.invoke(subNode);
@@ -156,7 +156,7 @@ class TreeSuiteExecutor implements TreeExecutor {
      */
     public interface NodeInvoker {
 
-        boolean testCondition();
+        boolean shouldSkip(Node.Condition condition);
 
         /**
          * The implementation should care about the node invocation rather about the exception handling.

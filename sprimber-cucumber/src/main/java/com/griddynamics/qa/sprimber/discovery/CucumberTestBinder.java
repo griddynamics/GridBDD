@@ -58,7 +58,6 @@ class CucumberTestBinder {
 
     private final PickleStepFactory pickleStepFactory;
     private final TestMethodRegistry testMethodRegistry;
-    private final NodeExecutionEventsPublisher eventsPublisher;
 
     void buildAndAddTestNode(Node parentNode, Pickle testCandidate, CucumberSuiteDiscovery.CucumberDocument cucumberDocument) {
         String description = getScenarioDescriptionByTestName(cucumberDocument, testCandidate.getName())
@@ -85,7 +84,6 @@ class CucumberTestBinder {
         testCandidate.getSteps().stream()
                 .map(pickleStep -> pickleStepFactory.addStepContainerNode(testNode, pickleStep))
                 .forEach(this::fillStepBeforeAndAfter);
-        eventsPublisher.stagePrepared(testNode);
     }
 
     private void fillStepBeforeAndAfter(Node stepContainerNode) {

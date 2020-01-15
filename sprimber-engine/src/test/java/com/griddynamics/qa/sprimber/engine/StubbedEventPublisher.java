@@ -40,16 +40,6 @@ public class StubbedEventPublisher implements NodeExecutionEventsPublisher {
     private ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
 
     @Override
-    public void stageFiltered(Node node) {
-        log.info("(sub)stage with role '{}' filtered", node.getRole());
-    }
-
-    @Override
-    public void stagePrepared(Node node) {
-        log.info("(sub)stage with role '{}' prepared", node.getRole());
-    }
-
-    @Override
     public void stageStarted(Node node) {
         int currentLevel = Optional.ofNullable(depthLevelThreadLocal.get()).orElse(1);
         currentLevel++;

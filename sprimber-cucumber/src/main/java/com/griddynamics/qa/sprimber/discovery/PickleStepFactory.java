@@ -24,6 +24,8 @@ $Id:
 
 package com.griddynamics.qa.sprimber.discovery;
 
+import com.griddynamics.qa.sprimber.condition.PropertyCondition;
+import com.griddynamics.qa.sprimber.condition.SkipOnProperty;
 import com.griddynamics.qa.sprimber.engine.Node;
 import com.griddynamics.qa.sprimber.stepdefinition.TestMethod;
 import com.griddynamics.qa.sprimber.stepdefinition.TestMethodRegistry;
@@ -36,6 +38,7 @@ import io.cucumber.stepexpression.Argument;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -95,12 +98,23 @@ class PickleStepFactory {
                 .withParameters(convertStepArguments(arguments, Arrays.asList(testMethod.getMethod().getGenericParameterTypes())));
         handleAdditionalStepData(stepCandidate)
                 .ifPresent(stepData -> builder.withAttribute("stepData", stepData));
+        buildCondition(testMethod.getMethod())
+                .ifPresent(builder::withCondition);
         return parentNode.addTarget(builder);
     }
 
     Predicate<TestMethod> filterTestMethodByTags() {
         return testMethod ->
                 tagFilter.filter((String) testMethod.getAttribute(TAGS_ATTRIBUTE));
+    }
+
+    private Optional<Condition> buildCondition(Method method) {
+        PropertyCondition propertyCondition = null;
+        if (method.isAnnotationPresent(SkipOnProperty.class)) {
+            SkipOnProperty skipOnProperty = AnnotationUtils.getAnnotation(method, SkipOnProperty.class);
+            propertyCondition = new PropertyCondition(skipOnProperty.value(), skipOnProperty.havingValue());
+        }
+        return Optional.ofNullable(propertyCondition);
     }
 
     private Map<String, Object> convertStepArguments(List<Argument> arguments, List<Type> methodParameters) {
