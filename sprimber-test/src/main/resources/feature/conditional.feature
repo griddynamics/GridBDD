@@ -22,19 +22,13 @@
 # @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 # */
 
-Feature: This is a show case feature for Sprimber scopes usage
+Feature: This is a feature for echo application to see the ability of conditional test skipping
 
-  @scope
-  Scenario Outline: Simple scenario to check scenario scope
-    Given put to the step context value '<value>'
-    Then step context contains value '<value>'
+  @conditional
+  @Story=conditional
+  Scenario: Simple scenario to check conditional steps
 
-    Examples:
-      | value |
-      | 1     |
-      | 2     |
-      | 3     |
-      | 4     |
-      | 5     |
-      | 6     |
-      | 7     |
+    Given test given action
+    When test when action
+    When conditional action
+    Then test then action

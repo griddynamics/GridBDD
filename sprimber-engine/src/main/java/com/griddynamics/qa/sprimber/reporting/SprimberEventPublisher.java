@@ -39,18 +39,6 @@ public class SprimberEventPublisher implements NodeExecutionEventsPublisher {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    public void stageFiltered(Node node) {
-        NodeFilteredEvent nodeFilteredEvent = new NodeFilteredEvent(this, node);
-        eventPublisher.publishEvent(nodeFilteredEvent);
-    }
-
-    @Override
-    public void stagePrepared(Node node) {
-        NodePreparationDoneEvent nodePreparationDoneEvent = new NodePreparationDoneEvent(this, node);
-        eventPublisher.publishEvent(nodePreparationDoneEvent);
-    }
-
-    @Override
     public void stageStarted(Node node) {
         ContainerNodeStartedEvent containerNodeStartedEvent = new ContainerNodeStartedEvent(this,  node);
         eventPublisher.publishEvent(containerNodeStartedEvent);
@@ -114,27 +102,6 @@ public class SprimberEventPublisher implements NodeExecutionEventsPublisher {
     public void afterNodeError(Node node) {
         AfterNodeErrorEvent afterNodeErrorEvent = new AfterNodeErrorEvent(this,  node);
         eventPublisher.publishEvent(afterNodeErrorEvent);
-    }
-
-    public class NodeFilteredEvent extends Events.NodeEvent {
-        public NodeFilteredEvent(Object source) {
-            super(source);
-        }
-
-        public NodeFilteredEvent(Object source, Node node) {
-            super(source, node);
-        }
-    }
-
-    public class NodePreparationDoneEvent extends Events.NodeEvent {
-
-        public NodePreparationDoneEvent(Object source) {
-            super(source);
-        }
-
-        public NodePreparationDoneEvent(Object source, Node node) {
-            super(source, node);
-        }
     }
 
     public class ContainerNodeStartedEvent extends Events.NodeEvent {

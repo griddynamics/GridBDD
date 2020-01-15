@@ -22,32 +22,28 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine;
+package com.griddynamics.qa.sprimber.condition;
+
+import com.griddynamics.qa.sprimber.engine.Node;
+import lombok.RequiredArgsConstructor;
 
 /**
  * @author fparamonov
  */
-public interface NodeExecutionEventsPublisher {
 
-    void stageStarted(Node node);
+@RequiredArgsConstructor
+public class PropertyCondition implements Node.Condition {
 
-    void stageFinished(Node node);
+    private final String propertyName;
+    private final String expectedValue;
 
-    void beforeNodeStarted(Node node);
+    @Override
+    public Object getTriggerType() {
+        return propertyName;
+    }
 
-    void beforeNodeCompleted(Node node);
-
-    void beforeNodeError(Node node);
-
-    void targetNodeStarted(Node node);
-
-    void targetNodeCompleted(Node node);
-
-    void targetNodeError(Node node);
-
-    void afterNodeStarted(Node node);
-
-    void afterNodeCompleted(Node node);
-
-    void afterNodeError(Node node);
+    @Override
+    public boolean match(Object actualValue) {
+        return expectedValue.equals(actualValue);
+    }
 }

@@ -53,13 +53,6 @@ public class TestCaseSummaryPrinter {
     private final AtomicInteger executedCount = new AtomicInteger(0);
 
     @EventListener
-    public void nodePrepared(SprimberEventPublisher.NodePreparationDoneEvent nodePreparationDoneEvent) {
-        if ("test".equals(nodePreparationDoneEvent.getNode().getRole())) {
-            totalCount.incrementAndGet();
-        }
-    }
-
-    @EventListener
     public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
         increaseDepthLevel();
         if ("test".equals(startedEvent.getNode().getRole())) {

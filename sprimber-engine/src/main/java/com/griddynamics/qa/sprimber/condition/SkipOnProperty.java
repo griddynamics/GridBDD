@@ -22,32 +22,31 @@ $Id:
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
 
-package com.griddynamics.qa.sprimber.engine;
+package com.griddynamics.qa.sprimber.condition;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * @author fparamonov
  */
-public interface NodeExecutionEventsPublisher {
 
-    void stageStarted(Node node);
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface SkipOnProperty {
 
-    void stageFinished(Node node);
+    /**
+     * Property name that should skip the provided step
+     * @return property name
+     */
+    String value();
 
-    void beforeNodeStarted(Node node);
-
-    void beforeNodeCompleted(Node node);
-
-    void beforeNodeError(Node node);
-
-    void targetNodeStarted(Node node);
-
-    void targetNodeCompleted(Node node);
-
-    void targetNodeError(Node node);
-
-    void afterNodeStarted(Node node);
-
-    void afterNodeCompleted(Node node);
-
-    void afterNodeError(Node node);
+    /**
+     * The string representation of the expected value for the properties. If not
+     * specified, the property must <strong>not</strong> be equals to {@code false}.
+     * @return the expected value
+     */
+    String havingValue() default "";
 }
