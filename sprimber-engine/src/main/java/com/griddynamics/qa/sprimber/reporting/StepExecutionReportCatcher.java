@@ -24,7 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.reporting;
 
-import com.griddynamics.qa.sprimber.engine.NodeFallbackManager;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -44,17 +43,11 @@ import java.lang.reflect.Method;
 public class StepExecutionReportCatcher {
 
     private static SprimberEventPublisher eventPublisher;
-    private static NodeFallbackManager nodeFallbackManager;
 //    private static SpringTestMethodsLoader stepDefinitionsFactory;
 
     @Autowired
     public void setEventPublisher(SprimberEventPublisher eventPublisher) {
         StepExecutionReportCatcher.eventPublisher = eventPublisher;
-    }
-
-    @Autowired
-    public void setErrorMapper(NodeFallbackManager nodeFallbackManager) {
-        StepExecutionReportCatcher.nodeFallbackManager = nodeFallbackManager;
     }
 
 //    @Autowired
