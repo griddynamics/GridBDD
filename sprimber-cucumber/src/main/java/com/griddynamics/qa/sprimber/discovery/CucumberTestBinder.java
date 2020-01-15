@@ -25,7 +25,6 @@ $Id:
 package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.engine.Node;
-import com.griddynamics.qa.sprimber.engine.NodeExecutionEventsPublisher;
 import com.griddynamics.qa.sprimber.stepdefinition.TestMethodRegistry;
 import gherkin.ast.ScenarioDefinition;
 import gherkin.pickles.Pickle;
@@ -59,7 +58,8 @@ class CucumberTestBinder {
     private final PickleStepFactory pickleStepFactory;
     private final TestMethodRegistry testMethodRegistry;
 
-    void buildAndAddTestNode(Node parentNode, Pickle testCandidate, CucumberSuiteDiscovery.CucumberDocument cucumberDocument) {
+    void buildAndAddTestNode(Node parentNode, Pickle testCandidate,
+                             CucumberSuiteDiscovery.CucumberDocument cucumberDocument) {
         String description = getScenarioDescriptionByTestName(cucumberDocument, testCandidate.getName())
                 .map(ScenarioDefinition::getDescription).orElse(testCandidate.getName());
         String testLocation = formatLocation(testCandidate);
