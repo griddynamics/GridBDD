@@ -31,8 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.NamedThreadLocal;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -76,11 +75,12 @@ public class TestCaseSummaryPrinter {
     @EventListener
     public void targetNodeCompleted(SprimberEventPublisher.TargetNodeCompletedEvent completedEvent) {
         StringBuilder stringBuilder = reportBuilder.get();
-        stringBuilder.append("\n");
-        stringBuilder.append(getIndents() + "\t");
-        stringBuilder.append(String.format(" %s", completedEvent.getNode().getName()));
-        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getNode().getMethodParameters().values()})));
-        stringBuilder.append(String.format(" (%s) ", completedEvent.getNode().getCurrentState()));
+        stringBuilder.append("\n")
+                .append(getIndents())
+                .append("\t")
+                .append(String.format(" %s", completedEvent.getNode().getName()))
+                .append(String.format(" (%s) ", completedEvent.getNode().getCurrentState()));
+        printMethodParameters(completedEvent.getNode().getMethodParameters());
     }
 
     @EventListener
@@ -100,8 +100,8 @@ public class TestCaseSummaryPrinter {
         stringBuilder.append("\n");
         stringBuilder.append(getIndents());
         stringBuilder.append(String.format(" %s", completedEvent.getNode().getName()));
-        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getNode().getMethodParameters().values()})));
         stringBuilder.append(String.format(" (%s) ", completedEvent.getNode().getCurrentState()));
+        printMethodParameters(completedEvent.getNode().getMethodParameters());
     }
 
     @EventListener
@@ -120,8 +120,8 @@ public class TestCaseSummaryPrinter {
         stringBuilder.append("\n");
         stringBuilder.append(getIndents());
         stringBuilder.append(String.format(" %s", completedEvent.getNode().getName()));
-        stringBuilder.append(String.format(" %s", Arrays.toString(new Collection[]{completedEvent.getNode().getMethodParameters().values()})));
         stringBuilder.append(String.format(" (%s) ", completedEvent.getNode().getCurrentState()));
+        printMethodParameters(completedEvent.getNode().getMethodParameters());
     }
 
     @EventListener
@@ -132,6 +132,12 @@ public class TestCaseSummaryPrinter {
         stringBuilder.append(getIndents());
         stringBuilder.append(String.format(" %s", errorEvent.getNode().getName()));
         stringBuilder.append(String.format(" (%s) ", errorEvent.getNode().getCurrentState()));
+    }
+
+    private void printMethodParameters(Map<String, Object> parameters) {
+        parameters.forEach((k,v) -> reportBuilder.get()
+                .append("\nValue:\n")
+                .append(v));
     }
 
     private void doWithTestStart(Node containerNode) {

@@ -55,6 +55,7 @@ public class AllureSprimber {
     private static final String EPIC_DEFAULT_NAME = "Cucumber Features";
     private final Map<String, TestParentInfo> testParentsById = new ConcurrentHashMap<>();
     private final AllureLifecycle lifecycle;
+    private final Set<String> nonPrintableExceptions;
 
     @EventListener
     public void stageStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
@@ -124,8 +125,7 @@ public class AllureSprimber {
                 scenarioResult.setStatus(Status.PASSED);
             }
             if (node.isCompletedExceptionally()) {
-                scenarioResult.setStatus(Status.FAILED);
-                // TODO: 2020-01-15 STATUS MAPPING
+                scenarioResult.setStatus(node.getThrowable().map(this::mapThrowable).orElse(Status.BROKEN));
                 Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(null);
                 statusDetails.ifPresent(scenarioResult::setStatusDetails);
             }
@@ -188,8 +188,7 @@ public class AllureSprimber {
         Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(errorEvent.getNode().getThrowable().get());
         lifecycle.updateStep(errorEvent.getNode().getRuntimeId().toString(),
                 stepResult -> {
-                    // TODO: 2020-01-15 add status mapping
-                    stepResult.setStatus(Status.FAILED);
+                    stepResult.setStatus(errorEvent.getNode().getThrowable().map(this::mapThrowable).orElse(Status.BROKEN));
                     statusDetails.ifPresent(stepResult::setStatusDetails);
                 });
         lifecycle.updateTestCase(testResult -> statusDetails.ifPresent(testResult::setStatusDetails));
@@ -212,16 +211,7 @@ public class AllureSprimber {
     @EventListener
     public void beforeNodeCompleted(SprimberEventPublisher.BeforeNodeCompletedEvent completedEvent) {
         if ("test".equals(testParentsById.get(completedEvent.getNode().getParentId().toString()).getParentType())) {
-            lifecycle.updateFixture(completedEvent.getNode().getRuntimeId().toString(),
-                    fixtureResult -> {
-                        if (completedEvent.getNode().isCompletedSuccessfully()) {
-                            fixtureResult.setStatus(Status.PASSED);
-                        }
-                        if (completedEvent.getNode().isCompletedWithSkip()) {
-                            fixtureResult.setStatus(Status.SKIPPED);
-                        }
-                    });
-            lifecycle.stopFixture(completedEvent.getNode().getRuntimeId().toString());
+            updateAndStopNonExceptionFixture(completedEvent.getNode());
             lifecycle.setCurrentTestCase(completedEvent.getNode().getParentId().toString());
         } else {
             completeStep(completedEvent.getNode());
@@ -233,34 +223,45 @@ public class AllureSprimber {
         stopStepWithError(errorEvent.getNode());
     }
 
-//    @EventListener
-//    public void afterNodeStarted(SprimberEventPublisher.AfterNodeStartedEvent startedEvent) {
-//        if ("test".equals(testParentsById.get(startedEvent.getExecutableNode().getParentId()).getParentType())) {
-//            FixtureResult fixtureResult = new FixtureResult();
-//            fixtureResult.setName(startedEvent.getExecutableNode().getName());
-//            fixtureResult.setParameters(convertStepParameters(startedEvent.getExecutableNode().getMethodParameters()));
-//            lifecycle.startTearDownFixture(TEST_CONTAINER_PREFIX_NAME + startedEvent.getExecutableNode().getParentId(),
-//                    startedEvent.getExecutableNode().getRuntimeId(), fixtureResult);
-//        } else {
-//            startStep(startedEvent.getExecutableNode());
-//        }
-//    }
-//
-//    @EventListener
-//    public void afterNodeCompleted(SprimberEventPublisher.AfterNodeCompletedEvent completedEvent) {
-//        if ("test".equals(testParentsById.get(completedEvent.getExecutableNode().getParentId()).getParentType())) {
-//            lifecycle.updateFixture(completedEvent.getExecutableNode().getRuntimeId(),
-//                    fixtureResult -> fixtureResult.setStatus(allureToSprimberStatusMapping.get(completedEvent.getExecutableNode().getStatus())));
-//            lifecycle.stopFixture(completedEvent.getExecutableNode().getRuntimeId());
-//        } else {
-//            completeStep(completedEvent.getExecutableNode());
-//        }
-//    }
-//
-//    @EventListener
-//    public void afterNodeError(SprimberEventPublisher.AfterNodeErrorEvent errorEvent) {
-//        stopStepWithError(errorEvent.getExecutableNode());
-//    }
+    @EventListener
+    public void afterNodeStarted(SprimberEventPublisher.AfterNodeStartedEvent startedEvent) {
+        if ("test".equals(testParentsById.get(startedEvent.getNode().getParentId().toString()).getParentType())) {
+            FixtureResult fixtureResult = new FixtureResult();
+            fixtureResult.setName(startedEvent.getNode().getName());
+            fixtureResult.setParameters(convertStepParameters(startedEvent.getNode().getMethodParameters()));
+            lifecycle.startTearDownFixture(TEST_CONTAINER_PREFIX_NAME + startedEvent.getNode().getParentId(),
+                    startedEvent.getNode().getRuntimeId().toString(), fixtureResult);
+        } else {
+            startStep(startedEvent.getNode());
+        }
+    }
+
+    @EventListener
+    public void afterNodeCompleted(SprimberEventPublisher.AfterNodeCompletedEvent completedEvent) {
+        if ("test".equals(testParentsById.get(completedEvent.getNode().getParentId().toString()).getParentType())) {
+            updateAndStopNonExceptionFixture(completedEvent.getNode());
+        } else {
+            completeStep(completedEvent.getNode());
+        }
+    }
+
+    private void updateAndStopNonExceptionFixture(Node node) {
+        lifecycle.updateFixture(node.getRuntimeId().toString(),
+                fixtureResult -> {
+                    if (node.isCompletedSuccessfully()) {
+                        fixtureResult.setStatus(Status.PASSED);
+                    }
+                    if (node.isCompletedWithSkip()) {
+                        fixtureResult.setStatus(Status.SKIPPED);
+                    }
+                });
+        lifecycle.stopFixture(node.getRuntimeId().toString());
+    }
+
+    @EventListener
+    public void afterNodeError(SprimberEventPublisher.AfterNodeErrorEvent errorEvent) {
+        stopStepWithError(errorEvent.getNode());
+    }
 
     private void startStep(Node node) {
         StepResult stepResult = new StepResult();
@@ -271,8 +272,9 @@ public class AllureSprimber {
         node.attributesStream()
                 .filter(entry -> !entry.getKey().equals("stepData"))
                 .forEach(entry -> dataTableCsv.append(entry.getKey()).append("\t").append(entry.getValue()).append("\n"));
-
-        lifecycle.addAttachment("Step Attributes", "text/tab-separated-values", "csv", dataTableCsv.toString().getBytes());
+        if (!dataTableCsv.toString().isEmpty()) {
+            lifecycle.addAttachment("Step Attributes", "text/tab-separated-values", "csv", dataTableCsv.toString().getBytes());
+        }
         attachStepDataParameterIfPresent(String.valueOf(node.getAttribute("stepData").orElse("")));
     }
 
@@ -290,23 +292,24 @@ public class AllureSprimber {
         lifecycle.stopStep(node.getRuntimeId().toString());
     }
 
-    private void stopStepWithError(Node executableNode) {
-        if ("test".equals(testParentsById.get(executableNode.getParentId().toString()).getParentType())) {
-            Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(executableNode.getThrowable().get());
-            lifecycle.updateFixture(executableNode.getRuntimeId().toString(), fixtureResult -> {
-                fixtureResult.setStatus(Status.FAILED);
+    private void stopStepWithError(Node node) {
+        if ("test".equals(testParentsById.get(node.getParentId().toString()).getParentType())) {
+            Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(node.getThrowable().get());
+            lifecycle.updateFixture(node.getRuntimeId().toString(), fixtureResult -> {
+                fixtureResult.setStatus(node.getThrowable().map(this::mapThrowable).orElse(Status.BROKEN));
                 statusDetails.ifPresent(fixtureResult::setStatusDetails);
             });
-            lifecycle.stopFixture(executableNode.getRuntimeId().toString());
-            lifecycle.setCurrentTestCase(executableNode.getParentId().toString());
+            lifecycle.stopFixture(node.getRuntimeId().toString());
+            lifecycle.setCurrentTestCase(node.getParentId().toString());
         } else {
-            Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(executableNode.getThrowable().get());
-            lifecycle.updateStep(executableNode.getRuntimeId().toString(),
+            Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(node.getThrowable().get());
+            lifecycle.updateStep(node.getRuntimeId().toString(),
                     stepResult -> {
+                        // TODO: 2020-01-15 add status mapping
                         stepResult.setStatus(Status.FAILED);
                         statusDetails.ifPresent(stepResult::setStatusDetails);
                     });
-            lifecycle.stopStep(executableNode.getRuntimeId().toString());
+            lifecycle.stopStep(node.getRuntimeId().toString());
         }
     }
 
@@ -330,6 +333,13 @@ public class AllureSprimber {
             lifecycle.writeAttachment(attachmentSource,
                     new ByteArrayInputStream(stepData.getBytes(Charset.forName("UTF-8"))));
         }
+    }
+
+    private Status mapThrowable(Throwable throwable) {
+        if (nonPrintableExceptions.contains(throwable.getClass().getName())) {
+            return Status.FAILED;
+        }
+        return Status.BROKEN;
     }
 
     @Data

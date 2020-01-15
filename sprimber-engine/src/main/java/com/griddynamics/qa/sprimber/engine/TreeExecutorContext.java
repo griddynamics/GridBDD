@@ -24,9 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.engine;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -36,11 +34,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class TreeExecutorContext {
 
-    private final Map<UUID, TreeSuiteExecutor.StageStatus> storage = new ConcurrentHashMap<>();
+    private final Map<UUID, StageStatus> storage = new ConcurrentHashMap<>();
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    public void startStage(Node node) {
-        TreeSuiteExecutor.StageStatus stageStatus = new TreeSuiteExecutor.StageStatus();
+    void startStage(Node node) {
+        StageStatus stageStatus = new StageStatus();
         lock.writeLock().lock();
         try {
             storage.put(node.getRuntimeId(), stageStatus);
@@ -49,7 +47,7 @@ public class TreeExecutorContext {
         }
     }
 
-    public void completeStage(Node node) {
+    void completeStage(Node node) {
         lock.writeLock().lock();
         try {
             storage.remove(node.getRuntimeId());
@@ -58,22 +56,50 @@ public class TreeExecutorContext {
         }
     }
 
-    public void reportStageException(Node node) {
+    void reportStageException(Node node) {
         lock.writeLock().lock();
         try {
             Optional.ofNullable(storage.get(node.getParentId()))
-                    .ifPresent(stageStatus -> stageStatus.setHasExceptions(true));
+                    .ifPresent(stageStatus -> stageStatus.registerException(node.getThrowable().get()));
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    public boolean hasStageException(Node node) {
+    boolean hasStageException(Node node) {
         lock.readLock().lock();
         try {
             return storage.get(node.getRuntimeId()).hasExceptions();
         } finally {
             lock.readLock().unlock();
+        }
+    }
+
+    // TODO: 2020-01-16 add support for multiply exceptions at node level
+    Throwable getStageException(Node node) {
+        lock.readLock().lock();
+        try {
+            return storage.get(node.getRuntimeId()).getFirstException();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    static class StageStatus {
+        private boolean hasExceptions;
+        private List<Throwable> exceptionList = new ArrayList<>();
+
+        boolean hasExceptions() {
+            return hasExceptions;
+        }
+
+        void registerException(Throwable throwable) {
+            this.hasExceptions = true;
+            exceptionList.add(throwable);
+        }
+
+        Throwable getFirstException() {
+            return exceptionList.get(0);
         }
     }
 }

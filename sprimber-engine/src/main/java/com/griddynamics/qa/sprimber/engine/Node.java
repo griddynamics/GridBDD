@@ -68,7 +68,7 @@ public class Node {
 
     private final Method method;
     private Throwable throwable;
-    private final Map<String, Object> parameters = new HashMap<>();
+    private final Map<String, Object> parameters = new LinkedHashMap<>();
 
     private Node(UUID parentId, Type type, String role, Method method, int subNodeExecutionModes) {
         this.type = type;
@@ -139,7 +139,7 @@ public class Node {
     }
 
     public Map<String, Object> getMethodParameters() {
-        return new HashMap<>(parameters);
+        return new LinkedHashMap<>(parameters);
     }
 
     public Optional<Throwable> getThrowable() {
@@ -479,7 +479,7 @@ public class Node {
         private Condition condition;
         private Method method;
         private final Map<String, Object> attributes = new HashMap<>();
-        private final Map<String, Object> parameters = new HashMap<>();
+        private final Map<String, Object> parameters = new LinkedHashMap<>();
 
         public Builder() {
         }

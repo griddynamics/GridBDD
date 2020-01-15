@@ -42,10 +42,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -71,7 +68,7 @@ class PickleStepFactory {
                 .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_TARGET_WHEN_BYPASS_MODE);
         Node stepContainerNode = parentNode.addChild(builder);
 
-        List<Node> testMethods = testMethodRegistry.streamAllTestMethods()
+        List<Node> nodeList = testMethodRegistry.streamAllTestMethods()
                 .filter(testMethod -> StringUtils.isNotBlank(testMethod.getTextPattern()))
                 .filter(filterTestMethodByTags())
                 .map(testMethod ->
@@ -81,11 +78,11 @@ class PickleStepFactory {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
-        if (testMethods.size() == 0) {
+        if (nodeList.size() == 0) {
             throw new StepNotFoundException(stepCandidate);
         }
-        if (testMethods.size() > 1) {
-            throw new ExtraMappingFoundException(testMethods, stepCandidate);
+        if (nodeList.size() > 1) {
+            throw new ExtraMappingFoundException(nodeList, stepCandidate);
         }
         return stepContainerNode;
     }
@@ -119,16 +116,16 @@ class PickleStepFactory {
 
     private Map<String, Object> convertStepArguments(List<Argument> arguments, List<Type> methodParameters) {
         return IntStream.range(0, methodParameters.size())
-                .mapToObj(counter -> argumentToEntry(arguments.get(counter), methodParameters.get(counter)))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .mapToObj(counter -> argumentToEntry(arguments.get(counter), methodParameters.get(counter), counter))
+                .collect(LinkedHashMap::new, (linkedHashMap, entry) -> linkedHashMap.put(entry.getKey(), entry.getValue()), LinkedHashMap::putAll);
     }
 
-    private Map.Entry<String, Object> argumentToEntry(Argument argument, Type type) {
+    private Map.Entry<String, Object> argumentToEntry(Argument argument, Type type, int counter) {
         Object value = argument.getValue();
         if (value instanceof DataTable) {
             value = ((DataTable) value).convert(type, false);
         }
-        return new ImmutablePair<>(type.getTypeName(), value);
+        return new ImmutablePair<>(type.getTypeName() + counter, value);
     }
 
     /**
