@@ -71,10 +71,10 @@ public class SprimberReportingConfiguration {
 
     @Configuration
     static class AllureReporting {
-//        @Bean
-//        public AllureSprimber allureSprimber(Map<Node.Status, Status> allureToSprimberStatusMapping, AllureLifecycle allureLifecycle) {
-//            return new AllureSprimber(allureToSprimberStatusMapping, allureLifecycle);
-//        }
+        @Bean
+        public AllureSprimber allureSprimber(AllureLifecycle allureLifecycle) {
+            return new AllureSprimber(allureLifecycle);
+        }
 
         @Bean
         public Set<String> nonPrintableExceptions() {
