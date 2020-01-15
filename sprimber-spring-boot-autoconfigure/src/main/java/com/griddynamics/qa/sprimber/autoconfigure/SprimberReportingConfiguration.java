@@ -29,6 +29,7 @@ import com.griddynamics.qa.sprimber.reporting.ConditionalErrorPrinter;
 import com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher;
 import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
 import com.griddynamics.qa.sprimber.reporting.AllureSprimber;
+import com.griddynamics.qa.sprimber.runtime.ExecutionContext;
 import cucumber.api.Pending;
 import io.qameta.allure.AllureLifecycle;
 import io.qameta.allure.model.Status;
@@ -51,8 +52,8 @@ public class SprimberReportingConfiguration {
     static class ClassicReporting {
         @Bean
         @ConditionalOnProperty(value = "reporting.summary.enable", prefix = "sprimber.configuration", havingValue = "true", matchIfMissing = true)
-        public TestCaseSummaryPrinter summaryPrinter() {
-            return new TestCaseSummaryPrinter();
+        public TestCaseSummaryPrinter summaryPrinter(ExecutionContext context) {
+            return new TestCaseSummaryPrinter(context);
         }
 
         @Bean

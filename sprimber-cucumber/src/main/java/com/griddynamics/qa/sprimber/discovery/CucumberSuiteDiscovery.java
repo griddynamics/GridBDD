@@ -61,6 +61,17 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
     private final Parser<GherkinDocument> gherkinParser;
     private final ApplicationContext applicationContext;
     private final CucumberTagFilter tagFilter;
+    private final Statistic statistic = new Statistic();
+
+    @Override
+    public Statistic getDiscoveredInfo() {
+        return statistic;
+    }
+
+    @Override
+    public String name() {
+        return "Cucumber Test Discovery";
+    }
 
     @Override
     public Node discover() {
@@ -80,11 +91,20 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
         Node testCase = parentNode.addChild(builder);
         compiler.compile(cucumberDocument.getDocument()).stream()
                 .filter(pickleTagFilter())
-                .forEach(pickle -> cucumberTestBinder.buildAndAddTestNode(testCase, pickle, cucumberDocument));
+                .forEach(pickle -> {
+                    cucumberTestBinder.buildAndAddTestNode(testCase, pickle, cucumberDocument);
+                    statistic.registerPreparedStage("test");
+                });
     }
 
     private Predicate<Pickle> pickleTagFilter() {
-        return pickle -> tagFilter.filter(getTagsFromPickle(pickle));
+        return pickle -> {
+            boolean isMatched = tagFilter.filter(getTagsFromPickle(pickle));
+            if (!isMatched) {
+                statistic.registerFilteredStage("test");
+            }
+            return isMatched;
+        };
     }
 
     private List<String> getTagsFromPickle(Pickle pickle) {
