@@ -26,22 +26,48 @@ package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.engine.Node;
 
+import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * @author fparamonov
  */
 public interface TestSuiteDiscovery {
 
+    Statistic getDiscoveredInfo();
+
     Node discover();
 
-    /**
-     * This interface allow to extract the specific logic for test parsing.
-     * For example the classic test consist of one method rather than BDD test
-     * consist of complex logic to bind the text to corresponding Java methods
-     *
-     * @author fparamonov
-     */
-    interface TestDefinitionBinder<TC> {
+    String name();
 
-        Node bind(TC testCandidate);
+    class Statistic extends HashMap<String, AtomicInteger> {
+
+        private static final String FILTERED_PREFIX = "filter";
+        private static final String PREPARED_PREFIX = "prepared";
+
+        public void registerFilteredStage(String stageRole) {
+            putIfAbsent(FILTERED_PREFIX + stageRole, new AtomicInteger(0));
+            get(FILTERED_PREFIX + stageRole).incrementAndGet();
+        }
+
+        public void registerPreparedStage(String stageRole) {
+            putIfAbsent(PREPARED_PREFIX + stageRole, new AtomicInteger(0));
+            get(PREPARED_PREFIX + stageRole).incrementAndGet();
+        }
+
+        public int filteredCountByStage(String stageRole) {
+            return getOrDefault(FILTERED_PREFIX + stageRole, new AtomicInteger(0)).get();
+        }
+
+        public int preparedCountByStage(String stageRole) {
+            return getOrDefault(PREPARED_PREFIX + stageRole, new AtomicInteger(0)).get();
+        }
+
+        public void accumulate(Statistic statistic) {
+            statistic.keySet().forEach(key -> {
+                int newValue = getOrDefault(key, new AtomicInteger(0)).addAndGet(statistic.get(key).get());
+                put(key, new AtomicInteger(newValue));
+            });
+        }
     }
 }

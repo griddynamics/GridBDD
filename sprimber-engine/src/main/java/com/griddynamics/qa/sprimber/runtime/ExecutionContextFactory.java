@@ -29,8 +29,10 @@ import com.griddynamics.qa.sprimber.engine.Node;
 import com.griddynamics.qa.sprimber.stepdefinition.StepClassAnnotationsProvider;
 import com.griddynamics.qa.sprimber.stepdefinition.TestMethodsBulkLoader;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.context.ApplicationContext;
+import org.springframework.util.StopWatch;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -44,6 +46,7 @@ import java.util.stream.Stream;
  * @author fparamonov
  */
 
+@Slf4j
 @RequiredArgsConstructor
 public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContext> {
 
@@ -59,9 +62,16 @@ public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContex
 
     @Override
     protected ExecutionContext createInstance() throws Exception {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         ExecutionContext executionContext = new ExecutionContext();
         bulkLoader.load(getMethodCandidates());
         executionContext.getNodes().addAll(exploreNodes());
+        TestSuiteDiscovery.Statistic discoveryInfo = joinStatistic();
+        executionContext.getStatistic().putAll(discoveryInfo);
+        logTotalDiscoveryResults(discoveryInfo);
+        stopWatch.stop();
+        log.debug("Initial setup took: '{}' seconds", stopWatch.getTotalTimeSeconds());
         return executionContext;
     }
 
@@ -78,7 +88,33 @@ public class ExecutionContextFactory extends AbstractFactoryBean<ExecutionContex
 
     private List<Node> exploreNodes() {
         return testSuiteDiscoveries.stream()
-                .map(TestSuiteDiscovery::discover)
+                .map(this::discoverRootNodeAndLog)
                 .collect(Collectors.toList());
+    }
+
+    private Node discoverRootNodeAndLog(TestSuiteDiscovery discovery) {
+        log.debug("Started test discovery from '{}'", discovery.name());
+        Node rootNode = discovery.discover();
+        logDiscoveryResults(discovery.getDiscoveredInfo());
+        log.debug("Finished discovery");
+        return rootNode;
+    }
+
+    private TestSuiteDiscovery.Statistic joinStatistic() {
+        return testSuiteDiscoveries.stream()
+                .map(TestSuiteDiscovery::getDiscoveredInfo)
+                .collect(TestSuiteDiscovery.Statistic::new, TestSuiteDiscovery.Statistic::accumulate, HashMap::putAll);
+    }
+
+    private void logTotalDiscoveryResults(TestSuiteDiscovery.Statistic statistic) {
+        log.info("Total discovery statistic:");
+        statistic.forEach((key, value) -> log.info("\tStage: '{}' count: '{}'", key, value));
+        log.info("Initial test discovery Completed");
+    }
+
+    private void logDiscoveryResults(TestSuiteDiscovery.Statistic statistic) {
+        log.debug("Current discovery statistic:");
+        statistic.forEach((key, value) -> log.debug("\tStage: '{}' count: '{}'", key, value));
+        log.debug("Initial test discovery Completed");
     }
 }

@@ -24,6 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.runtime;
 
+import com.griddynamics.qa.sprimber.discovery.TestSuiteDiscovery;
 import com.griddynamics.qa.sprimber.engine.Node;
 import lombok.Getter;
 
@@ -45,4 +46,6 @@ public class ExecutionContext {
      * Convenient place to hold all root nodes that available at runtime
      */
     private final List<Node> nodes = new ArrayList<>();
+
+    private final TestSuiteDiscovery.Statistic statistic = new TestSuiteDiscovery.Statistic();
 }

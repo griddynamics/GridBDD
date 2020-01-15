@@ -51,6 +51,17 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
     private final ClassicTestBinder classicTestBinder;
     private final ApplicationContext applicationContext;
     private final TagFilter tagFilter;
+    private final Statistic statistic = new Statistic();
+
+    @Override
+    public Statistic getDiscoveredInfo() {
+        return statistic;
+    }
+
+    @Override
+    public String name() {
+        return "Classic Test Discovery";
+    }
 
     @Override
     public Node discover() {
@@ -72,7 +83,10 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
         Arrays.stream(testController.getClass().getDeclaredMethods())
                 .filter(method -> method.isAnnotationPresent(TestMapping.class))
                 .filter(this::filterTests)
-                .forEach(method -> classicTestBinder.bind(testCase, method));
+                .forEach(method -> {
+                    classicTestBinder.bind(testCase, method);
+                    statistic.registerPreparedStage("test");
+                });
     }
 
     private boolean filterTests(Method method) {
@@ -80,6 +94,10 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
         List<String> tags = Arrays.stream((Object[]) AnnotationUtils.getValue(testMapping, "tags"))
                 .map(o -> (String) o)
                 .collect(Collectors.toList());
-        return tagFilter.filter(tags);
+        boolean isMatched = tagFilter.filter(tags);
+        if (!isMatched) {
+            statistic.registerFilteredStage("test");
+        }
+        return isMatched;
     }
 }

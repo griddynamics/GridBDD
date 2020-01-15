@@ -25,6 +25,8 @@ $Id:
 package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.runtime.ExecutionContext;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.NamedThreadLocal;
@@ -45,12 +47,15 @@ import java.util.stream.IntStream;
  */
 
 @Slf4j
+@RequiredArgsConstructor
 public class TestCaseSummaryPrinter {
+
+    private final ExecutionContext executionContext;
 
     private final ThreadLocal<StringBuilder> reportBuilder = new NamedThreadLocal<>("Testcase report builder");
     private final ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
-    private final AtomicInteger totalCount = new AtomicInteger(0);
     private final AtomicInteger executedCount = new AtomicInteger(0);
+    private final AtomicInteger exceptionsCount = new AtomicInteger(0);
 
     @EventListener
     public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
@@ -80,6 +85,7 @@ public class TestCaseSummaryPrinter {
 
     @EventListener
     public void targetNodeError(SprimberEventPublisher.TargetNodeErrorEvent errorEvent) {
+        exceptionsCount.incrementAndGet();
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
         stringBuilder.append(getIndents() + "\t");
@@ -100,6 +106,7 @@ public class TestCaseSummaryPrinter {
 
     @EventListener
     public void beforeNodeError(SprimberEventPublisher.BeforeNodeErrorEvent errorEvent) {
+        exceptionsCount.incrementAndGet();
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
         stringBuilder.append(getIndents());
@@ -119,6 +126,7 @@ public class TestCaseSummaryPrinter {
 
     @EventListener
     public void afterNodeError(SprimberEventPublisher.AfterNodeErrorEvent errorEvent) {
+        exceptionsCount.incrementAndGet();
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n");
         stringBuilder.append(getIndents());
@@ -138,12 +146,17 @@ public class TestCaseSummaryPrinter {
         executedCount.incrementAndGet();
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n")
-                .append(String.format("Executed '%d' out of '%d'", executedCount.get(), totalCount.get()));
-        stringBuilder.append("\n\n");
+                .append(String.format("Executed '%d' out of '%d'", executedCount.get(), executionContext.getStatistic().preparedCountByStage("test")))
+                .append(String.format("\nCurrent pass rate %.2f%%", getPassedRate()))
+                .append("\n\n");
         String summaryRaw = stringBuilder.toString();
         String summary = summaryRaw.replaceFirst("\\{STATUS}", String.valueOf(containerNode.getCurrentState()));
         log.info(summary);
         reportBuilder.remove();
+    }
+
+    private double getPassedRate() {
+        return (1.0 - (double) exceptionsCount.get() / (double) executionContext.getStatistic().preparedCountByStage("test")) * 100;
     }
 
     private String getIndents() {
