@@ -26,6 +26,7 @@ package com.griddynamics.qa.sprimber.discovery;
 
 import com.griddynamics.qa.sprimber.condition.PropertyCondition;
 import com.griddynamics.qa.sprimber.condition.SkipOnProperty;
+import com.griddynamics.qa.sprimber.engine.Async;
 import com.griddynamics.qa.sprimber.engine.Node;
 import com.griddynamics.qa.sprimber.stepdefinition.TestMethod;
 import com.griddynamics.qa.sprimber.stepdefinition.TestMethodRegistry;
@@ -97,6 +98,7 @@ class PickleStepFactory {
                 .ifPresent(stepData -> builder.withAttribute("stepData", stepData));
         buildCondition(testMethod.getMethod())
                 .ifPresent(builder::withCondition);
+        prepareForAsyncIfPresent(builder, testMethod.getMethod());
         return parentNode.addTarget(builder);
     }
 
@@ -112,6 +114,12 @@ class PickleStepFactory {
             propertyCondition = new PropertyCondition(skipOnProperty.value(), skipOnProperty.havingValue());
         }
         return Optional.ofNullable(propertyCondition);
+    }
+
+    private void prepareForAsyncIfPresent(Builder builder, Method method) {
+        if (method.isAnnotationPresent(Async.class)) {
+            builder.withAsyncEnabled("test");
+        }
     }
 
     private Map<String, Object> convertStepArguments(List<Argument> arguments, List<Type> methodParameters) {

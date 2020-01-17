@@ -25,6 +25,7 @@ $Id:
 package com.griddynamics.qa.sprimber.test.steps;
 
 import com.griddynamics.qa.sprimber.condition.SkipOnProperty;
+import com.griddynamics.qa.sprimber.engine.Async;
 import com.griddynamics.qa.sprimber.engine.model.action.Actions;
 import com.griddynamics.qa.sprimber.test.model.Author;
 import cucumber.api.java.After;
@@ -40,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author fparamonov
@@ -76,7 +78,7 @@ public class BaseEchoSteps {
 
     @Given("the next raw data table present")
     public void givenRawDataTable(DataTable dataTable) {
-        LOGGER.info("Hey, I'm given action for author {}", dataTable.cell(0,0));
+        LOGGER.info("Hey, I'm given action for author {}", dataTable.cell(0, 0));
     }
 
     @Given("the next author long consumed '{long}'")
@@ -106,6 +108,25 @@ public class BaseEchoSteps {
     @When("conditional action")
     public void whenThatMayBeSkipped() {
         LOGGER.info("I'm step that can be conditionally skipped");
+    }
+
+    @Async
+    @When("long lasting optional action")
+    public void whenLongOptionalAction() throws InterruptedException {
+        LOGGER.info("I'm step that optional and took to match time for executing");
+        LOGGER.info("I'm starting now...");
+        TimeUnit.SECONDS.sleep(5);
+        LOGGER.info("I'm done!");
+    }
+
+    @Async
+    @When("long lasting optional action with exception")
+    public void whenLongOptionalExceptionalAction() throws InterruptedException {
+        LOGGER.info("I'm step with exception that optional and took to match time for executing");
+        LOGGER.info("I'm starting now...");
+        TimeUnit.SECONDS.sleep(5);
+        LOGGER.info("I'm done!");
+        Assertions.assertThat("true").as("True should never be false").isEqualTo("false");
     }
 
     @Then("test then action")

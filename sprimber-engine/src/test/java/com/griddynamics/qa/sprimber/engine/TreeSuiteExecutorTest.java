@@ -53,6 +53,7 @@ public class TreeSuiteExecutorTest {
         Map<String, Executor> childSubNodesExecutor = new HashMap<>();
 
         childSubNodesExecutor.put("testExecutor", Executors.newFixedThreadPool(3));
+        childSubNodesExecutor.put("node-async-pool", Executors.newFixedThreadPool(3));
 
         treeSuiteExecutor = Mockito.spy(
                 new TreeSuiteExecutor(stubbedNodeInvoker, childSubNodesExecutor, context, stubbedEventPublisher));
@@ -130,5 +131,18 @@ public class TreeSuiteExecutorTest {
         inOrder.verify(stubbedNodeInvoker, times(1)).after();
         inOrder.verify(stubbedNodeInvoker, times(1)).exceptionalStep();
         inOrder.verify(stubbedNodeInvoker, times(0)).after();
+    }
+
+    @Test
+    public void asyncAndRegularStep() {
+        Node rootNode = testCaseBuilder.buildAsyncAndRegularWrappedSteps();
+        InOrder inOrder = Mockito.inOrder(stubbedNodeInvoker);
+        treeSuiteExecutor.executeRoot(rootNode);
+        inOrder.verify(stubbedNodeInvoker, times(1)).before();
+        inOrder.verify(stubbedNodeInvoker, times(1)).step();
+        inOrder.verify(stubbedNodeInvoker, times(1)).after();
+        inOrder.verify(stubbedNodeInvoker, times(1)).before();
+        inOrder.verify(stubbedNodeInvoker, times(1)).step();
+        inOrder.verify(stubbedNodeInvoker, times(1)).after();
     }
 }

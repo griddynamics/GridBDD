@@ -26,7 +26,10 @@ package com.griddynamics.qa.sprimber.engine;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Spliterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -41,6 +44,7 @@ import static com.griddynamics.qa.sprimber.engine.Node.*;
 @Slf4j
 class TreeSuiteExecutor implements TreeExecutor {
 
+    public static final String NODE_ASYNC_EXECUTOR_NAME = "node-async-pool";
     private static final String STARTED_EVENT_POSTFIX = "Started";
     private static final String COMPLETED_EVENT_POSTFIX = "Completed";
     private static final String ERROR_EVENT_POSTFIX = "Error";
@@ -79,15 +83,15 @@ class TreeSuiteExecutor implements TreeExecutor {
         processStage(node);
     }
 
-    public void processStage(Node node) {
+    private void processStage(Node node) {
         node.scheduleExecution();
         context.startStage(node);
         eventsPublisher.stageStarted(node);
         invokeSubStage(node.beforeSpliterator(context.hasStageException(node)), BEFORE_SUB_NODE_NAME);
-        CompletableFuture subStageFuture = scheduleSubStage(node.childSpliterator(context.hasStageException(node)));
+        scheduleSubStage(node.childSpliterator(context.hasStageException(node))).join();
         invokeSubStage(node.targetSpliterator(context.hasStageException(node)), TARGET_SUB_NODE_NAME);
         invokeSubStage(node.afterSpliterator(context.hasStageException(node)), AFTER_SUB_NODE_NAME);
-        subStageFuture.join();
+        context.waitForFutures(node);
         if (context.hasStageException(node)) {
             node.completeExceptionally(context.getStageException(node));
             context.reportStageException(node);
@@ -101,26 +105,36 @@ class TreeSuiteExecutor implements TreeExecutor {
     private void invokeSubStage(Spliterator<Node> subNodesSpliterator, String stageName) {
         StreamSupport.stream(subNodesSpliterator, false)
                 .forEach(subNode -> {
-                    subNode.prepareExecution();
-                    eventsPublisherByName.get(stageName + STARTED_EVENT_POSTFIX).accept(subNode);
-                    boolean skippedByCondition = subNode.getCondition().map(nodeInvoker::shouldSkip).orElse(false);
-                    if (subNode.isReadyForInvoke() && !skippedByCondition) {
-                        try {
-                            nodeInvoker.invoke(subNode);
-                            subNode.completeSuccessfully();
-                            eventsPublisherByName.get(stageName + COMPLETED_EVENT_POSTFIX).accept(subNode);
-                        } catch (Throwable throwable) {
-                            subNode.completeExceptionally(throwable);
-                            context.reportStageException(subNode);
-                            eventsPublisherByName.get(stageName + ERROR_EVENT_POSTFIX).accept(subNode);
-                        }
-                    }
-                    if (subNode.isBypassed() || skippedByCondition) {
-                        //// TODO: 2020-01-09 add callback for option to execute something extra for BYPASS mode
-                        subNode.completeWithSkip();
-                        eventsPublisherByName.get(stageName + COMPLETED_EVENT_POSTFIX).accept(subNode);
+                    if (subNode.isAsync()) {
+                        CompletableFuture<Void> scheduledNodeInvocation =
+                                CompletableFuture.runAsync(() -> invokeNode(stageName, subNode), childExecutors.get(NODE_ASYNC_EXECUTOR_NAME));
+                        context.scheduleInvocation(subNode, scheduledNodeInvocation);
+                    } else {
+                        invokeNode(stageName, subNode);
                     }
                 });
+    }
+
+    private void invokeNode(String stageName, Node subNode) {
+        subNode.prepareExecution();
+        eventsPublisherByName.get(stageName + STARTED_EVENT_POSTFIX).accept(subNode);
+        boolean skippedByCondition = subNode.getCondition().map(nodeInvoker::shouldSkip).orElse(false);
+        if (subNode.isReadyForInvoke() && !skippedByCondition) {
+            try {
+                nodeInvoker.invoke(subNode);
+                subNode.completeSuccessfully();
+                eventsPublisherByName.get(stageName + COMPLETED_EVENT_POSTFIX).accept(subNode);
+            } catch (Throwable throwable) {
+                subNode.completeExceptionally(throwable);
+                context.reportStageException(subNode);
+                eventsPublisherByName.get(stageName + ERROR_EVENT_POSTFIX).accept(subNode);
+            }
+        }
+        if (subNode.isBypassed() || skippedByCondition) {
+            //// TODO: 2020-01-09 add callback for option to execute something extra for BYPASS mode
+            subNode.completeWithSkip();
+            eventsPublisherByName.get(stageName + COMPLETED_EVENT_POSTFIX).accept(subNode);
+        }
     }
 
     private CompletableFuture<Void> scheduleSubStage(Spliterator<Node> subNodesSpliterator) {

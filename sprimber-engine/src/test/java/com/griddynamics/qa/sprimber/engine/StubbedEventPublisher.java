@@ -37,7 +37,7 @@ import java.util.stream.IntStream;
 @Slf4j
 public class StubbedEventPublisher implements NodeExecutionEventsPublisher {
 
-    private ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
+    private ThreadLocal<Integer> depthLevelThreadLocal = ThreadLocal.withInitial(() -> 0);
 
     @Override
     public void stageStarted(Node node) {

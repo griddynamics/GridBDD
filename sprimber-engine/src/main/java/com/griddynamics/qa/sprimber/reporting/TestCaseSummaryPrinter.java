@@ -51,8 +51,8 @@ public class TestCaseSummaryPrinter {
 
     private final ExecutionContext executionContext;
 
-    private final ThreadLocal<StringBuilder> reportBuilder = new NamedThreadLocal<>("Testcase report builder");
-    private final ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
+    private final ThreadLocal<StringBuilder> reportBuilder = ThreadLocal.withInitial(StringBuilder::new);
+    private final ThreadLocal<Integer> depthLevelThreadLocal = ThreadLocal.withInitial(() -> 0);
     private final AtomicInteger executedCount = new AtomicInteger(0);
     private final AtomicInteger exceptionsCount = new AtomicInteger(0);
 

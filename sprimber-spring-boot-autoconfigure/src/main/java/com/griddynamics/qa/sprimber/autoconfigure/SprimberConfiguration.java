@@ -77,9 +77,16 @@ public class SprimberConfiguration {
             return getDefaultExecutor("TCExecutor-");
         }
 
-        @Bean
+        @Bean("testExecutor")
+        @ConditionalOnMissingBean(name = "testExecutor")
         public Executor testExecutor() {
             return getDefaultExecutor("TestExecutor-");
+        }
+
+        @Bean("node-async-pool")
+        @ConditionalOnMissingBean(name = "node-async-pool")
+        public Executor nodeAsyncPool() {
+            return getDefaultExecutor("NodeAsyncPool");
         }
 
         private ThreadPoolTaskExecutor getDefaultExecutor(String s) {

@@ -9,7 +9,7 @@ sprimber:
       printer:
         enable: true
     tagFilters:
-      - "@scope or @echo or @labels or @code_style or @conditional"
+      - "@scope or @echo or @labels or @code_style or @conditional or @async_mode"
 skip:
   me:
     when:

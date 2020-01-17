@@ -25,69 +25,122 @@ $Id:
 package com.griddynamics.qa.sprimber.engine;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Stream;
 
 /**
  * @author fparamonov
  */
 public class TreeExecutorContext {
 
-    private final Map<UUID, StageStatus> storage = new ConcurrentHashMap<>();
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final Map<UUID, StageDetails> storage = new ConcurrentHashMap<>();
+    private final Map<UUID, FutureContainer> futures = new ConcurrentHashMap<>();
+    private final Map<UUID, UUID> scheduledStageToGrantParent = new ConcurrentHashMap<>();
+    private final ReadWriteLock storageLock = new ReentrantReadWriteLock();
+    private final ReadWriteLock futureLock = new ReentrantReadWriteLock();
 
     void startStage(Node node) {
-        StageStatus stageStatus = new StageStatus();
-        lock.writeLock().lock();
+        StageDetails stageDetails = new StageDetails();
+        storageLock.writeLock().lock();
         try {
-            storage.put(node.getRuntimeId(), stageStatus);
+            storage.put(node.getRuntimeId(), stageDetails);
         } finally {
-            lock.writeLock().unlock();
+            storageLock.writeLock().unlock();
+        }
+    }
+
+    void waitForFutures(Node node) {
+        Optional.ofNullable(getFutureContainer(node)).ifPresent(c -> {
+            if (c.getJoinStage().equals(node.getRole())) {
+                CompletableFuture
+                        .allOf(futures.get(node.getRuntimeId()).streamFutures().toArray(CompletableFuture[]::new))
+                        .join();
+            } else {
+                rescheduleFutureContainer(node, c);
+                scheduledStageToGrantParent.merge(node.getRuntimeId(), node.getParentId(), (childId, oldParentId) -> node.getParentId());
+            }
+        });
+    }
+
+    private void rescheduleFutureContainer(Node node, FutureContainer c) {
+        futureLock.writeLock().lock();
+        try {
+            futures.putIfAbsent(node.getParentId(), new FutureContainer(c.getJoinStage()));
+            futures.get(node.getParentId()).merge(c);
+            futures.remove(node.getRuntimeId());
+        } finally {
+            futureLock.writeLock().unlock();
+        }
+    }
+
+    private FutureContainer getFutureContainer(Node node) {
+        FutureContainer container;
+        futureLock.readLock().lock();
+        try {
+            container = futures.get(node.getRuntimeId());
+        } finally {
+            futureLock.readLock().unlock();
+        }
+        return container;
+    }
+
+    void scheduleInvocation(Node node, CompletableFuture future) {
+        futureLock.writeLock().lock();
+        try {
+            futures.putIfAbsent(node.getParentId(), new FutureContainer(node.joinStage()));
+            futures.get(node.getParentId()).addFuture(future);
+        } finally {
+            futureLock.writeLock().unlock();
         }
     }
 
     void completeStage(Node node) {
-        lock.writeLock().lock();
+        storageLock.writeLock().lock();
         try {
             storage.remove(node.getRuntimeId());
         } finally {
-            lock.writeLock().unlock();
+            storageLock.writeLock().unlock();
         }
     }
 
     void reportStageException(Node node) {
-        lock.writeLock().lock();
+        storageLock.writeLock().lock();
         try {
             Optional.ofNullable(storage.get(node.getParentId()))
-                    .ifPresent(stageStatus -> stageStatus.registerException(node.getThrowable().get()));
+                    .ifPresent(sd -> sd.registerException(node.getThrowable().get()));
+            Optional.ofNullable(scheduledStageToGrantParent.get(node.getParentId()))
+                    .map(storage::get)
+                    .ifPresent(sd -> sd.registerException(node.getThrowable().get()));
         } finally {
-            lock.writeLock().unlock();
+            storageLock.writeLock().unlock();
         }
     }
 
     boolean hasStageException(Node node) {
-        lock.readLock().lock();
+        storageLock.readLock().lock();
         try {
             return storage.get(node.getRuntimeId()).hasExceptions();
         } finally {
-            lock.readLock().unlock();
+            storageLock.readLock().unlock();
         }
     }
 
     // TODO: 2020-01-16 add support for multiply exceptions at node level
     Throwable getStageException(Node node) {
-        lock.readLock().lock();
+        storageLock.readLock().lock();
         try {
             return storage.get(node.getRuntimeId()).getFirstException();
         } finally {
-            lock.readLock().unlock();
+            storageLock.readLock().unlock();
         }
     }
 
-    static class StageStatus {
+    static class StageDetails {
         private boolean hasExceptions;
-        private List<Throwable> exceptionList = new ArrayList<>();
+        private final List<Throwable> exceptionList = new ArrayList<>();
 
         boolean hasExceptions() {
             return hasExceptions;
@@ -100,6 +153,31 @@ public class TreeExecutorContext {
 
         Throwable getFirstException() {
             return exceptionList.get(0);
+        }
+    }
+
+    static class FutureContainer {
+        private final List<CompletableFuture> futureList = new ArrayList<>();
+        private final String joinStage;
+
+        FutureContainer(String joinStage) {
+            this.joinStage = joinStage;
+        }
+
+        void addFuture(CompletableFuture future) {
+            futureList.add(future);
+        }
+
+        void merge(FutureContainer container) {
+            container.streamFutures().forEach(futureList::add);
+        }
+
+        Stream<CompletableFuture> streamFutures() {
+            return futureList.stream();
+        }
+
+        String getJoinStage() {
+            return joinStage;
         }
     }
 }

@@ -47,6 +47,7 @@ public class Node {
     private Status status;
     private Phase phase;
     private Type type;
+    private AsyncMode asyncMode;
     private boolean isBypassed;
     /**
      * The node can be in one the 3 state - SKIP, ERROR and normal execution.
@@ -89,6 +90,7 @@ public class Node {
         this.historyId = builder.historyId;
         this.subNodeExecutionModes = builder.subNodeExecutionModes;
         this.condition = builder.condition;
+        this.asyncMode = builder.asyncMode;
         this.method = builder.method;
         this.parameters.putAll(builder.parameters);
         this.attributes.putAll(builder.attributes);
@@ -168,6 +170,14 @@ public class Node {
 
     public boolean isBypassed() {
         return this.isBypassed;
+    }
+
+    public boolean isAsync() {
+        return Optional.ofNullable(asyncMode).map(asyncMode -> asyncMode.isEnabled).orElse(false);
+    }
+
+    public String joinStage() {
+        return Optional.ofNullable(asyncMode).map(asyncMode -> asyncMode.joinStage).orElseThrow(() -> new RuntimeException("Node is not configured for async invocation mode"));
     }
 
     public void prepareExecution() {
@@ -375,6 +385,16 @@ public class Node {
         BEFORE, CHILD, TARGET, AFTER
     }
 
+    private static class AsyncMode {
+        private final boolean isEnabled;
+        private final String joinStage;
+
+        public AsyncMode(boolean isEnabled, String joinStage) {
+            this.isEnabled = isEnabled;
+            this.joinStage = joinStage;
+        }
+    }
+
     /**
      * The Node Spliterator with feedback.
      * It aimed to walk through the underlain collection of sub nodes and emit one per iteration.
@@ -477,6 +497,7 @@ public class Node {
         private String historyId;
         private String role;
         private Condition condition;
+        private AsyncMode asyncMode;
         private Method method;
         private final Map<String, Object> attributes = new HashMap<>();
         private final Map<String, Object> parameters = new LinkedHashMap<>();
@@ -526,6 +547,11 @@ public class Node {
 
         public Builder withMethod(Method method) {
             this.method = method;
+            return this;
+        }
+
+        public Builder withAsyncEnabled(String joinStage) {
+            this.asyncMode = new AsyncMode(true, joinStage);
             return this;
         }
     }
