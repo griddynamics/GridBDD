@@ -189,6 +189,7 @@ public class AllureSprimber {
         lifecycle.updateStep(errorEvent.getNode().getRuntimeId().toString(),
                 stepResult -> {
                     stepResult.setStatus(errorEvent.getNode().getThrowable().map(this::mapThrowable).orElse(Status.BROKEN));
+                    errorEvent.getNode().getThrowable().ifPresent(this::attachExceptionMessage);
                     statusDetails.ifPresent(stepResult::setStatusDetails);
                 });
         lifecycle.updateTestCase(testResult -> statusDetails.ifPresent(testResult::setStatusDetails));
@@ -333,6 +334,10 @@ public class AllureSprimber {
             lifecycle.writeAttachment(attachmentSource,
                     new ByteArrayInputStream(stepData.getBytes(Charset.forName("UTF-8"))));
         }
+    }
+
+    private void attachExceptionMessage(Throwable throwable) {
+        lifecycle.addAttachment("Exception Message", "text/plain", ".exception", throwable.getLocalizedMessage().getBytes());
     }
 
     private Status mapThrowable(Throwable throwable) {

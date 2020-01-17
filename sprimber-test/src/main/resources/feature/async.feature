@@ -58,3 +58,15 @@ Feature: This is a feature for echo application to see the ability of delayed st
     When long lasting optional action
     Then test then action
 
+  @async_mode
+  @Story=async_mode
+  Scenario: Simple scenario to check multiple exceptions in async steps
+
+    Given test given action
+    When test when action
+    And long lasting optional action
+    Then test then action
+    When long lasting optional action with exception
+    Then test then action
+    And every time failed action
+    And test then action

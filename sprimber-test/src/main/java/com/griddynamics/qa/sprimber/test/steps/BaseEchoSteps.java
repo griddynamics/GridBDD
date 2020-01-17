@@ -115,7 +115,7 @@ public class BaseEchoSteps {
     public void whenLongOptionalAction() throws InterruptedException {
         LOGGER.info("I'm step that optional and took to match time for executing");
         LOGGER.info("I'm starting now...");
-        TimeUnit.SECONDS.sleep(5);
+        TimeUnit.SECONDS.sleep(1);
         LOGGER.info("I'm done!");
     }
 
@@ -124,7 +124,7 @@ public class BaseEchoSteps {
     public void whenLongOptionalExceptionalAction() throws InterruptedException {
         LOGGER.info("I'm step with exception that optional and took to match time for executing");
         LOGGER.info("I'm starting now...");
-        TimeUnit.SECONDS.sleep(5);
+        TimeUnit.SECONDS.sleep(1);
         LOGGER.info("I'm done!");
         Assertions.assertThat("true").as("True should never be false").isEqualTo("false");
     }
