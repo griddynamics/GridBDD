@@ -51,14 +51,16 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 public class AllureSprimber {
 
     private static final String CUCUMBER_SUITES = "Cucumber Suites";
-    private static final String TEST_CONTAINER_PREFIX_NAME = "test-container-";
+    private static final String TEST_CONTAINER_PREFIX_NAME = "test-";
     private static final String EPIC_DEFAULT_NAME = "Cucumber Features";
+    private static final String TEST_CASE_CONTAINER_PREFIX_NAME = "test-case-";
     private final Map<String, TestParentInfo> testParentsById = new ConcurrentHashMap<>();
     private final AllureLifecycle lifecycle;
     private final Set<String> nonPrintableExceptions;
 
     @EventListener
     public void stageStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
+        if (startedEvent.getNode().isEmptyHolder()) return;
         storeParentInfo(startedEvent.getNode());
         if ("testCase".equals(startedEvent.getNode().getRole())) {
             doWithTestCaseStart(startedEvent.getNode());
@@ -66,15 +68,42 @@ public class AllureSprimber {
         if ("test".equals(startedEvent.getNode().getRole())) {
             doWithTestStart(startedEvent.getNode());
         }
+        if ("stepContainer".equals(startedEvent.getNode().getRole())) {
+            log.info(startedEvent.getNode().getRuntimeId().toString());
+            StepResult stepResult = new StepResult();
+            lifecycle.startStep(startedEvent.getNode().getParentId().toString(),
+                    startedEvent.getNode().getRuntimeId().toString(), stepResult);
+        }
     }
 
     @EventListener
     public void stageFinished(SprimberEventPublisher.ContainerNodeFinishedEvent finishedEvent) {
+        if (finishedEvent.getNode().isEmptyHolder()) return;
         if ("testCase".equals(finishedEvent.getNode().getRole())) {
             doWithTestCaseFinish(finishedEvent.getNode());
         }
         if ("test".equals(finishedEvent.getNode().getRole())) {
             doWithTestFinish(finishedEvent.getNode());
+        }
+        if ("stepContainer".equals(finishedEvent.getNode().getRole())) {
+            log.info(finishedEvent.getNode().getRuntimeId().toString() + ":" + finishedEvent.getNode().getCurrentState());
+
+            lifecycle.updateStep(finishedEvent.getNode().getRuntimeId().toString(),
+                    stepResult -> {
+                        if (finishedEvent.getNode().isCompletedSuccessfully()) {
+                            stepResult.setStatus(Status.PASSED);
+                        }
+                        if (finishedEvent.getNode().isCompletedWithSkip()) {
+                            stepResult.setStatus(Status.SKIPPED);
+                        }
+                        if (finishedEvent.getNode().isCompletedExceptionally()) {
+                            stepResult.setStatus(finishedEvent.getNode().getThrowable().map(this::mapThrowable).orElse(Status.BROKEN));
+                            Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(finishedEvent.getNode().getThrowable().get());
+                            statusDetails.ifPresent(stepResult::setStatusDetails);
+                        }
+                    }
+            );
+            lifecycle.stopStep(finishedEvent.getNode().getRuntimeId().toString());
         }
     }
 
@@ -89,19 +118,22 @@ public class AllureSprimber {
         TestResultContainer testCaseResultContainer = new TestResultContainer();
         testCaseResultContainer.setName(node.getName());
         testCaseResultContainer.setDescription(node.getDescription());
-        testCaseResultContainer.setUuid(node.getRuntimeId().toString());
+        testCaseResultContainer.setUuid(TEST_CASE_CONTAINER_PREFIX_NAME + node.getRuntimeId().toString());
 
         lifecycle.startTestContainer(testCaseResultContainer);
     }
 
     private void doWithTestCaseFinish(Node node) {
-        lifecycle.stopTestContainer(node.getRuntimeId().toString());
-        lifecycle.writeTestContainer(node.getRuntimeId().toString());
+        lifecycle.stopTestContainer(TEST_CASE_CONTAINER_PREFIX_NAME + node.getRuntimeId().toString());
+        lifecycle.writeTestContainer(TEST_CASE_CONTAINER_PREFIX_NAME + node.getRuntimeId().toString());
     }
 
     private void doWithTestStart(Node node) {
         TestResultContainer testResultContainer = new TestResultContainer();
         testResultContainer.setUuid(TEST_CONTAINER_PREFIX_NAME + node.getRuntimeId());
+        testResultContainer.setDescription(node.getDescription());
+        testResultContainer.setName(node.getName());
+
         TestResult testResult = new TestResult();
         testResult.setName(node.getName());
         testResult.setDescription(node.getDescription());
@@ -109,14 +141,14 @@ public class AllureSprimber {
         testResult.setHistoryId(node.getHistoryId());
         testResult.setFullName(String.valueOf(node.getAttribute("testLocation").orElse("")));
 
-        lifecycle.startTestContainer(testResultContainer);
-        lifecycle.scheduleTestCase(testResultContainer.getUuid(), testResult);
-        lifecycle.startTestCase(node.getRuntimeId().toString());
-
         List<Label> labels = processTestLabels(node);
         List<Link> links = processTestLinks(node);
         testResult.setLabels(labels);
         testResult.setLinks(links);
+
+        lifecycle.startTestContainer(TEST_CASE_CONTAINER_PREFIX_NAME + node.getParentId().toString(), testResultContainer);
+        lifecycle.scheduleTestCase(testResultContainer.getUuid(), testResult);
+        lifecycle.startTestCase(node.getRuntimeId().toString());
     }
 
     private void doWithTestFinish(Node node) {
@@ -161,6 +193,9 @@ public class AllureSprimber {
 
             Label severityLabel = ResultsUtils.createSeverityLabel(meta.getSingleValueOrDefault("severity", SeverityLevel.NORMAL.value()));
 
+            Label threadLabel = ResultsUtils.createThreadLabel();
+            Label hostLabel = ResultsUtils.createHostLabel();
+
             labels.add(epicLabel);
             labels.add(featureLabel);
             labels.add(storyLabel);
@@ -169,6 +204,8 @@ public class AllureSprimber {
             labels.add(suiteLabel);
             labels.add(subSuiteLabel);
             labels.add(severityLabel);
+            labels.add(threadLabel);
+            labels.add(hostLabel);
             return labels;
         }).orElse(Collections.emptyList());
     }
@@ -176,6 +213,8 @@ public class AllureSprimber {
     @EventListener
     public void targetNodeStarted(SprimberEventPublisher.TargetNodeStartedEvent startedEvent) {
         startStep(startedEvent.getNode());
+        lifecycle.updateStep(startedEvent.getNode().getParentId().toString(),
+                stepResult -> stepResult.setName(startedEvent.getNode().getName()));
     }
 
     @EventListener
@@ -267,7 +306,7 @@ public class AllureSprimber {
         StepResult stepResult = new StepResult();
         stepResult.setName(node.getName());
         stepResult.setParameters(convertStepParameters(node.getMethodParameters()));
-        lifecycle.startStep(node.getRuntimeId().toString(), stepResult);
+        lifecycle.startStep(node.getParentId().toString(), node.getRuntimeId().toString(), stepResult);
         StringBuilder dataTableCsv = new StringBuilder();
         node.attributesStream()
                 .filter(entry -> !entry.getKey().equals("stepData"))
@@ -305,8 +344,7 @@ public class AllureSprimber {
             Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(node.getThrowable().get());
             lifecycle.updateStep(node.getRuntimeId().toString(),
                     stepResult -> {
-                        // TODO: 2020-01-15 add status mapping
-                        stepResult.setStatus(Status.FAILED);
+                        stepResult.setStatus(node.getThrowable().map(this::mapThrowable).orElse(Status.BROKEN));
                         statusDetails.ifPresent(stepResult::setStatusDetails);
                     });
             lifecycle.stopStep(node.getRuntimeId().toString());
