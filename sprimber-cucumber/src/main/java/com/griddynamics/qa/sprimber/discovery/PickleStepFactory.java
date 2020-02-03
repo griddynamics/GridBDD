@@ -47,7 +47,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.griddynamics.qa.sprimber.engine.Node.*;
+import static com.griddynamics.qa.sprimber.engine.Node.Builder;
+import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
+import static com.griddynamics.qa.sprimber.engine.Node.Condition;
 
 /**
  * @author fparamonov
@@ -65,7 +67,7 @@ class PickleStepFactory {
     Node addStepContainerNode(Node parentNode, PickleStep stepCandidate) {
         Node.Builder builder = new Node.Builder()
                 .withRole("stepContainer")
-                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_TARGET_WHEN_BYPASS_MODE);
+                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
         Node stepContainerNode = parentNode.addChild(builder);
 
         List<Node> nodeList = testMethodRegistry.streamAllTestMethods()

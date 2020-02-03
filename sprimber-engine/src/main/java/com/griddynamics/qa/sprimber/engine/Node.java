@@ -31,6 +31,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
+
 /**
  * @author fparamonov
  */
@@ -60,7 +62,7 @@ public class Node {
      * <p>
      * the result of seed flags represented as ORed values from constants below.
      */
-    private final int subNodeExecutionModes;
+    private final EnumSet<Bypass> subNodeExecutionModes;
     private final Condition condition;
     private final UUID parentId;
     private final UUID runtimeId = UUID.randomUUID();
@@ -70,7 +72,7 @@ public class Node {
     private Throwable throwable;
     private final Map<String, Object> parameters = new LinkedHashMap<>();
 
-    private Node(UUID parentId, Type type, String role, Method method, int subNodeExecutionModes) {
+    private Node(UUID parentId, Type type, String role, Method method, EnumSet<Bypass> subNodeExecutionModes) {
         this.type = type;
         this.role = role;
         this.parentId = parentId;
@@ -94,7 +96,7 @@ public class Node {
         this.attributes.putAll(builder.attributes);
     }
 
-    public static Node createRootNode(String role, int subNodesSkippingFlags) {
+    public static Node createRootNode(String role, EnumSet<Bypass> subNodesSkippingFlags) {
         return new Node(UUID.randomUUID(), Type.HOLDER, role, null, subNodesSkippingFlags);
     }
 
@@ -209,7 +211,7 @@ public class Node {
         return node;
     }
 
-    public Node addChild(String role, int subNodesSkippingFlags) {
+    public Node addChild(String role, EnumSet<Bypass> subNodesSkippingFlags) {
         Node node = new Node(this.runtimeId, Type.HOLDER, role, null, subNodesSkippingFlags);
         this.children.computeIfAbsent(Relation.CHILD, k -> new ArrayList<>()).add(node);
         return node;
@@ -222,7 +224,7 @@ public class Node {
     }
 
     public Node addTarget(String role, Method method) {
-        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, method, 0);
+        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, method, EnumSet.noneOf(Bypass.class));
         this.children.computeIfAbsent(Relation.TARGET, k -> new ArrayList<>()).add(node);
         return node;
     }
@@ -234,7 +236,7 @@ public class Node {
     }
 
     public Node addBefore(String role, Method method) {
-        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, method, 0);
+        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, method, EnumSet.noneOf(Bypass.class));
         this.children.computeIfAbsent(Relation.BEFORE, k -> new ArrayList<>()).add(node);
         return node;
     }
@@ -246,32 +248,32 @@ public class Node {
     }
 
     public Node addAfter(String role, Method method) {
-        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, method, 0);
+        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, method, EnumSet.noneOf(Bypass.class));
         this.children.computeIfAbsent(Relation.AFTER, k -> new ArrayList<>()).add(node);
         return node;
     }
 
     Spliterator<Node> childSpliterator(boolean hasErrorOnPreviousStage) {
-        boolean bypassNextNodesAfterError = hasFlags(BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
-        boolean bypassMode = (isBypassed() && hasFlags(BYPASS_CHILDREN_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlags(BYPASS_CHILDREN_AFTER_STAGE_ERROR));
+        boolean bypassNextNodesAfterError = hasFlag(BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
+        boolean bypassMode = (isBypassed() && hasFlag(BYPASS_CHILDREN_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlag(BYPASS_CHILDREN_AFTER_STAGE_ERROR));
         return new NodeSpliterator(children.getOrDefault(Relation.CHILD, new ArrayList<>()), bypassMode, bypassNextNodesAfterError);
     }
 
     Spliterator<Node> targetSpliterator(boolean hasErrorOnPreviousStage) {
-        boolean bypassNextNodesAfterError = hasFlags(BYPASS_TARGET_AFTER_ITERATION_ERROR);
-        boolean bypassMode = (isBypassed() && hasFlags(BYPASS_TARGET_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlags(BYPASS_TARGET_AFTER_STAGE_ERROR));
+        boolean bypassNextNodesAfterError = hasFlag(BYPASS_TARGET_AFTER_ITERATION_ERROR);
+        boolean bypassMode = (isBypassed() && hasFlag(BYPASS_TARGET_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlag(BYPASS_TARGET_AFTER_STAGE_ERROR));
         return new NodeSpliterator(children.getOrDefault(Relation.TARGET, new ArrayList<>()), bypassMode, bypassNextNodesAfterError);
     }
 
     Spliterator<Node> beforeSpliterator(boolean hasErrorOnPreviousStage) {
-        boolean bypassNextNodesAfterError = hasFlags(BYPASS_BEFORE_AFTER_ITERATION_ERROR);
-        boolean bypassMode = (isBypassed() && hasFlags(BYPASS_BEFORE_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlags(BYPASS_BEFORE_AFTER_STAGE_ERROR));
+        boolean bypassNextNodesAfterError = hasFlag(BYPASS_BEFORE_AFTER_ITERATION_ERROR);
+        boolean bypassMode = (isBypassed() && hasFlag(BYPASS_BEFORE_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlag(BYPASS_BEFORE_AFTER_STAGE_ERROR));
         return new NodeSpliterator(children.getOrDefault(Relation.BEFORE, new ArrayList<>()), bypassMode, bypassNextNodesAfterError);
     }
 
     Spliterator<Node> afterSpliterator(boolean hasErrorOnPreviousStage) {
-        boolean bypassNextNodesAfterError = hasFlags(BYPASS_AFTER_AFTER_ITERATION_ERROR);
-        boolean bypassMode = (isBypassed() && hasFlags(BYPASS_AFTER_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlags(BYPASS_AFTER_AFTER_STAGE_ERROR));
+        boolean bypassNextNodesAfterError = hasFlag(BYPASS_AFTER_AFTER_ITERATION_ERROR);
+        boolean bypassMode = (isBypassed() && hasFlag(BYPASS_AFTER_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlag(BYPASS_AFTER_AFTER_STAGE_ERROR));
         return new NodeSpliterator(children.getOrDefault(Relation.AFTER, new ArrayList<>()), bypassMode, bypassNextNodesAfterError);
     }
 
@@ -285,62 +287,44 @@ public class Node {
      * The default implementation returns true if the corresponding bits
      * of the given characteristics are set.
      *
-     * @param flags the flags to check for
+     * @param flag the flag to check for
      * @return {@code true} if all the specified flags are present,
      * else {@code false}
      */
-    private boolean hasFlags(int flags) {
-        return (this.subNodeExecutionModes & flags) == flags;
+    private boolean hasFlag(Bypass flag) {
+        return this.subNodeExecutionModes.contains(flag);
     }
 
     /**
-     * Seed all before sub nodes in BYPASS mode when the current node in the BYPASS mode
+     * Next bypass modes are available:
+     * * BYPASS_BEFORE_WHEN_BYPASS_MODE - Seed all before sub nodes in BYPASS mode when the current node in the BYPASS mode
+     * * BYPASS_AFTER_WHEN_BYPASS_MODE - Seed all after sub nodes in BYPASS mode when the current node in the BYPASS mode
+     * * BYPASS_TARGET_WHEN_BYPASS_MODE - Seed all target sub nodes in BYPASS mode when the current node in the BYPASS mode
+     * * BYPASS_CHILDREN_WHEN_BYPASS_MODE - Seed all children sub nodes in BYPASS mode when the current node in the BYPASS mode
+     * * BYPASS_BEFORE_AFTER_STAGE_ERROR - Seed all before sub nodes in BYPASS mode when the current node in the ERROR state
+     * * BYPASS_AFTER_AFTER_STAGE_ERROR - Seed all after sub nodes in BYPASS mode when the current node in the ERROR state
+     * * BYPASS_TARGET_AFTER_STAGE_ERROR - Seed all target sub nodes in BYPASS mode when the current stage(node) in the ERROR state
+     * * BYPASS_CHILDREN_AFTER_STAGE_ERROR - Seed all child sub nodes in BYPASS mode when the current node in the ERROR state
+     * * BYPASS_BEFORE_AFTER_ITERATION_ERROR - Switch iterator to seed nodes in BYPASS mode after error with previous node execution
+     * * BYPASS_AFTER_AFTER_ITERATION_ERROR - Switch iterator to seed nodes in BYPASS mode after error with previous node execution
+     * * BYPASS_TARGET_AFTER_ITERATION_ERROR - Switch iterator to seed nodes in BYPASS mode after error with previous node execution
+     * * BYPASS_CHILDREN_AFTER_ITERATION_ERROR - Switch iterator to seed nodes in BYPASS mode after error with previous node execution
+     * *
      */
-    public static final int BYPASS_BEFORE_WHEN_BYPASS_MODE = 0x00000001;
-    /**
-     * Seed all after sub nodes in BYPASS mode when the current node in the BYPASS mode
-     */
-    public static final int BYPASS_AFTER_WHEN_BYPASS_MODE = 0x00000002;
-    /**
-     * Seed all target sub nodes in BYPASS mode when the current node in the BYPASS mode
-     */
-    public static final int BYPASS_TARGET_WHEN_BYPASS_MODE = 0x00000004;
-    /**
-     * Seed all children sub nodes in BYPASS mode when the current node in the BYPASS mode
-     */
-    public static final int BYPASS_CHILDREN_WHEN_BYPASS_MODE = 0x00000008;
-    /**
-     * Seed all before sub nodes in BYPASS mode when the current node in the ERROR state
-     */
-    public static final int BYPASS_BEFORE_AFTER_STAGE_ERROR = 0x00000010;
-    /**
-     * Seed all after sub nodes in BYPASS mode when the current node in the ERROR state
-     */
-    public static final int BYPASS_AFTER_AFTER_STAGE_ERROR = 0x00000020;
-    /**
-     * Seed all target sub nodes in BYPASS mode when the current stage(node) in the ERROR state
-     */
-    public static final int BYPASS_TARGET_AFTER_STAGE_ERROR = 0x00000040;
-    /**
-     * Seed all child sub nodes in BYPASS mode when the current node in the ERROR state
-     */
-    public static final int BYPASS_CHILDREN_AFTER_STAGE_ERROR = 0x00000080;
-    /**
-     * Switch iterator to seed nodes in BYPASS mode after error with previous node execution
-     */
-    public static final int BYPASS_BEFORE_AFTER_ITERATION_ERROR = 0x00000100;
-    /**
-     * Switch iterator to seed nodes in BYPASS mode after error with previous node execution
-     */
-    public static final int BYPASS_AFTER_AFTER_ITERATION_ERROR = 0x00000200;
-    /**
-     * Switch iterator to seed nodes in BYPASS mode after error with previous node execution
-     */
-    public static final int BYPASS_TARGET_AFTER_ITERATION_ERROR = 0x00000400;
-    /**
-     * Switch iterator to seed nodes in BYPASS mode after error with previous node execution
-     */
-    public static final int BYPASS_CHILDREN_AFTER_ITERATION_ERROR = 0x00000800;
+    public enum Bypass {
+        BYPASS_BEFORE_WHEN_BYPASS_MODE,
+        BYPASS_AFTER_WHEN_BYPASS_MODE,
+        BYPASS_TARGET_WHEN_BYPASS_MODE,
+        BYPASS_CHILDREN_WHEN_BYPASS_MODE,
+        BYPASS_BEFORE_AFTER_STAGE_ERROR,
+        BYPASS_AFTER_AFTER_STAGE_ERROR,
+        BYPASS_TARGET_AFTER_STAGE_ERROR,
+        BYPASS_CHILDREN_AFTER_STAGE_ERROR,
+        BYPASS_BEFORE_AFTER_ITERATION_ERROR,
+        BYPASS_AFTER_AFTER_ITERATION_ERROR,
+        BYPASS_TARGET_AFTER_ITERATION_ERROR,
+        BYPASS_CHILDREN_AFTER_ITERATION_ERROR
+    }
 
     /**
      * Node can be on one of the following statuses after the processing by executor:
@@ -471,7 +455,7 @@ public class Node {
 
     public static final class Builder {
 
-        private int subNodeExecutionModes;
+        private EnumSet<Bypass> subNodeExecutionModes;
         private String name;
         private String description;
         private String historyId;
@@ -504,7 +488,7 @@ public class Node {
             return this;
         }
 
-        public Builder withSubNodeModes(int subNodeExecutionModes) {
+        public Builder withSubNodeModes(EnumSet<Bypass> subNodeExecutionModes) {
             this.subNodeExecutionModes = subNodeExecutionModes;
             return this;
         }
