@@ -33,8 +33,10 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.DigestUtils;
 
 import java.lang.reflect.Method;
+import java.util.EnumSet;
 
-import static com.griddynamics.qa.sprimber.engine.Node.*;
+import static com.griddynamics.qa.sprimber.engine.Node.Builder;
+import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 
 /**
  * @author fparamonov
@@ -49,7 +51,8 @@ class ClassicTestBinder {
         TestMapping testMapping = AnnotationUtils.getAnnotation(testCandidate, TestMapping.class);
         String testName = buildTestName(testCandidate, testMapping);
         Builder builder = new Builder()
-                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR)
+                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
+                        BYPASS_CHILDREN_AFTER_ITERATION_ERROR))
                 .withRole("test")
                 .withName(testName)
                 .withDescription(String.valueOf(AnnotationUtils.getValue(testMapping, "description")))
@@ -63,7 +66,8 @@ class ClassicTestBinder {
                 .filter(tm -> method.equals(tm.getMethod()))
                 .findFirst().orElseThrow(() -> new RuntimeException("No methods found"));
         Builder builder = new Builder()
-                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR)
+                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
+                        BYPASS_CHILDREN_AFTER_ITERATION_ERROR))
                 .withRole("step")
                 .withName(method.getName())
                 .withMethod(testMethod.getMethod());

@@ -33,10 +33,12 @@ import org.springframework.core.annotation.AnnotationUtils;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.griddynamics.qa.sprimber.engine.Node.*;
+import static com.griddynamics.qa.sprimber.engine.Node.Builder;
+import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 
 /**
  * @author fparamonov
@@ -65,7 +67,8 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
 
     @Override
     public Node discover() {
-        Node testSuite = Node.createRootNode("testSuite", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
+        Node testSuite = Node.createRootNode("testSuite", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
         applicationContext.getBeansWithAnnotation(TestController.class).values()
                 .forEach(testController -> testCaseNodeDiscover(testSuite, testController));
         return testSuite;
@@ -74,7 +77,8 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
     private void testCaseNodeDiscover(Node parentNode, Object testController) {
         TestController controller = testController.getClass().getAnnotation(TestController.class);
         Builder builder = new Builder()
-                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR)
+                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
+                        BYPASS_CHILDREN_AFTER_ITERATION_ERROR))
                 .withRole("testCase")
                 .withName(String.valueOf(AnnotationUtils.getValue(controller, NAME_ATTRIBUTE_NAME)))
                 .withDescription(String.valueOf(AnnotationUtils.getValue(controller, DESCRIPTION_ATTRIBUTE_NAME)));

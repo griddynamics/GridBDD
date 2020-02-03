@@ -40,12 +40,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.griddynamics.qa.sprimber.engine.Node.*;
+import static com.griddynamics.qa.sprimber.engine.Node.Builder;
+import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 
 /**
  * @author fparamonov
@@ -75,7 +77,8 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
 
     @Override
     public Node discover() {
-        Node testSuite = Node.createRootNode("testSuite", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
+        Node testSuite = Node.createRootNode("testSuite", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
         featureResourcesStream()
                 .map(this::buildCucumberDocument)
                 .forEach(cucumberDocument -> testCaseNodeDiscover(testSuite, cucumberDocument));
@@ -87,7 +90,8 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
                 .withDescription(cucumberDocument.getDocument().getFeature().getDescription())
                 .withName(cucumberDocument.getDocument().getFeature().getName())
                 .withRole("testCase")
-                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
+                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
+                        BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
         Node testCase = parentNode.addChild(builder);
         compiler.compile(cucumberDocument.getDocument()).stream()
                 .filter(pickleTagFilter())
