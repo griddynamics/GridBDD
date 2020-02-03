@@ -28,8 +28,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
+import java.util.EnumSet;
 
-import static com.griddynamics.qa.sprimber.engine.Node.*;
+import static com.griddynamics.qa.sprimber.engine.Node.Builder;
+import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 
 /**
  * @author fparamonov
@@ -44,13 +46,15 @@ public class TestCaseBuilder {
     private final Method exceptionalStepMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "exceptionalStep");
 
     Node buildSingleStep() {
-        Node stepNode = Node.createRootNode("stepRoot", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_TARGET_WHEN_BYPASS_MODE);
+        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
         stepNode.addTarget("step", stepMethod);
         return stepNode;
     }
 
     Node buildSingleWrappedStep() {
-        Node stepNode = Node.createRootNode("stepRoot", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_TARGET_WHEN_BYPASS_MODE);
+        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
         stepNode.addBefore("before", beforeMethod);
         stepNode.addTarget("step", stepMethod);
         stepNode.addAfter("after", afterMethod);
@@ -58,15 +62,15 @@ public class TestCaseBuilder {
     }
 
     Node buildTestWithRegularAndExceptionalWrappedStep() {
-        Node testNode = Node.createRootNode("testRoot", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE |
-                BYPASS_TARGET_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
-        Node exceptionalStepNode = testNode.addChild("stepHolder", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE |
-                BYPASS_TARGET_WHEN_BYPASS_MODE);
+        Node testNode = Node.createRootNode("testRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
+        Node exceptionalStepNode = testNode.addChild("stepHolder", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
         exceptionalStepNode.addBefore("before", beforeMethod);
         exceptionalStepNode.addTarget("step", exceptionalStepMethod);
         exceptionalStepNode.addAfter("after", afterMethod);
-        Node regularStepNode = testNode.addChild("stepHolder", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE |
-                BYPASS_TARGET_WHEN_BYPASS_MODE);
+        Node regularStepNode = testNode.addChild("stepHolder", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
         regularStepNode.addBefore("before", beforeMethod);
         regularStepNode.addTarget("step", stepMethod);
         regularStepNode.addAfter("after", afterMethod);
@@ -74,8 +78,8 @@ public class TestCaseBuilder {
     }
 
     Node buildSingleWrappedStepWithExceptionalBefore() {
-        Node stepNode = Node.createRootNode("stepRoot", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE |
-                BYPASS_TARGET_WHEN_BYPASS_MODE | BYPASS_BEFORE_AFTER_ITERATION_ERROR);
+        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_BEFORE_AFTER_ITERATION_ERROR));
         stepNode.addBefore("before", beforeMethod);
         stepNode.addBefore("before", exceptionalStepMethod);
         stepNode.addBefore("before", beforeMethod);
@@ -85,8 +89,8 @@ public class TestCaseBuilder {
     }
 
     Node buildSingleWrappedStepWithExceptionalAfter() {
-        Node stepNode = Node.createRootNode("stepRoot", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE |
-                BYPASS_TARGET_WHEN_BYPASS_MODE | BYPASS_AFTER_AFTER_ITERATION_ERROR);
+        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_AFTER_AFTER_ITERATION_ERROR));
         stepNode.addBefore("before", beforeMethod);
         stepNode.addTarget("step", stepMethod);
         stepNode.addAfter("after", afterMethod);
@@ -96,8 +100,8 @@ public class TestCaseBuilder {
     }
 
     Node buildSingleWrappedStepWithExceptionalBeforeSkipTarget() {
-        Node stepNode = Node.createRootNode("stepRoot", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE |
-                BYPASS_TARGET_WHEN_BYPASS_MODE | BYPASS_BEFORE_AFTER_ITERATION_ERROR | BYPASS_TARGET_AFTER_STAGE_ERROR);
+        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
+                BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_BEFORE_AFTER_ITERATION_ERROR, BYPASS_TARGET_AFTER_STAGE_ERROR));
         stepNode.addBefore("before", beforeMethod);
         stepNode.addBefore("before", exceptionalStepMethod);
         stepNode.addBefore("before", beforeMethod);
@@ -107,8 +111,8 @@ public class TestCaseBuilder {
     }
 
     Node buildSingleWrappedStepWithExceptionalBeforeSkipTargetAndAfter() {
-        Node stepNode = Node.createRootNode("stepRoot", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE |
-                BYPASS_TARGET_WHEN_BYPASS_MODE | BYPASS_BEFORE_AFTER_ITERATION_ERROR | BYPASS_TARGET_AFTER_STAGE_ERROR | BYPASS_AFTER_AFTER_STAGE_ERROR);
+        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
+                BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_BEFORE_AFTER_ITERATION_ERROR, BYPASS_TARGET_AFTER_STAGE_ERROR, BYPASS_AFTER_AFTER_STAGE_ERROR));
         stepNode.addBefore("before", beforeMethod);
         stepNode.addBefore("before", exceptionalStepMethod);
         stepNode.addBefore("before", beforeMethod);
@@ -118,11 +122,11 @@ public class TestCaseBuilder {
     }
 
     Node buildAsyncAndRegularWrappedSteps() {
-        Node testRoot = Node.createRootNode("testRoot", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE |
-                BYPASS_TARGET_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
+        Node testRoot = Node.createRootNode("testRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
 
-        Node asyncStepHolder = testRoot.addChild("stepHolder", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE |
-                BYPASS_TARGET_WHEN_BYPASS_MODE);
+        Node asyncStepHolder = testRoot.addChild("stepHolder", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
         asyncStepHolder.addBefore("before", beforeMethod);
         Builder builder = new Builder()
                 .withRole("target")
@@ -131,8 +135,8 @@ public class TestCaseBuilder {
         asyncStepHolder.addTarget(builder);
         asyncStepHolder.addAfter("after", afterMethod);
 
-        Node stepHolderNode = testRoot.addChild("stepHolder", BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE |
-                BYPASS_TARGET_WHEN_BYPASS_MODE);
+        Node stepHolderNode = testRoot.addChild("stepHolder", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
         stepHolderNode.addBefore("before", beforeMethod);
         stepHolderNode.addTarget("step", stepMethod);
         stepHolderNode.addAfter("after", afterMethod);

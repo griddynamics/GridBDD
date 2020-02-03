@@ -37,7 +37,9 @@ import org.springframework.util.DigestUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.griddynamics.qa.sprimber.engine.Node.*;
+import static com.griddynamics.qa.sprimber.engine.Node.Builder;
+import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
+import static com.griddynamics.qa.sprimber.engine.Node.Meta;
 
 /**
  * @author fparamonov
@@ -67,7 +69,8 @@ class CucumberTestBinder {
                 cucumberDocument.getDocument().getFeature().getLocation().getColumn() +
                 cucumberDocument.getDocument().getFeature().getName() + testLocation + testCandidate.getName();
         Builder builder = new Builder()
-                .withSubNodeModes(BYPASS_BEFORE_WHEN_BYPASS_MODE | BYPASS_AFTER_WHEN_BYPASS_MODE | BYPASS_CHILDREN_AFTER_ITERATION_ERROR)
+                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
+                        BYPASS_CHILDREN_AFTER_ITERATION_ERROR))
                 .withRole("test")
                 .withName(testCandidate.getName())
                 .withDescription(description)
