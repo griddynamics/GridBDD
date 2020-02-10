@@ -24,8 +24,6 @@ $Id:
 
 package com.griddynamics.qa.sprimber.stepdefinition;
 
-import com.griddynamics.qa.sprimber.engine.Node;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -52,41 +50,5 @@ public class TestMethodRegistry {
     public Stream<TestMethod> streamByStyle(String style) {
         return testMethodMap.values().stream()
                 .filter(testMethod -> style.equals(testMethod.getStyle()));
-    }
-
-//    public Stream<Node> provideBeforeTestHookNodes() {
-//        return provideNodesForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.TEST);
-//    }
-//
-//    public Stream<Node> provideAfterTestHookNodes() {
-//        return provideNodesForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.TEST);
-//    }
-//
-//    public Stream<Node> provideBeforeStepHookNodes() {
-//        return provideNodesForTargetTypeAndPhase(StepDefinition.StepType.BEFORE, StepDefinition.StepPhase.STEP);
-//    }
-//
-//    public Stream<Node> provideAfterStepHookNodes() {
-//        return provideNodesForTargetTypeAndPhase(StepDefinition.StepType.AFTER, StepDefinition.StepPhase.STEP);
-//    }
-//
-//    private Stream<Node> provideNodesForTargetTypeAndPhase(StepDefinition.StepType stepType, StepDefinition.StepPhase stepPhase) {
-//        return findStepHooksForCurrentStage(stepType, stepPhase)
-//                .map(this::provideExecutableNode);
-//    }
-//
-//    private Stream<StepDefinition> findStepHooksForCurrentStage(StepDefinition.StepType stepType,
-//                                                                StepDefinition.StepPhase stepPhase) {
-//        return testMethodMap.values().stream()
-//                .filter(stepDefinition -> stepDefinition.getStepType().equals(stepType))
-//                .filter(stepDefinition -> stepDefinition.getStepPhase().equals(stepPhase));
-//    }
-
-    private Node provideExecutableNode(TestMethod nodeDefinition) {
-//        Node.ExecutableNode executableNode = new Node.ExecutableNode("step");
-//        executableNode.setName(stepDefinition.getName());
-//        executableNode.setMethod(stepDefinition.getMethod());
-//        executableNode.setName(stepDefinition.getMethod().getName());
-        return null;
     }
 }

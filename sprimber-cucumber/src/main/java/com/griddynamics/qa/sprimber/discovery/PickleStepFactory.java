@@ -80,7 +80,7 @@ class PickleStepFactory {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
-        if (nodeList.size() == 0) {
+        if (nodeList.isEmpty()) {
             throw new StepNotFoundException(stepCandidate);
         }
         if (nodeList.size() > 1) {
