@@ -24,10 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
-import com.griddynamics.qa.sprimber.reporting.AllureSprimber;
-import com.griddynamics.qa.sprimber.reporting.ConditionalErrorPrinter;
-import com.griddynamics.qa.sprimber.reporting.StepExecutionReportCatcher;
-import com.griddynamics.qa.sprimber.reporting.TestCaseSummaryPrinter;
+import com.griddynamics.qa.sprimber.reporting.*;
 import com.griddynamics.qa.sprimber.runtime.ExecutionContext;
 import cucumber.api.Pending;
 import io.qameta.allure.AllureLifecycle;
@@ -67,6 +64,12 @@ public class SprimberReportingConfiguration {
         @ConditionalOnProperty(value = "reporting.aspect.enable", prefix = "sprimber.configuration", havingValue = "true")
         public StepExecutionReportCatcher stepExecutionReportCatcher() {
             return new StepExecutionReportCatcher();
+        }
+
+        @Bean
+        @ConditionalOnProperty(value = "reporting.cycle.enable", prefix = "sprimber.configuration", havingValue = "true", matchIfMissing = true)
+        public StepCycleReporter stepCycleReporter() {
+            return new StepCycleReporter();
         }
     }
 
