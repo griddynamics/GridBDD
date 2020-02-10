@@ -40,7 +40,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import java.time.Clock;
 import java.util.concurrent.Executor;
 
 import static com.griddynamics.qa.sprimber.scope.TestCaseScope.TEST_CASE_SCOPE_NAME;
@@ -62,12 +61,6 @@ public class SprimberConfiguration {
         };
     }
 
-    @Bean
-    @ConditionalOnMissingBean
-    public Clock clock() {
-        return Clock.systemDefaultZone();
-    }
-
     @Configuration
     static class SprimberExecutors {
 
@@ -78,8 +71,15 @@ public class SprimberConfiguration {
         }
 
         @Bean
+        @ConditionalOnMissingBean(name = "testExecutor")
         public Executor testExecutor() {
             return getDefaultExecutor("TestExecutor-");
+        }
+
+        @Bean
+        @ConditionalOnMissingBean(name = "testCaseExecutor")
+        public Executor testCaseExecutor() {
+            return getDefaultExecutor("TestCaseExecutor-");
         }
 
         private ThreadPoolTaskExecutor getDefaultExecutor(String s) {
