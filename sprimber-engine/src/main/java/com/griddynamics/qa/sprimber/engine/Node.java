@@ -173,7 +173,7 @@ public class Node {
     }
 
     public boolean isEmptyHolder() {
-        return Type.HOLDER.equals(this.type) && this.children.size() == 0;
+        return Type.HOLDER.equals(this.type) && this.children.isEmpty();
     }
 
     public void prepareExecution() {
@@ -355,10 +355,22 @@ public class Node {
         CREATED, PREPARED, SCHEDULED, EXECUTING, COMPLETED
     }
 
+    /**
+     * Node can play the next functions:
+     * HOLDER - just a holder node that handle their child, cannot be executed
+     * INVOKABLE - leaf node, cannot have children as holders for next nodes, but may be invokable
+     */
     enum Type {
         HOLDER, INVOKABLE
     }
 
+    /**
+     * Node may have one of the next relations to the children
+     * BEFORE - must be a INVOKABLE node, will be executed before the proceeding to the next
+     * AFTER - must be a INVOKABLE node, will be executed after all previous children executions
+     * TARGET - must be a INVOKABLE node, the final logical end of the tree branch
+     * CHILD - HOLDER node that contains information about the tree extension
+     */
     enum Relation {
         BEFORE, CHILD, TARGET, AFTER
     }
