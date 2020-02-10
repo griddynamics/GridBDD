@@ -7,7 +7,7 @@
     <groupId>com.griddynamics.qa</groupId>
     <artifactId>sprimber-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>1.1.1-SNAPSHOT</version>
 
     <name>Sprimber</name>
     <description>Spring BDD engine for popular frameworks</description>
@@ -139,7 +139,7 @@
                         <version>1.6.8</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>ossrh</serverId>
+                            <serverId>sonatype-nexus-staging</serverId>
                             <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                         </configuration>
