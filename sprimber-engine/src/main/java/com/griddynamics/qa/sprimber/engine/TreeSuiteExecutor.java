@@ -26,7 +26,10 @@ package com.griddynamics.qa.sprimber.engine;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Spliterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -91,6 +94,8 @@ class TreeSuiteExecutor implements TreeExecutor {
         if (context.hasStageException(node)) {
             node.completeExceptionally(context.getStageException(node));
             context.reportStageException(node);
+        } else if (node.isBypassed()) {
+            node.completeWithSkip();
         } else {
             node.completeSuccessfully();
         }
