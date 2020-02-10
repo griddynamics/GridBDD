@@ -172,6 +172,10 @@ public class Node {
         return this.isBypassed;
     }
 
+    public boolean isEmptyHolder() {
+        return Type.HOLDER.equals(this.type) && this.children.size() == 0;
+    }
+
     public void prepareExecution() {
         this.status = Status.STARTED;
         this.phase = Phase.EXECUTING;
