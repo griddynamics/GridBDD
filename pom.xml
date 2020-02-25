@@ -58,7 +58,7 @@
     <distributionManagement>
         <snapshotRepository>
             <id>github-pkg</id>
-            <url>https://maven.pkg.github.com/griddynamics/GridBDD</url>
+            <url>https://maven.pkg.github.com/griddynamics</url>
         </snapshotRepository>
         <repository>
             <id>sonatype-nexus-staging</id>
