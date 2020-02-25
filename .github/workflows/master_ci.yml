@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      - name: Build and Deploy to Packages
+      - name: Build and Test
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: mvn -B clean deploy -Dregistry=https://maven.pkg.github.com/griddynamics -Dtoken=$GH_TOKEN --file pom.xml
+        run: mvn -B clean package --file pom.xml
