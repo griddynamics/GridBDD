@@ -25,7 +25,9 @@ $Id:
 package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.engine.TreeExecutorContext;
 import com.griddynamics.qa.sprimber.runtime.ExecutionContext;
+import org.springframework.context.event.EventListener;
 
 import static com.griddynamics.qa.sprimber.discovery.ClassicAdapterConstants.CLASSIC_TEST_ROLE;
 
@@ -34,17 +36,51 @@ import static com.griddynamics.qa.sprimber.discovery.ClassicAdapterConstants.CLA
  */
 public class ClassicTestSummaryPrinter extends TestSummaryPrinter {
 
-    public ClassicTestSummaryPrinter(ExecutionContext executionContext) {
-        super(executionContext);
+    public ClassicTestSummaryPrinter(ExecutionContext executionContext, TreeExecutorContext context) {
+        super(executionContext, context);
     }
 
     @Override
-    boolean isNodeOfRoleTest(Node node) {
-        return CLASSIC_TEST_ROLE.equals(node.getRole());
+    boolean isNodeLevelAboveTest(Node node) {
+        return !CLASSIC_TEST_ROLE.equals(node.getRole()); //Since there are no hooks and steps for now
     }
 
     @Override
-    boolean isNodeBelongsToTest(Node node) {
-        return CLASSIC_TEST_ROLE.equals(node.getRole()); //Since there are no hooks and steps for now
+    String getTestStageName() {
+        return CLASSIC_TEST_ROLE;
+    }
+
+    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.ClassicAdapterConstants).CLASSIC_ADAPTER_NAME")
+    public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
+        increaseDepthLevel(startedEvent.getNode());
+        if (CLASSIC_TEST_ROLE.equals(startedEvent.getNode().getRole())) {
+            doWithTestStart(startedEvent.getNode());
+        }
+    }
+
+    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.ClassicAdapterConstants).CLASSIC_ADAPTER_NAME")
+    public void containerNodeFinished(SprimberEventPublisher.ContainerNodeFinishedEvent finishedEvent) {
+        decreaseDepthLevel(finishedEvent.getNode());
+        if (CLASSIC_TEST_ROLE.equals(finishedEvent.getNode().getRole())) {
+            doWithTestFinish(finishedEvent.getNode());
+        }
+    }
+
+    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.ClassicAdapterConstants).CLASSIC_ADAPTER_NAME",
+            classes = {SprimberEventPublisher.InvokableNodeStartedEvent.class})
+    public void invokableNodeStarted(SprimberEventPublisher.InvokableNodeStartedEvent startedEvent) {
+        increaseDepthLevel(startedEvent.getNode());
+    }
+
+    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.ClassicAdapterConstants).CLASSIC_ADAPTER_NAME")
+    public void invokableNodeFinished(SprimberEventPublisher.InvokableNodeFinishedEvent finishedEvent) {
+        addSuccessNodeRow(finishedEvent.getNode());
+        decreaseDepthLevel(finishedEvent.getNode());
+    }
+
+    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.ClassicAdapterConstants).CLASSIC_ADAPTER_NAME")
+    public void invokableNodeError(SprimberEventPublisher.InvokableNodeErrorEvent errorEvent) {
+        addErrorNodeRow(errorEvent.getNode());
+        decreaseDepthLevel(errorEvent.getNode());
     }
 }

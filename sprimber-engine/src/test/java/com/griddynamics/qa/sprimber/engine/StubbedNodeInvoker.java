@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class StubbedNodeInvoker implements TreeSuiteExecutor.NodeInvoker {
 
     @Override
-    public boolean shouldSkip(Node.Condition condition) {
+    public boolean isSkippedByCondition(Node.Condition condition) {
         return false;
     }
 

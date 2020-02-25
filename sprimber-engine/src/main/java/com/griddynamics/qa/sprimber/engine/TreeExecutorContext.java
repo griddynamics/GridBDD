@@ -28,20 +28,55 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 /**
  * @author fparamonov
  */
 public class TreeExecutorContext {
 
-    private final Map<UUID, StageStatus> storage = new ConcurrentHashMap<>();
+    private final Map<UUID, StageDetails> storage = new ConcurrentHashMap<>();
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final NodeExecutionEventsPublisher eventsPublisher;
 
-    void startStage(Node node) {
-        StageStatus stageStatus = new StageStatus();
+    public TreeExecutorContext(NodeExecutionEventsPublisher eventsPublisher) {
+        this.eventsPublisher = eventsPublisher;
+    }
+
+    void start(Node node) {
+        if (node.isContainer()) {
+            initStage(node);
+            eventsPublisher.stageStarted(node);
+        }
+        if (node.isInvokable()) {
+            eventsPublisher.nodeStarted(node);
+        }
+    }
+
+    void success(Node node) {
+        if (node.isContainer()) {
+            eventsPublisher.stageFinished(node);
+        }
+        if (node.isInvokable()) {
+            eventsPublisher.nodeFinished(node);
+        }
+    }
+
+    void error(Node node, String subStageName) {
+        reportExceptionForParentStage(node, subStageName);
+        if (node.isContainer()) {
+            eventsPublisher.stageError(node);
+        }
+        if (node.isInvokable()) {
+            eventsPublisher.nodeError(node);
+        }
+    }
+
+    private void initStage(Node node) {
+        StageDetails stageDetails = new StageDetails();
         lock.writeLock().lock();
         try {
-            storage.put(node.getRuntimeId(), stageStatus);
+            storage.put(node.getRuntimeId(), stageDetails);
         } finally {
             lock.writeLock().unlock();
         }
@@ -56,50 +91,126 @@ public class TreeExecutorContext {
         }
     }
 
-    void reportStageException(Node node) {
+    public void addObjectForStage(Node currentNode, String stageName, String objectName, Object value) {
+        lock.readLock().lock();
+        try {
+            storage.get(currentNode.getParentNodeOfRole(stageName).getRuntimeId()).registerStageObject(objectName, value);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public Object getObjectForStage(Node currentNode, String stageName, String objectName) {
+        lock.readLock().lock();
+        try {
+            return storage.get(currentNode.getParentNodeOfRole(stageName).getRuntimeId()).getStageObject(objectName);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    void reportExceptionForParentStage(Node node, String subStageName) {
         lock.writeLock().lock();
         try {
-            Optional.ofNullable(storage.get(node.getParentId()))
-                    .ifPresent(stageStatus -> stageStatus.registerException(node.getThrowable().get()));
+            if (node.isRootNode()) return;
+            if (node.isOptional()) {
+                Optional.ofNullable(storage.get(node.getParentId()))
+                        .ifPresent(stageDetails -> stageDetails.registerSoftException(Node.Relation.getByName(subStageName), node.getThrowable().get()));
+            } else {
+                Optional.ofNullable(storage.get(node.getParentId()))
+                        .ifPresent(stageDetails -> stageDetails.registerFatalException(Node.Relation.getByName(subStageName), node.getThrowable().get()));
+            }
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    boolean hasStageException(Node node) {
+    void reportSoftExceptionForParentStage(Node node, String subStageName) {
+        lock.writeLock().lock();
+        try {
+            if (node.isRootNode()) return;
+            Optional.ofNullable(storage.get(node.getParentId()))
+                    .ifPresent(stageDetails -> stageDetails.registerSoftException(Node.Relation.getByName(subStageName), node.getThrowable().get()));
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    boolean hasFatalExceptionOnParentStage(Node node) {
         lock.readLock().lock();
         try {
-            return storage.get(node.getRuntimeId()).hasExceptions();
+            return storage.get(node.getParentId()).hasFatalExceptions();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    boolean hasFatalExceptionOnCurrentStage(Node node) {
+        lock.readLock().lock();
+        try {
+            return storage.get(node.getRuntimeId()).hasFatalExceptions();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    boolean hasFatalExceptionOnParentSubStage(Node node, String subStageName) {
+        lock.readLock().lock();
+        try {
+            return storage.get(node.getParentId()).hasFatalExceptions(Node.Relation.getByName(subStageName));
         } finally {
             lock.readLock().unlock();
         }
     }
 
     // TODO: 2020-01-16 add support for multiply exceptions at node level
-    Throwable getStageException(Node node) {
+    List<Throwable> getStageException(Node node) {
         lock.readLock().lock();
         try {
-            return storage.get(node.getRuntimeId()).getFirstException();
+            return storage.get(node.getRuntimeId()).getAllExceptions();
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    static class StageStatus {
-        private boolean hasExceptions;
-        private List<Throwable> exceptionList = new ArrayList<>();
+    static class StageDetails {
+        private Map<Node.Relation, List<Throwable>> fatalExceptionsBySubStage = new EnumMap<>(Node.Relation.class);
+        private Map<Node.Relation, List<Throwable>> softExceptionsBySubStage = new EnumMap<>(Node.Relation.class);
+        private Map<String, Object> stageObjects = new HashMap<>();
 
-        boolean hasExceptions() {
-            return hasExceptions;
+        void registerStageObject(String objectName, Object value) {
+            stageObjects.put(objectName, value);
         }
 
-        void registerException(Throwable throwable) {
-            this.hasExceptions = true;
-            exceptionList.add(throwable);
+        Object getStageObject(String name) {
+            return stageObjects.get(name);
         }
 
-        Throwable getFirstException() {
-            return exceptionList.get(0);
+        boolean hasFatalExceptions() {
+            return fatalExceptionsBySubStage.values().stream().mapToLong(Collection::size).sum() > 0;
+        }
+
+        boolean hasFatalExceptions(Node.Relation relation) {
+            return Optional.ofNullable(fatalExceptionsBySubStage.get(relation))
+                    .map(list -> !list.isEmpty())
+                    .orElse(false);
+        }
+
+        void registerFatalException(Node.Relation relation, Throwable throwable) {
+            fatalExceptionsBySubStage.putIfAbsent(relation, new ArrayList<>());
+            fatalExceptionsBySubStage.get(relation).add(throwable);
+        }
+
+        void registerSoftException(Node.Relation relation, Throwable throwable) {
+            softExceptionsBySubStage.putIfAbsent(relation, new ArrayList<>());
+            softExceptionsBySubStage.get(relation).add(throwable);
+        }
+
+        List<Throwable> getAllExceptions() {
+            List<Throwable> exceptions = new ArrayList<>();
+            exceptions.addAll(fatalExceptionsBySubStage.values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+            exceptions.addAll(softExceptionsBySubStage.values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+            return exceptions;
         }
     }
 }

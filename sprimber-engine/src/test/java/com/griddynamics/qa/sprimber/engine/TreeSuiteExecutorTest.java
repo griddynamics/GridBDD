@@ -44,8 +44,8 @@ public class TreeSuiteExecutorTest {
 
     private TreeSuiteExecutor treeSuiteExecutor;
     private final TestCaseBuilder testCaseBuilder = new TestCaseBuilder();
-    private final TreeExecutorContext context = new TreeExecutorContext();
     private final StubbedEventPublisher stubbedEventPublisher = Mockito.spy(new StubbedEventPublisher());
+    private final TreeExecutorContext context = new TreeExecutorContext(stubbedEventPublisher);
     private final StubbedNodeInvoker stubbedNodeInvoker = Mockito.spy(new StubbedNodeInvoker());
 
     @Before
@@ -55,7 +55,7 @@ public class TreeSuiteExecutorTest {
         childSubNodesExecutor.put("testExecutor", Executors.newFixedThreadPool(3));
 
         treeSuiteExecutor = Mockito.spy(
-                new TreeSuiteExecutor(stubbedNodeInvoker, childSubNodesExecutor, context, stubbedEventPublisher));
+                new TreeSuiteExecutor(stubbedNodeInvoker, childSubNodesExecutor, context));
     }
 
     @Test
@@ -84,6 +84,9 @@ public class TreeSuiteExecutorTest {
         inOrder.verify(stubbedNodeInvoker, times(1)).before();
         inOrder.verify(stubbedNodeInvoker, times(1)).exceptionalStep();
         inOrder.verify(stubbedNodeInvoker, times(1)).after();
+        inOrder.verify(stubbedNodeInvoker, times(0)).before();
+        inOrder.verify(stubbedNodeInvoker, times(0)).exceptionalStep();
+        inOrder.verify(stubbedNodeInvoker, times(0)).after();
     }
 
     @Test

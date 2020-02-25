@@ -24,6 +24,7 @@ $Id:
 
 package com.griddynamics.qa.sprimber.autoconfigure;
 
+import com.griddynamics.qa.sprimber.engine.TreeExecutorContext;
 import com.griddynamics.qa.sprimber.reporting.*;
 import com.griddynamics.qa.sprimber.runtime.ExecutionContext;
 import cucumber.api.Pending;
@@ -50,14 +51,14 @@ public class SprimberReportingConfiguration {
     static class ClassicReporting {
         @Bean
         @ConditionalOnProperty(value = "reporting.summary.enable", prefix = "sprimber.configuration.cucumber", havingValue = "true", matchIfMissing = true)
-        public CucumberScenarioSummaryPrinter summaryPrinter(ExecutionContext context) {
-            return new CucumberScenarioSummaryPrinter(context);
+        public CucumberScenarioSummaryPrinter summaryPrinter(ExecutionContext context, TreeExecutorContext executorContext) {
+            return new CucumberScenarioSummaryPrinter(context, executorContext);
         }
 
         @Bean
         @ConditionalOnProperty(value = "reporting.summary.enable", prefix = "sprimber.configuration.classic", havingValue = "true", matchIfMissing = true)
-        public ClassicTestSummaryPrinter classicSummaryPrinter(ExecutionContext context) {
-            return new ClassicTestSummaryPrinter(context);
+        public ClassicTestSummaryPrinter classicSummaryPrinter(ExecutionContext context, TreeExecutorContext executorContext) {
+            return new ClassicTestSummaryPrinter(context, executorContext);
         }
 
         @Bean

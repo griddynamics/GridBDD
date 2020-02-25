@@ -29,25 +29,15 @@ package com.griddynamics.qa.sprimber.engine;
  */
 public interface NodeExecutionEventsPublisher {
 
-    void stageStarted(Node node);
+    void stageStarted(Node parentNode);
 
-    void stageFinished(Node node);
+    void stageFinished(Node parentNode);
 
-    void beforeNodeStarted(Node node);
+    void stageError(Node parentNode);
 
-    void beforeNodeCompleted(Node node);
+    void nodeStarted(Node node);
 
-    void beforeNodeError(Node node);
+    void nodeFinished(Node node);
 
-    void targetNodeStarted(Node node);
-
-    void targetNodeCompleted(Node node);
-
-    void targetNodeError(Node node);
-
-    void afterNodeStarted(Node node);
-
-    void afterNodeCompleted(Node node);
-
-    void afterNodeError(Node node);
+    void nodeError(Node node);
 }

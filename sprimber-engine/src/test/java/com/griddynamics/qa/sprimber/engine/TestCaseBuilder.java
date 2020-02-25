@@ -17,7 +17,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
@@ -30,14 +30,15 @@ import org.springframework.util.ReflectionUtils;
 import java.lang.reflect.Method;
 import java.util.EnumSet;
 
-import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
+import static com.griddynamics.qa.sprimber.engine.Node.SkipOptions.BYPASS_WHEN_STAGE_HAS_ERROR;
+import static com.griddynamics.qa.sprimber.engine.Node.SkipOptions.BYPASS_WHEN_SUB_STAGE_HAS_ERROR;
 
 /**
  * @author fparamonov
  */
 
 @Slf4j
-public class TestCaseBuilder {
+class TestCaseBuilder {
 
     private static final String TEST_ADAPTER_NAME = "testAdapter";
     private final Method beforeMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "before");
@@ -46,80 +47,121 @@ public class TestCaseBuilder {
     private final Method exceptionalStepMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "exceptionalStep");
 
     Node buildSingleStep() {
-        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
-                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
-        stepNode.addTarget(getStepBuilder());
+        Node.Builder builder = new Node.Builder()
+                .withRole("stepRoot")
+                .withAdapterName(TEST_ADAPTER_NAME)
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class));
+        Node stepNode = Node.createRootNode(builder);
+        stepNode.addInvokableTarget(getStepBuilder());
         return stepNode;
     }
 
     Node buildSingleWrappedStep() {
-        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
-                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
-        stepNode.addBefore(getBeforeStepBuilder());
-        stepNode.addTarget(getStepBuilder());
-        stepNode.addAfter(getAfterStepBuilder());
+        Node.Builder builder = new Node.Builder()
+                .withRole("stepRoot")
+                .withAdapterName(TEST_ADAPTER_NAME)
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class));
+        Node stepNode = Node.createRootNode(builder);
+        stepNode.addInvokableBefore(getBeforeStepBuilder());
+        stepNode.addInvokableTarget(getStepBuilder());
+        stepNode.addInvokableAfter(getAfterStepBuilder());
         return stepNode;
     }
 
     Node buildTestWithRegularAndExceptionalWrappedStep() {
-        Node testNode = Node.createRootNode("testRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
-                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
-        Node.Builder stepHolderBuilder = new Node.Builder()
-                .withRole("stepHolder")
-                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
-                        BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
-        Node exceptionalStepNode = testNode.addChild(stepHolderBuilder);
-        exceptionalStepNode.addBefore(getBeforeStepBuilder());
-        exceptionalStepNode.addTarget(getExceptionalStepBuilder("step"));
-        exceptionalStepNode.addAfter(getAfterStepBuilder());
-        Node regularStepNode = testNode.addChild(stepHolderBuilder);
-        regularStepNode.addBefore(getBeforeStepBuilder());
-        regularStepNode.addTarget(getStepBuilder());
-        regularStepNode.addAfter(getAfterStepBuilder());
+        Node.Builder testBuilder = new Node.Builder()
+                .withRole("testRoot")
+                .withAdapterName(TEST_ADAPTER_NAME)
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.of(BYPASS_WHEN_STAGE_HAS_ERROR))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class));
+        Node testNode = Node.createRootNode(testBuilder);
+        Node.Builder exceptionalBuilder = new Node.Builder()
+                .withRole("stepRoot")
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class));
+        Node exceptionalStepNode = testNode.addContainerTarget(exceptionalBuilder);
+        exceptionalStepNode.addInvokableBefore(getBeforeStepBuilder());
+        exceptionalStepNode.addInvokableTarget(getExceptionalStepBuilder("step"));
+        exceptionalStepNode.addInvokableAfter(getAfterStepBuilder());
+        Node.Builder regularBuilder = new Node.Builder()
+                .withRole("stepRoot")
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class));
+        Node regularStepNode = testNode.addContainerTarget(regularBuilder);
+        regularStepNode.addInvokableBefore(getBeforeStepBuilder());
+        regularStepNode.addInvokableTarget(getStepBuilder());
+        regularStepNode.addInvokableAfter(getAfterStepBuilder());
         return testNode;
     }
 
     Node buildSingleWrappedStepWithExceptionalBefore() {
-        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
-                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_BEFORE_AFTER_ITERATION_ERROR));
-        stepNode.addBefore(getBeforeStepBuilder());
-        stepNode.addBefore(getExceptionalStepBuilder("before"));
-        stepNode.addBefore(getBeforeStepBuilder());
-        stepNode.addTarget(getStepBuilder());
-        stepNode.addAfter(getAfterStepBuilder());
-        return stepNode;
-    }
-
-    Node buildSingleWrappedStepWithExceptionalAfter() {
-        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
-                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_AFTER_AFTER_ITERATION_ERROR));
-        stepNode.addBefore(getBeforeStepBuilder());
-        stepNode.addTarget(getStepBuilder());
-        stepNode.addAfter(getAfterStepBuilder());
-        stepNode.addAfter(getExceptionalStepBuilder("after"));
-        stepNode.addAfter(getAfterStepBuilder());
+        Node.Builder builder = new Node.Builder()
+                .withRole("stepRoot")
+                .withAdapterName(TEST_ADAPTER_NAME)
+                .withBeforeBypassOptions(EnumSet.of(BYPASS_WHEN_SUB_STAGE_HAS_ERROR))
+                .withTargetBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class));
+        Node stepNode = Node.createRootNode(builder);
+        stepNode.addInvokableBefore(getBeforeStepBuilder());
+        stepNode.addInvokableBefore(getExceptionalStepBuilder("before"));
+        stepNode.addInvokableBefore(getBeforeStepBuilder());
+        stepNode.addInvokableTarget(getStepBuilder());
+        stepNode.addInvokableAfter(getAfterStepBuilder());
         return stepNode;
     }
 
     Node buildSingleWrappedStepWithExceptionalBeforeSkipTarget() {
-        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
-                BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_BEFORE_AFTER_ITERATION_ERROR, BYPASS_TARGET_AFTER_STAGE_ERROR));
-        stepNode.addBefore(getBeforeStepBuilder());
-        stepNode.addBefore(getExceptionalStepBuilder("before"));
-        stepNode.addBefore(getBeforeStepBuilder());
-        stepNode.addTarget(getStepBuilder());
-        stepNode.addAfter(getAfterStepBuilder());
+        Node.Builder builder = new Node.Builder()
+                .withRole("stepRoot")
+                .withAdapterName(TEST_ADAPTER_NAME)
+                .withBeforeBypassOptions(EnumSet.of(BYPASS_WHEN_SUB_STAGE_HAS_ERROR))
+                .withTargetBypassOptions(EnumSet.of(BYPASS_WHEN_STAGE_HAS_ERROR))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class));
+        Node stepNode = Node.createRootNode(builder);
+        stepNode.addInvokableBefore(getBeforeStepBuilder());
+        stepNode.addInvokableBefore(getExceptionalStepBuilder("before"));
+        stepNode.addInvokableBefore(getBeforeStepBuilder());
+        stepNode.addInvokableTarget(getStepBuilder());
+        stepNode.addInvokableAfter(getAfterStepBuilder());
         return stepNode;
     }
 
     Node buildSingleWrappedStepWithExceptionalBeforeSkipTargetAndAfter() {
-        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
-                BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_BEFORE_AFTER_ITERATION_ERROR, BYPASS_TARGET_AFTER_STAGE_ERROR, BYPASS_AFTER_AFTER_STAGE_ERROR));
-        stepNode.addBefore(getBeforeStepBuilder());
-        stepNode.addBefore(getExceptionalStepBuilder("before"));
-        stepNode.addBefore(getBeforeStepBuilder());
-        stepNode.addTarget(getStepBuilder());
-        stepNode.addAfter(getAfterStepBuilder());
+        Node.Builder builder = new Node.Builder()
+                .withRole("stepRoot")
+                .withAdapterName(TEST_ADAPTER_NAME)
+                .withBeforeBypassOptions(EnumSet.allOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.of(BYPASS_WHEN_STAGE_HAS_ERROR))
+                .withAfterBypassOptions(EnumSet.of(Node.SkipOptions.BYPASS_WHEN_STAGE_HAS_ERROR));
+        Node stepNode = Node.createRootNode(builder);
+        stepNode.addInvokableBefore(getBeforeStepBuilder());
+        stepNode.addInvokableBefore(getExceptionalStepBuilder("before"));
+        stepNode.addInvokableBefore(getBeforeStepBuilder());
+        stepNode.addInvokableTarget(getStepBuilder());
+        stepNode.addInvokableAfter(getAfterStepBuilder());
+        return stepNode;
+    }
+
+    Node buildSingleWrappedStepWithExceptionalAfter() {
+        Node.Builder builder = new Node.Builder()
+                .withRole("stepRoot")
+                .withAdapterName(TEST_ADAPTER_NAME)
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.of(BYPASS_WHEN_SUB_STAGE_HAS_ERROR));
+        Node stepNode = Node.createRootNode(builder);
+        stepNode.addInvokableBefore(getBeforeStepBuilder());
+        stepNode.addInvokableTarget(getStepBuilder());
+        stepNode.addInvokableAfter(getAfterStepBuilder());
+        stepNode.addInvokableAfter(getExceptionalStepBuilder("after"));
+        stepNode.addInvokableAfter(getAfterStepBuilder());
         return stepNode;
     }
 

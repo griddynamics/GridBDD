@@ -49,7 +49,6 @@ import java.util.stream.Stream;
 
 import static com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Builder;
-import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 
 /**
  * @author fparamonov
@@ -79,8 +78,13 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
 
     @Override
     public Node discover() {
-        Node testSuiteNode = Node.createRootNode(CUCUMBER_SUITE_ROLE, ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
-                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
+        Node.Builder testSuiteBuilder = new Node.Builder()
+                .withRole(CUCUMBER_SUITE_ROLE)
+                .withAdapterName(ADAPTER_NAME)
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.noneOf(Node.SkipOptions.class));
+        Node testSuiteNode = Node.createRootNode(testSuiteBuilder);
         fillSuiteHooks(testSuiteNode);
         featureResourcesStream()
                 .map(this::buildCucumberDocument)
@@ -93,20 +97,23 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
                 .withDescription(cucumberDocument.getDocument().getFeature().getDescription())
                 .withName(cucumberDocument.getDocument().getFeature().getName())
                 .withRole(CUCUMBER_FEATURE_ROLE)
-                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
-                        BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
-        Node testCaseNode = suiteNode.addChild(builder);
-        List<String> tagsToEvaluate = cucumberDocument.getDocument().getFeature().getTags()
-                .stream()
-                .map(Tag::getName)
-                .collect(Collectors.toList());
-        fillFeatureHooks(testCaseNode, tagsToEvaluate);
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.noneOf(Node.SkipOptions.class));
+        Node testCaseNode = suiteNode.addContainerTarget(builder);
         compiler.compile(cucumberDocument.getDocument()).stream()
                 .filter(pickleTagFilter())
                 .forEach(pickle -> {
                     cucumberTestBinder.buildAndAddTestNode(testCaseNode, pickle, cucumberDocument);
                     statistic.registerPreparedStage(CUCUMBER_SCENARIO_ROLE);
                 });
+        if (!testCaseNode.isEmptyHolder()) {
+            List<String> tagsToEvaluate = cucumberDocument.getDocument().getFeature().getTags()
+                    .stream()
+                    .map(Tag::getName)
+                    .collect(Collectors.toList());
+            fillFeatureHooks(testCaseNode, tagsToEvaluate);
+        }
     }
 
     private void fillSuiteHooks(Node suiteNode) {

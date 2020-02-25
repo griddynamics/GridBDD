@@ -35,18 +35,18 @@ import org.springframework.context.event.EventListener;
 public class StepCycleReporter {
 
     @EventListener
-    public void targetNodeStarted(SprimberEventPublisher.TargetNodeStartedEvent startedEvent) {
+    public void targetNodeStarted(SprimberEventPublisher.InvokableNodeStartedEvent startedEvent) {
         log.info("Starting step '{}'", startedEvent.getNode().getName());
     }
 
     @EventListener
-    public void targetNodeCompleted(SprimberEventPublisher.TargetNodeCompletedEvent completedEvent) {
+    public void targetNodeCompleted(SprimberEventPublisher.InvokableNodeFinishedEvent completedEvent) {
         log.info("Completed step '{}' with state '{}'",
                 completedEvent.getNode().getName(), completedEvent.getNode().getCurrentState());
     }
 
     @EventListener
-    public void targetNodeError(SprimberEventPublisher.TargetNodeErrorEvent errorEvent) {
+    public void targetNodeError(SprimberEventPublisher.InvokableNodeErrorEvent errorEvent) {
         log.info("Step '{}' completed with error", errorEvent.getNode().getName());
     }
 }

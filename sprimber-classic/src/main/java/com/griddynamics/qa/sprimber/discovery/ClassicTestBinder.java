@@ -37,7 +37,7 @@ import java.util.EnumSet;
 
 import static com.griddynamics.qa.sprimber.discovery.ClassicAdapterConstants.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Builder;
-import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
+import static com.griddynamics.qa.sprimber.engine.Node.SkipOptions.BYPASS_WHEN_SUB_STAGE_HAS_ERROR;
 
 /**
  * @author fparamonov
@@ -52,13 +52,14 @@ class ClassicTestBinder {
         TestMapping testMapping = AnnotationUtils.getAnnotation(testCandidate, TestMapping.class);
         String testName = buildTestName(testCandidate, testMapping);
         Builder builder = new Builder()
-                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
-                        BYPASS_CHILDREN_AFTER_ITERATION_ERROR))
                 .withRole(CLASSIC_TEST_ROLE)
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.of(BYPASS_WHEN_SUB_STAGE_HAS_ERROR))
+                .withTargetBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
                 .withName(testName)
                 .withDescription(String.valueOf(AnnotationUtils.getValue(testMapping, DESCRIPTION_ATTRIBUTE)))
                 .withHistoryId(buildTestHistoryId(testCandidate));
-        Node test = parentNode.addChild(builder);
+        Node test = parentNode.addContainerTarget(builder);
         provideStepNode(test, testCandidate);
     }
 
@@ -67,12 +68,13 @@ class ClassicTestBinder {
                 .filter(tm -> method.equals(tm.getMethod()))
                 .findFirst().orElseThrow(() -> new RuntimeException("No methods found"));
         Builder builder = new Builder()
-                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
-                        BYPASS_CHILDREN_AFTER_ITERATION_ERROR))
                 .withRole(CLASSIC_STEP_ROLE)
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
                 .withName(method.getName())
                 .withMethod(testMethod.getMethod());
-        parentNode.addTarget(builder);
+        parentNode.addInvokableTarget(builder);
     }
 
     private String buildTestName(Method method, TestMapping testMapping) {

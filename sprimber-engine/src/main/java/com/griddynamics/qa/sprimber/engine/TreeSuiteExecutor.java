@@ -28,14 +28,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Spliterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import java.util.stream.StreamSupport;
-
-import static com.griddynamics.qa.sprimber.engine.Node.*;
 
 /**
  * @author fparamonov
@@ -44,99 +40,79 @@ import static com.griddynamics.qa.sprimber.engine.Node.*;
 @Slf4j
 class TreeSuiteExecutor implements TreeExecutor {
 
-    private static final String STARTED_EVENT_POSTFIX = "Started";
-    private static final String COMPLETED_EVENT_POSTFIX = "Completed";
-    private static final String ERROR_EVENT_POSTFIX = "Error";
-    private static final String EXECUTOR_NAME_SUFFIX = "Executor";
     private final TreeExecutorContext context;
     private final NodeInvoker nodeInvoker;
-    private final NodeExecutionEventsPublisher eventsPublisher;
     private final Map<String, Executor> childExecutors = new HashMap<>();
-    private final Map<String, Consumer<Node>> eventsPublisherByName = new HashMap<>();
 
     public TreeSuiteExecutor(NodeInvoker nodeInvoker,
                              Map<String, Executor> childExecutors,
-                             TreeExecutorContext context,
-                             NodeExecutionEventsPublisher eventsPublisher) {
+                             TreeExecutorContext context) {
         this.nodeInvoker = nodeInvoker;
         this.context = context;
-        this.eventsPublisher = eventsPublisher;
         this.childExecutors.putAll(childExecutors);
-        initEventPublisherMap(eventsPublisher);
-    }
-
-    private void initEventPublisherMap(NodeExecutionEventsPublisher eventsPublisher) {
-        eventsPublisherByName.put(BEFORE_SUB_NODE_NAME + STARTED_EVENT_POSTFIX, eventsPublisher::beforeNodeStarted);
-        eventsPublisherByName.put(BEFORE_SUB_NODE_NAME + COMPLETED_EVENT_POSTFIX, eventsPublisher::beforeNodeCompleted);
-        eventsPublisherByName.put(BEFORE_SUB_NODE_NAME + ERROR_EVENT_POSTFIX, eventsPublisher::beforeNodeError);
-        eventsPublisherByName.put(TARGET_SUB_NODE_NAME + STARTED_EVENT_POSTFIX, eventsPublisher::targetNodeStarted);
-        eventsPublisherByName.put(TARGET_SUB_NODE_NAME + COMPLETED_EVENT_POSTFIX, eventsPublisher::targetNodeCompleted);
-        eventsPublisherByName.put(TARGET_SUB_NODE_NAME + ERROR_EVENT_POSTFIX, eventsPublisher::targetNodeError);
-        eventsPublisherByName.put(AFTER_SUB_NODE_NAME + STARTED_EVENT_POSTFIX, eventsPublisher::afterNodeStarted);
-        eventsPublisherByName.put(AFTER_SUB_NODE_NAME + COMPLETED_EVENT_POSTFIX, eventsPublisher::afterNodeCompleted);
-        eventsPublisherByName.put(AFTER_SUB_NODE_NAME + ERROR_EVENT_POSTFIX, eventsPublisher::afterNodeError);
     }
 
     @Override
-    public void executeRoot(Node node) {
-        processStage(node);
+    public void executeRoot(Node rootNode) {
+        context.start(rootNode);
+        processStage(rootNode, Node.Relation.TARGET.subStageName());
+        context.success(rootNode);
     }
 
-    public void processStage(Node node) {
-        node.scheduleExecution();
-        context.startStage(node);
-        eventsPublisher.stageStarted(node);
-        invokeSubStage(node.beforeSpliterator(context.hasStageException(node)), BEFORE_SUB_NODE_NAME);
-        CompletableFuture subStageFuture = scheduleSubStage(node.childSpliterator(context.hasStageException(node)));
-        subStageFuture.join();
-        invokeSubStage(node.targetSpliterator(context.hasStageException(node)), TARGET_SUB_NODE_NAME);
-        invokeSubStage(node.afterSpliterator(context.hasStageException(node)), AFTER_SUB_NODE_NAME);
-        if (context.hasStageException(node)) {
-            node.completeExceptionally(context.getStageException(node));
-            context.reportStageException(node);
-        } else if (node.isBypassed()) {
-            node.completeWithSkip();
-        } else {
-            node.completeSuccessfully();
+    private void processStage(Node stageHolderNode, String subStageName) {
+        // TODO: 2020-03-03 add more graceful handling for empty node
+        if (stageHolderNode.isEmptyHolder()) return;
+
+        Executor stageExecutor = Executors.newSingleThreadExecutor();
+
+        stageHolderNode.init();
+        while (stageHolderNode.isNextSubStageAvailable()) {
+            Node.SubStage subStage = stageHolderNode.nextSubStage();
+            CompletableFuture.allOf(subStage.streamSubStageNodes(stageHolderNode.isDryMode())
+                    .map(subStageNode -> scheduleSubStageNode(subStageNode, stageExecutor, subStage))
+                    .toArray(CompletableFuture[]::new)).join();
         }
-        eventsPublisher.stageFinished(node);
-        context.completeStage(node);
+        if (context.hasFatalExceptionOnCurrentStage(stageHolderNode)) {
+            // TODO: 2020-03-12 handle multiple exceptions for node here
+            stageHolderNode.completeExceptionally(context.getStageException(stageHolderNode).get(0));
+            context.reportExceptionForParentStage(stageHolderNode, subStageName);
+        } else if (stageHolderNode.isDryMode()) {
+            stageHolderNode.completeWithSkip();
+        } else {
+            stageHolderNode.completeSuccessfully();
+        }
     }
 
-    private void invokeSubStage(Spliterator<Node> subNodesSpliterator, String stageName) {
-        StreamSupport.stream(subNodesSpliterator, false)
-                .forEach(subNode -> {
-                    subNode.prepareExecution();
-                    eventsPublisherByName.get(stageName + STARTED_EVENT_POSTFIX).accept(subNode);
-                    boolean skippedByCondition = subNode.getCondition().map(nodeInvoker::shouldSkip).orElse(false);
-                    if (subNode.isReadyForInvoke() && !skippedByCondition) {
-                        try {
-                            nodeInvoker.invoke(subNode);
-                            subNode.completeSuccessfully();
-                            eventsPublisherByName.get(stageName + COMPLETED_EVENT_POSTFIX).accept(subNode);
-                        } catch (Throwable throwable) {
-                            subNode.completeExceptionally(throwable);
-                            context.reportStageException(subNode);
-                            eventsPublisherByName.get(stageName + ERROR_EVENT_POSTFIX).accept(subNode);
-                        }
+    private CompletableFuture<Void> scheduleSubStageNode(Node subStageNode, Executor executor, Node.SubStage subStage) {
+        subStageNode.prepareExecution(node -> this.processStage(node, subStage.getName()), nodeInvoker::invoke);
+        boolean skippedByCondition = subStageNode.getCondition()
+                .map(nodeInvoker::isSkippedByCondition)
+                .orElse(false);
+        return CompletableFuture
+                .runAsync(() -> {
+                    context.start(subStageNode);
+                }, executor)
+                .exceptionally(throwable -> {
+                    log.error("Exception on start event handling. Message: {}", throwable.getLocalizedMessage());
+                    return null;
+                })
+                .thenApply(v -> {
+                    if ((subStage.isGlobalStageSkipOnException() && context.hasFatalExceptionOnParentStage(subStageNode)) ||
+                            (subStage.isNodeExecutionSkippedOnSubStageException() && context.hasFatalExceptionOnParentSubStage(subStageNode, subStage.getName()))) {
+                        subStageNode.enableDryMode();
                     }
-                    if (subNode.isBypassed() || skippedByCondition) {
-                        //// TODO: 2020-01-09 add callback for option to execute something extra for BYPASS mode
-                        subNode.completeWithSkip();
-                        eventsPublisherByName.get(stageName + COMPLETED_EVENT_POSTFIX).accept(subNode);
-                    }
+                    subStageNode.invoke(skippedByCondition);
+                    return (Consumer<Node>) context::success;
+                })
+                .exceptionally(throwable -> {
+                    subStageNode.completeExceptionally(throwable);
+                    return node -> context.error(node, subStage.getName());
+                })
+                .thenAccept(contextAction -> contextAction.accept(subStageNode))
+                .exceptionally(throwable -> {
+                    log.error("Exception on complete/error event handling. Message: {}", throwable.getLocalizedMessage());
+                    return null;
                 });
-    }
-
-    private CompletableFuture<Void> scheduleSubStage(Spliterator<Node> subNodesSpliterator) {
-        return CompletableFuture.allOf(StreamSupport.stream(subNodesSpliterator, false)
-                .map(this::scheduleSubNode).toArray(CompletableFuture[]::new));
-    }
-
-    private CompletableFuture<Void> scheduleSubNode(Node node) {
-        return Optional.ofNullable(childExecutors.get(node.getRole() + EXECUTOR_NAME_SUFFIX))
-                .map(executor -> CompletableFuture.runAsync(() -> processStage(node), executor))
-                .orElseGet(() -> CompletableFuture.allOf().thenRun(() -> processStage(node)));
     }
 
     /**
@@ -146,7 +122,7 @@ class TreeSuiteExecutor implements TreeExecutor {
      */
     public interface NodeInvoker {
 
-        boolean shouldSkip(Node.Condition condition);
+        boolean isSkippedByCondition(Node.Condition condition);
 
         /**
          * The implementation should care about the node invocation rather about the exception handling.
@@ -157,10 +133,6 @@ class TreeSuiteExecutor implements TreeExecutor {
          * @return - status of invocation, usually COMPLETED.
          */
         void invoke(Node executableNode);
-
-        default Status dryInvoke(Node executableNode) {
-            return Status.SKIP;
-        }
     }
 
 }

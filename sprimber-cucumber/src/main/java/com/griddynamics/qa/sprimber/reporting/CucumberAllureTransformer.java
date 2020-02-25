@@ -34,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 
+import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -54,13 +55,30 @@ public class CucumberAllureTransformer {
     private static final String TEST_CONTAINER_PREFIX_NAME = "test-";
     private static final String TEST_CASE_CONTAINER_PREFIX_NAME = "test-case-";
     private final Map<String, TestParentInfo> testParentsById = new ConcurrentHashMap<>();
+    private final List<String> hookRoles = new ArrayList<>();
+    private final List<String> stepHookRoles = new ArrayList<>();
     private final AllureLifecycle lifecycle;
     private final Set<String> nonPrintableExceptions;
+
+    @PostConstruct
+    public void initHookRoles() {
+        hookRoles.add(BEFORE_TEST_ACTION_STYLE);
+        hookRoles.add(BEFORE_FEATURE_ACTION_STYLE);
+        hookRoles.add(BEFORE_SUITE_ACTION_STYLE);
+        hookRoles.add(AFTER_SUITE_ACTION_STYLE);
+        hookRoles.add(AFTER_TEST_ACTION_STYLE);
+        hookRoles.add(AFTER_FEATURE_ACTION_STYLE);
+        stepHookRoles.add(BEFORE_STEP_ACTION_STYLE);
+        stepHookRoles.add(AFTER_STEP_ACTION_STYLE);
+    }
 
     @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
     public void stageStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
         if (startedEvent.getNode().isEmptyHolder()) return;
         storeParentInfo(startedEvent.getNode());
+        if (CUCUMBER_SUITE_ROLE.equals(startedEvent.getNode().getRole())) {
+            doWithTestCaseStart(startedEvent.getNode());
+        }
         if (CUCUMBER_FEATURE_ROLE.equals(startedEvent.getNode().getRole())) {
             doWithTestCaseStart(startedEvent.getNode());
         }
@@ -77,6 +95,9 @@ public class CucumberAllureTransformer {
     @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
     public void stageFinished(SprimberEventPublisher.ContainerNodeFinishedEvent finishedEvent) {
         if (finishedEvent.getNode().isEmptyHolder()) return;
+        if (CUCUMBER_SUITE_ROLE.equals(finishedEvent.getNode().getRole())) {
+            doWithTestCaseFinish(finishedEvent.getNode());
+        }
         if (CUCUMBER_FEATURE_ROLE.equals(finishedEvent.getNode().getRole())) {
             doWithTestCaseFinish(finishedEvent.getNode());
         }
@@ -237,77 +258,54 @@ public class CucumberAllureTransformer {
     }
 
     @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
-    public void targetNodeStarted(SprimberEventPublisher.TargetNodeStartedEvent startedEvent) {
-        startStep(startedEvent.getNode());
-        lifecycle.updateStep(startedEvent.getNode().getParentId().toString(),
-                stepResult -> stepResult.setName(startedEvent.getNode().getName()));
-    }
-
-    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
-    public void targetNodeCompleted(SprimberEventPublisher.TargetNodeCompletedEvent completedEvent) {
-        completeStep(completedEvent.getNode());
-    }
-
-    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
-    public void targetNodeError(SprimberEventPublisher.TargetNodeErrorEvent errorEvent) {
-        Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(errorEvent.getNode().getThrowable().get());
-        lifecycle.updateStep(errorEvent.getNode().getRuntimeId().toString(),
-                stepResult -> {
-                    stepResult.setStatus(errorEvent.getNode().getThrowable().map(this::mapThrowable).orElse(Status.BROKEN));
-                    errorEvent.getNode().getThrowable().ifPresent(this::attachExceptionMessage);
-                    statusDetails.ifPresent(stepResult::setStatusDetails);
-                });
-        lifecycle.updateTestCase(testResult -> statusDetails.ifPresent(testResult::setStatusDetails));
-        lifecycle.stopStep(errorEvent.getNode().getRuntimeId().toString());
-    }
-
-    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
-    public void beforeNodeStarted(SprimberEventPublisher.BeforeNodeStartedEvent startedEvent) {
-        if (CUCUMBER_SCENARIO_ROLE.equals(testParentsById.get(startedEvent.getNode().getParentId().toString()).getParentType())) {
+    public void invokableNodeStarted(SprimberEventPublisher.InvokableNodeStartedEvent startedEvent) {
+        if (CUCUMBER_STEP_ROLE.equals(startedEvent.getNode().getRole())) {
+            startStep(startedEvent.getNode());
+            lifecycle.updateStep(startedEvent.getNode().getParentId().toString(),
+                    stepResult -> stepResult.setName(startedEvent.getNode().getName()));
+        }
+        if (hookRoles.contains(startedEvent.getNode().getRole())) {
             FixtureResult fixtureResult = new FixtureResult();
             fixtureResult.setName(startedEvent.getNode().getName());
             fixtureResult.setParameters(convertStepParameters(startedEvent.getNode().getMethodParameters()));
             lifecycle.startPrepareFixture(TEST_CONTAINER_PREFIX_NAME + startedEvent.getNode().getParentId(),
                     startedEvent.getNode().getRuntimeId().toString(), fixtureResult);
-        } else {
+        }
+        if (stepHookRoles.contains(startedEvent.getNode().getRole())) {
             startStep(startedEvent.getNode());
         }
     }
 
     @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
-    public void beforeNodeCompleted(SprimberEventPublisher.BeforeNodeCompletedEvent completedEvent) {
-        if (CUCUMBER_SCENARIO_ROLE.equals(testParentsById.get(completedEvent.getNode().getParentId().toString()).getParentType())) {
+    public void invokableNodeCompleted(SprimberEventPublisher.InvokableNodeFinishedEvent completedEvent) {
+        if (CUCUMBER_STEP_ROLE.equals(completedEvent.getNode().getRole())) {
+            completeStep(completedEvent.getNode());
+        }
+        if (hookRoles.contains(completedEvent.getNode().getRole())) {
             updateAndStopNonExceptionFixture(completedEvent.getNode());
             lifecycle.setCurrentTestCase(completedEvent.getNode().getParentId().toString());
-        } else {
+        }
+        if (stepHookRoles.contains(completedEvent.getNode().getRole())) {
             completeStep(completedEvent.getNode());
         }
     }
 
     @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
-    public void beforeNodeError(SprimberEventPublisher.BeforeNodeErrorEvent errorEvent) {
-        stopStepWithError(errorEvent.getNode());
-    }
-
-    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
-    public void afterNodeStarted(SprimberEventPublisher.AfterNodeStartedEvent startedEvent) {
-        if (CUCUMBER_SCENARIO_ROLE.equals(testParentsById.get(startedEvent.getNode().getParentId().toString()).getParentType())) {
-            FixtureResult fixtureResult = new FixtureResult();
-            fixtureResult.setName(startedEvent.getNode().getName());
-            fixtureResult.setParameters(convertStepParameters(startedEvent.getNode().getMethodParameters()));
-            lifecycle.startTearDownFixture(TEST_CONTAINER_PREFIX_NAME + startedEvent.getNode().getParentId(),
-                    startedEvent.getNode().getRuntimeId().toString(), fixtureResult);
-        } else {
-            startStep(startedEvent.getNode());
+    public void invokableNodeError(SprimberEventPublisher.InvokableNodeErrorEvent errorEvent) {
+        if (CUCUMBER_STEP_ROLE.equals(errorEvent.getNode().getRole())) {
+            Optional<StatusDetails> statusDetails = ResultsUtils.getStatusDetails(errorEvent.getNode().getThrowable().get());
+            lifecycle.updateStep(errorEvent.getNode().getRuntimeId().toString(),
+                    stepResult -> {
+                        stepResult.setStatus(errorEvent.getNode().getThrowable().map(this::mapThrowable).orElse(Status.BROKEN));
+                        errorEvent.getNode().getThrowable().ifPresent(this::attachExceptionMessage);
+                        statusDetails.ifPresent(stepResult::setStatusDetails);
+                    });
+            lifecycle.updateTestCase(testResult -> statusDetails.ifPresent(testResult::setStatusDetails));
+            lifecycle.stopStep(errorEvent.getNode().getRuntimeId().toString());
         }
-    }
+        if (hookRoles.contains(errorEvent.getNode().getRole()) || stepHookRoles.contains(errorEvent.getNode().getRole())) {
+            stopStepWithError(errorEvent.getNode());
 
-    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
-    public void afterNodeCompleted(SprimberEventPublisher.AfterNodeCompletedEvent completedEvent) {
-        if (CUCUMBER_SCENARIO_ROLE.equals(testParentsById.get(completedEvent.getNode().getParentId().toString()).getParentType())) {
-            updateAndStopNonExceptionFixture(completedEvent.getNode());
-        } else {
-            completeStep(completedEvent.getNode());
         }
     }
 
@@ -322,11 +320,6 @@ public class CucumberAllureTransformer {
                     }
                 });
         lifecycle.stopFixture(node.getRuntimeId().toString());
-    }
-
-    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
-    public void afterNodeError(SprimberEventPublisher.AfterNodeErrorEvent errorEvent) {
-        stopStepWithError(errorEvent.getNode());
     }
 
     private void startStep(Node node) {

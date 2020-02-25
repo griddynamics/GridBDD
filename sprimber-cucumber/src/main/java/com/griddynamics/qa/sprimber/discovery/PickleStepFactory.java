@@ -48,7 +48,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants.*;
-import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Condition;
 
 /**
@@ -65,8 +64,10 @@ class PickleStepFactory {
     Node addStepContainerNode(Node parentNode, PickleStep stepCandidate) {
         Node.Builder builder = new Node.Builder()
                 .withRole(CUCUMBER_STEP_CONTAINER_ROLE)
-                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
-        Node stepContainerNode = parentNode.addChild(builder);
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.noneOf(Node.SkipOptions.class));
+        Node stepContainerNode = parentNode.addContainerTarget(builder);
 
         List<Node> nodeList = testMethodRegistry.streamAllTestMethods()
                 .filter(testMethod -> StringUtils.isNotBlank(testMethod.getTextPattern()))
@@ -97,7 +98,7 @@ class PickleStepFactory {
                 .ifPresent(stepData -> builder.withAttribute(STEP_DATA_ATTRIBUTE, stepData));
         buildCondition(testMethod.getMethod())
                 .ifPresent(builder::withCondition);
-        return parentNode.addTarget(builder);
+        return parentNode.addInvokableTarget(builder);
     }
 
     Predicate<TestMethod> filterTestMethodByTags() {

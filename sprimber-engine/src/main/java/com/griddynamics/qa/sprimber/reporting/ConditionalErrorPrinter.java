@@ -39,7 +39,7 @@ public class ConditionalErrorPrinter {
     private final Set<String> nonPrintableExceptions;
 
     @EventListener
-    public void targetNodeError(SprimberEventPublisher.TargetNodeErrorEvent errorEvent) {
+    public void targetNodeError(SprimberEventPublisher.InvokableNodeErrorEvent errorEvent) {
         errorEvent.getNode().getThrowable()
                 .filter(throwable -> !nonPrintableExceptions.contains(throwable.getClass().getName()))
                 .ifPresent(Throwable::printStackTrace);

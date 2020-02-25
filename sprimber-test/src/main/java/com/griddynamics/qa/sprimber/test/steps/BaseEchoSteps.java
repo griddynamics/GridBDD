@@ -165,8 +165,13 @@ public class BaseEchoSteps {
     }
 
     @AfterFeature("@echo or not @labels")
-    public void afterCucumberFeature() {
+    public void afterCucumberEchoOnlyFeature() {
         LOGGER.info("Hey, I'm after Cucumber feature action for tag echo and not labels");
+    }
+
+    @AfterFeature("@echo")
+    public void afterCucumberEchoFeature() {
+        LOGGER.info("Hey, I'm after Cucumber feature action for tag echo");
     }
 
     @AfterSuite

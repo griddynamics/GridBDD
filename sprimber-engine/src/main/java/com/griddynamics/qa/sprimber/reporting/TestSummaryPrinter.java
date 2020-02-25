@@ -25,14 +25,12 @@ $Id:
 package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.engine.TreeExecutorContext;
 import com.griddynamics.qa.sprimber.runtime.ExecutionContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
-import org.springframework.core.NamedThreadLocal;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -49,144 +47,90 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public abstract class TestSummaryPrinter {
 
+    private static final String STRING_BUILDER_NAME = "stringBuilder";
+    private static final String LEVEL_COUNTER_NAME = "levelCounter";
     private final ExecutionContext executionContext;
 
-    private final ThreadLocal<StringBuilder> reportBuilder = new NamedThreadLocal<>("Testcase report builder");
-    private final ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
+    private final TreeExecutorContext executorContext;
     private final AtomicInteger executedCount = new AtomicInteger(0);
     private final AtomicInteger exceptionsCount = new AtomicInteger(0);
 
-    abstract boolean isNodeOfRoleTest(Node node);
-
     /**
      * Should return true in case when the node relates to the test phase like step, test hook, etc
+     *
      * @param node
      * @return
      */
-    abstract boolean isNodeBelongsToTest(Node node);
+    abstract boolean isNodeLevelAboveTest(Node node);
 
-    @EventListener
-    public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
-        increaseDepthLevel();
-        if (isNodeOfRoleTest(startedEvent.getNode())) {
-            doWithTestStart(startedEvent.getNode());
-        }
-    }
+    abstract String getTestStageName();
 
-    @EventListener
-    public void containerNodeFinished(SprimberEventPublisher.ContainerNodeFinishedEvent finishedEvent) {
-        decreaseDepthLevel();
-        if (isNodeOfRoleTest(finishedEvent.getNode())) {
-            doWithTestFinish(finishedEvent.getNode());
-        }
-    }
-
-    @EventListener
-    public void targetNodeStarted(SprimberEventPublisher.TargetNodeStartedEvent startedEvent) {
-        increaseDepthLevel();
-    }
-
-    @EventListener
-    public void targetNodeCompleted(SprimberEventPublisher.TargetNodeCompletedEvent completedEvent) {
-        addSuccessNodeRow(completedEvent.getNode());
-        decreaseDepthLevel();
-    }
-
-    @EventListener
-    public void targetNodeError(SprimberEventPublisher.TargetNodeErrorEvent errorEvent) {
-        addErrorNodeRow(errorEvent.getNode());
-        decreaseDepthLevel();
-    }
-
-    @EventListener
-    public void beforeNodeCompleted(SprimberEventPublisher.BeforeNodeCompletedEvent completedEvent) {
-        addSuccessNodeRow(completedEvent.getNode());
-    }
-
-    @EventListener
-    public void beforeNodeError(SprimberEventPublisher.BeforeNodeErrorEvent errorEvent) {
-        addErrorNodeRow(errorEvent.getNode());
-    }
-
-    @EventListener
-    public void afterNodeCompleted(SprimberEventPublisher.AfterNodeCompletedEvent completedEvent) {
-        addSuccessNodeRow(completedEvent.getNode());
-    }
-
-    @EventListener
-    public void afterNodeError(SprimberEventPublisher.AfterNodeErrorEvent errorEvent) {
-        addErrorNodeRow(errorEvent.getNode());
-    }
-
-    private void addSuccessNodeRow(Node node) {
-        if (!isNodeBelongsToTest(node)) return;
-        StringBuilder stringBuilder = reportBuilder.get();
+    void addSuccessNodeRow(Node node) {
+        if (isNodeLevelAboveTest(node)) return;
+        StringBuilder stringBuilder = (StringBuilder) executorContext.getObjectForStage(node, getTestStageName(), STRING_BUILDER_NAME);
         stringBuilder.append("\n")
-                .append(getIndents())
+                .append(getIndents(node))
                 .append(String.format(" %s", node.getName()))
                 .append(String.format(" (%s) ", node.getCurrentState()));
-        printMethodParameters(node.getMethodParameters());
+        printMethodParameters(node.getMethodParameters(), stringBuilder);
     }
 
-    private void addErrorNodeRow(Node node) {
-        if (!isNodeBelongsToTest(node)) return;
+    void addErrorNodeRow(Node node) {
+        if (isNodeLevelAboveTest(node)) return;
         exceptionsCount.incrementAndGet();
-        StringBuilder stringBuilder = reportBuilder.get();
+        StringBuilder stringBuilder =  (StringBuilder) executorContext.getObjectForStage(node, getTestStageName(), STRING_BUILDER_NAME);
         stringBuilder.append("\n")
-                .append(getIndents())
+                .append(getIndents(node))
                 .append(String.format(" %s", node.getName()))
                 .append(String.format(" (%s) \n", node.getCurrentState()));
         node.getThrowable().ifPresent(throwable -> stringBuilder.append(String.format("Description: %s ", throwable.getLocalizedMessage())));
     }
 
-    private void printMethodParameters(Map<String, Object> parameters) {
-        parameters.forEach((k, v) -> reportBuilder.get()
-                .append("\nValue:\n")
-                .append(v));
-    }
-
-    private void doWithTestStart(Node containerNode) {
+    void doWithTestStart(Node containerNode) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n\n")
                 .append(String.format("Completed: '%s'", containerNode.getName()))
                 .append(" with status {STATUS}");
-        reportBuilder.set(stringBuilder);
+        executorContext.addObjectForStage(containerNode, getTestStageName(), STRING_BUILDER_NAME, stringBuilder);
+        executorContext.addObjectForStage(containerNode, getTestStageName(), LEVEL_COUNTER_NAME, new AtomicInteger(0));
     }
 
-    private void doWithTestFinish(Node containerNode) {
+    void doWithTestFinish(Node containerNode) {
         executedCount.incrementAndGet();
-        StringBuilder stringBuilder = reportBuilder.get();
+        StringBuilder stringBuilder = (StringBuilder) executorContext.getObjectForStage(containerNode, getTestStageName(), STRING_BUILDER_NAME);
         stringBuilder.append("\n")
-                .append(String.format("Executed '%d' out of '%d'", executedCount.get(), executionContext.getStatistic().preparedCountByStage("test")))
+                .append(String.format("Executed '%d' out of '%d'", executedCount.get(), executionContext.getStatistic().preparedCountByStage(getTestStageName())))
                 .append(String.format("\nCurrent pass rate %.2f%%", getPassedRate()))
                 .append("\n\n");
         String summaryRaw = stringBuilder.toString();
         String summary = summaryRaw.replaceFirst("\\{STATUS}", String.valueOf(containerNode.getCurrentState()));
         log.info(summary);
-        reportBuilder.remove();
+    }
+
+    void increaseDepthLevel(Node currentNode) {
+        if (isNodeLevelAboveTest(currentNode)) return;
+        AtomicInteger currentLevel = (AtomicInteger) executorContext.getObjectForStage(currentNode, getTestStageName(), LEVEL_COUNTER_NAME);
+        currentLevel.incrementAndGet();
+    }
+
+    void decreaseDepthLevel(Node currentNode) {
+        if (isNodeLevelAboveTest(currentNode)) return;
+        AtomicInteger currentLevel = (AtomicInteger) executorContext.getObjectForStage(currentNode, getTestStageName(), LEVEL_COUNTER_NAME);
+        currentLevel.decrementAndGet();
+    }
+
+    private String getIndents(Node currentNode) {
+        AtomicInteger currentLevel = (AtomicInteger) executorContext.getObjectForStage(currentNode, getTestStageName(), LEVEL_COUNTER_NAME);
+        return IntStream.rangeClosed(0, currentLevel.get()).mapToObj(i -> "\t").collect(Collectors.joining());
+    }
+
+    private void printMethodParameters(Map<String, Object> parameters, StringBuilder stringBuilder) {
+        parameters.forEach((k, v) -> stringBuilder
+                .append("\nValue:\n")
+                .append(v));
     }
 
     private double getPassedRate() {
         return (1.0 - (double) exceptionsCount.get() / (double) executionContext.getStatistic().preparedCountByStage("test")) * 100;
-    }
-
-    private String getIndents() {
-        return IntStream.rangeClosed(0, depthLevelThreadLocal.get()).mapToObj(i -> "\t").collect(Collectors.joining());
-    }
-
-    private void increaseDepthLevel() {
-        int currentLevel = Optional.ofNullable(depthLevelThreadLocal.get()).orElse(1);
-        currentLevel++;
-        depthLevelThreadLocal.set(currentLevel);
-    }
-
-    private void decreaseDepthLevel() {
-        int currentLevel = Optional.ofNullable(depthLevelThreadLocal.get()).orElse(1);
-        currentLevel--;
-        depthLevelThreadLocal.set(currentLevel);
-    }
-
-    private String buildExceptionMessage(Throwable throwable) {
-        return Optional.ofNullable(throwable.getMessage()).orElse(throwable.getClass().getName());
     }
 }

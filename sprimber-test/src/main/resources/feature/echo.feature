@@ -55,6 +55,7 @@ Feature: This is a test feature for echo application
     Given the next author long consumed '123' and '321'
 
   @non_stable
+    @test_me
   Scenario: Scenario to check failed steps
     When some when action with param 'hi'
     Then every time failed action

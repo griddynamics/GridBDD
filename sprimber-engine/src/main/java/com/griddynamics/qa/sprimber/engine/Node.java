@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
+import static com.griddynamics.qa.sprimber.engine.Node.SkipOptions.*;
 
 /**
  * @author fparamonov
@@ -43,64 +43,48 @@ public class Node {
     private String description;
     private String historyId;
     private final String role;
+    private final String adapterName;
+    private final UUID runtimeId = UUID.randomUUID();
     private final Map<String, Object> attributes = new HashMap<>();
 
     // core related properties
     private Status status;
     private Phase phase;
     private Type type;
-    private final String adapterName;
-    private boolean isBypassed;
-    /**
-     * The node can be in one the 3 state - SKIP, ERROR and normal execution.
-     * During the SKIP and ERROR state the source spliterators over the sub nodes of current node
-     * may produce the next node in normal or in SKIP state.
-     * The node in SKIP state allows to control the execution in dry run mode -
-     * The all required events will be emitted but the actual code execution will not happens
-     * <p>
-     * The flags below describes which type of sub node should be seeded skipped status
-     * depends on the current node node state - SKIP or ERROR
-     * <p>
-     * the result of seed flags represented as ORed values from constants below.
-     */
-    private final EnumSet<Bypass> subNodeExecutionModes;
+    private boolean isDryMode;
+    private final boolean isOptional;
     private final Condition condition;
-    private final UUID parentId;
-    private final UUID runtimeId = UUID.randomUUID();
-    private final Map<Relation, List<Node>> children = new EnumMap<>(Relation.class);
+
+    private Consumer<Node> containerNodeExecutor;
+    private Consumer<Node> invokableNodeExecutor;
+    private Iterator<SubStage> subStagesIterator;
+
+    private final Node parentNode;
+    private final Map<Relation, SubStage> subStages = new EnumMap<>(Relation.class);
 
     private final Method method;
     private Throwable throwable;
     private final Map<String, Object> parameters = new LinkedHashMap<>();
 
-    private Node(UUID parentId, Type type, String role, String adapterName, Method method, EnumSet<Bypass> subNodeExecutionModes) {
+    private Node(Builder builder, Node parentNode, Type type) {
         this.type = type;
-        this.role = role;
-        this.adapterName = adapterName;
-        this.parentId = parentId;
-        this.subNodeExecutionModes = subNodeExecutionModes;
-        this.method = method;
-        this.phase = Phase.CREATED;
-        this.condition = null;
-    }
-
-    private Node(Builder builder, UUID parentId, Type type) {
-        this.type = type;
-        this.parentId = parentId;
         this.role = builder.role;
         this.adapterName = builder.adapterName;
         this.name = builder.name;
         this.description = builder.description;
         this.historyId = builder.historyId;
-        this.subNodeExecutionModes = builder.subNodeExecutionModes;
         this.condition = builder.condition;
+        this.isOptional = builder.isOptional;
         this.method = builder.method;
         this.parameters.putAll(builder.parameters);
         this.attributes.putAll(builder.attributes);
+        this.phase = Phase.CREATED;
+        this.parentNode = parentNode;
+        builder.bypassOptions.forEach((key, value) -> subStages.put(key, new SubStage(key.subStageName(), value)));
     }
 
-    public static Node createRootNode(String role, String adapterName, EnumSet<Bypass> subNodesSkippingFlags) {
-        return new Node(UUID.randomUUID(), Type.HOLDER, role, adapterName, null, subNodesSkippingFlags);
+    public static Node createRootNode(Builder builder) {
+        return new Node(builder, null, Type.HOLDER);
     }
 
     public UUID getRuntimeId() {
@@ -108,7 +92,14 @@ public class Node {
     }
 
     public UUID getParentId() {
-        return this.parentId;
+        return this.parentNode.runtimeId;
+    }
+
+    public Node getParentNodeOfRole(String role) {
+        if (parentNode != null) {
+            return role.equals(this.getRole()) ? this : parentNode.getParentNodeOfRole(role);
+        }
+        throw new RuntimeException("Node tree doesn't contains the requested node of role");
     }
 
     public String getHistoryId() {
@@ -134,24 +125,27 @@ public class Node {
     /**
      * Return unique name for adapter that was responsible for Node creation and lifecycle maintenance
      * in scope of custom functionality like reporting
+     *
      * @return adapter name that help to identify the node at runtime
      */
     public String getAdapterName() {
-        return adapterName;
+        return this.adapterName;
     }
 
     public String getCurrentState() {
-        return "[ Status: '" + status + "'; Phase: '" + phase + "'; Is bypassed: '" + isBypassed + "'; ]";
+        return "[ Status: '" + status + "'; Phase: '" + phase + "'; Is dry mode: '" + isDryMode + "'; ]";
     }
 
     public String getName() {
         return name;
     }
 
+    // TODO: 2020-03-05 remove it and hide into executor
     public Method getMethod() {
         return method;
     }
 
+    // TODO: 2020-03-05 remove it and hide into executor
     public Map<String, Object> getMethodParameters() {
         return new LinkedHashMap<>(parameters);
     }
@@ -164,49 +158,8 @@ public class Node {
         return Optional.ofNullable(this.condition);
     }
 
-    public boolean isReadyForInvoke() {
-        return Type.INVOKABLE.equals(type) && !isBypassed && Status.STARTED.equals(status) && Phase.EXECUTING.equals(phase);
-    }
-
-    public void completePreparation() {
-        this.phase = Phase.PREPARED;
-    }
-
-    public void scheduleExecution() {
-        this.phase = Phase.SCHEDULED;
-    }
-
-    public void bypassExecution() {
-        this.isBypassed = true;
-    }
-
-    public boolean isBypassed() {
-        return this.isBypassed;
-    }
-
     public boolean isEmptyHolder() {
-        return Type.HOLDER.equals(this.type) && this.children.isEmpty();
-    }
-
-    public void prepareExecution() {
-        this.status = Status.STARTED;
-        this.phase = Phase.EXECUTING;
-    }
-
-    public void completeExceptionally(Throwable throwable) {
-        this.throwable = throwable;
-        this.status = Status.ERROR;
-        this.phase = Phase.COMPLETED;
-    }
-
-    public void completeWithSkip() {
-        this.status = Status.SKIP;
-        this.phase = Phase.COMPLETED;
-    }
-
-    public void completeSuccessfully() {
-        this.status = Status.SUCCESS;
-        this.phase = Phase.COMPLETED;
+        return Type.HOLDER.equals(this.type) && this.subStages.values().stream().allMatch(SubStage::isEmpty);
     }
 
     public boolean isCompletedExceptionally() {
@@ -221,129 +174,149 @@ public class Node {
         return Phase.COMPLETED.equals(phase) && Status.SKIP.equals(status);
     }
 
-    public Node addChild(Builder builder) {
-        builder.withAdapterName(this.adapterName);
-        Node node = new Node(builder, this.runtimeId, Type.HOLDER);
-        this.children.computeIfAbsent(Relation.CHILD, k -> new ArrayList<>()).add(node);
+    public Node addContainerTarget(Builder builder) {
+        return addChildNode(builder, Relation.TARGET, Type.HOLDER);
+    }
+
+    public Node addInvokableTarget(Builder builder) {
+        return addChildNode(builder, Relation.TARGET, Type.INVOKABLE);
+    }
+
+    public Node addInvokableBefore(Builder builder) {
+        return addChildNode(builder, Relation.BEFORE, Type.INVOKABLE);
+    }
+
+    public Node addInvokableAfter(Builder builder) {
+        return addChildNode(builder, Relation.AFTER, Type.INVOKABLE);
+    }
+
+    boolean isInvokable() {
+        return Type.INVOKABLE.equals(this.type);
+    }
+
+    boolean isContainer() {
+        return Type.HOLDER.equals(this.type);
+    }
+
+    boolean isOptional() {
+        return this.isOptional;
+    }
+
+    void enableDryMode() {
+        this.isDryMode = true;
+    }
+
+    boolean isDryMode() {
+        return this.isDryMode;
+    }
+
+    boolean isRootNode() {
+        return parentNode == null;
+    }
+
+    void completeExceptionally(Throwable throwable) {
+        this.throwable = throwable;
+        this.status = Status.ERROR;
+        this.phase = Phase.COMPLETED;
+    }
+
+    void completeWithSkip() {
+        this.status = Status.SKIP;
+        this.phase = Phase.COMPLETED;
+    }
+
+    void completeSuccessfully() {
+        this.status = Status.SUCCESS;
+        this.phase = Phase.COMPLETED;
+    }
+
+    SubStage nextSubStage() {
+        return this.subStagesIterator.next();
+    }
+
+    boolean isNextSubStageAvailable() {
+        return this.subStagesIterator.hasNext();
+    }
+
+    void init() {
+        this.subStagesIterator = subStages.values().iterator();
+        this.phase = Phase.SCHEDULED;
+    }
+
+    void prepareExecution(Consumer<Node> childExecutor, Consumer<Node> targetExecutor) {
+        this.containerNodeExecutor = childExecutor;
+        this.invokableNodeExecutor = targetExecutor;
+        this.status = Status.STARTED;
+        this.phase = Phase.EXECUTING;
+    }
+
+    void invoke(boolean isSkipped) {
+        if (Type.INVOKABLE.equals(this.type)) {
+            if (this.isDryMode || isSkipped) {
+                completeWithSkip();
+            } else {
+                invokableNodeExecutor.accept(this);
+                // TODO: 2020-03-12 update the completion part for more graceful.
+                completeSuccessfully();
+            }
+        }
+        if (Type.HOLDER.equals(this.type)) {
+            containerNodeExecutor.accept(this);
+        }
+    }
+
+    private Node addChildNode(Builder builder, Relation relation, Type type) {
+        builder.withAdapterName(adapterName);
+        Node node = new Node(builder, this, type);
+        this.subStages.get(relation).addChild(node);
         return node;
     }
 
-    public Node addChild(String role, EnumSet<Bypass> subNodesSkippingFlags) {
-        Node node = new Node(this.runtimeId, Type.HOLDER, role, this.adapterName, null, subNodesSkippingFlags);
-        this.children.computeIfAbsent(Relation.CHILD, k -> new ArrayList<>()).add(node);
-        return node;
-    }
+    static class SubStage {
+        private final String name;
+        private final List<Node> children = new ArrayList<>();
+        private final EnumSet<SkipOptions> skipOptions;
 
-    public Node addTarget(Builder builder) {
-        builder.withAdapterName(this.adapterName);
-        Node node = new Node(builder, this.runtimeId, Type.INVOKABLE);
-        this.children.computeIfAbsent(Relation.TARGET, k -> new ArrayList<>()).add(node);
-        return node;
-    }
+        SubStage(String name,
+                 EnumSet<SkipOptions> skipOptions) {
+            this.name = name;
+            this.skipOptions = skipOptions;
+        }
 
-    public Node addTarget(String role, Method method) {
-        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, this.adapterName, method, EnumSet.noneOf(Bypass.class));
-        this.children.computeIfAbsent(Relation.TARGET, k -> new ArrayList<>()).add(node);
-        return node;
-    }
+        boolean isEmpty() {
+            return children.isEmpty();
+        }
 
-    public Node addBefore(Builder builder) {
-        builder.withAdapterName(this.adapterName);
-        Node node = new Node(builder, this.runtimeId, Type.INVOKABLE);
-        this.children.computeIfAbsent(Relation.BEFORE, k -> new ArrayList<>()).add(node);
-        return node;
-    }
+        String getName() {
+            return name;
+        }
 
-    public Node addBefore(String role, Method method) {
-        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, this.adapterName, method, EnumSet.noneOf(Bypass.class));
-        this.children.computeIfAbsent(Relation.BEFORE, k -> new ArrayList<>()).add(node);
-        return node;
-    }
+        boolean isGlobalStageSkipOnException() {
+            return hasSkipOption(BYPASS_WHEN_STAGE_HAS_ERROR);
+        }
 
-    public Node addAfter(Builder builder) {
-        builder.withAdapterName(this.adapterName);
-        Node node = new Node(builder, this.runtimeId, Type.INVOKABLE);
-        this.children.computeIfAbsent(Relation.AFTER, k -> new ArrayList<>()).add(node);
-        return node;
-    }
+        boolean isNodeExecutionSkippedOnSubStageException() {
+            return hasSkipOption(BYPASS_WHEN_SUB_STAGE_HAS_ERROR);
+        }
 
-    public Node addAfter(String role, Method method) {
-        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, this.adapterName, method, EnumSet.noneOf(Bypass.class));
-        this.children.computeIfAbsent(Relation.AFTER, k -> new ArrayList<>()).add(node);
-        return node;
-    }
+        Stream<Node> streamSubStageNodes(boolean isDryMode) {
+            return children.stream().peek(node -> node.isDryMode = isDryMode);
+        }
 
-    Spliterator<Node> childSpliterator(boolean hasErrorOnPreviousStage) {
-        boolean bypassNextNodesAfterError = hasFlag(BYPASS_CHILDREN_AFTER_ITERATION_ERROR);
-        boolean bypassMode = (isBypassed() && hasFlag(BYPASS_CHILDREN_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlag(BYPASS_CHILDREN_AFTER_STAGE_ERROR));
-        return new NodeSpliterator(children.getOrDefault(Relation.CHILD, new ArrayList<>()), bypassMode, bypassNextNodesAfterError);
-    }
+        void addChild(Node node) {
+            children.add(node);
+        }
 
-    Spliterator<Node> targetSpliterator(boolean hasErrorOnPreviousStage) {
-        boolean bypassNextNodesAfterError = hasFlag(BYPASS_TARGET_AFTER_ITERATION_ERROR);
-        boolean bypassMode = (isBypassed() && hasFlag(BYPASS_TARGET_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlag(BYPASS_TARGET_AFTER_STAGE_ERROR));
-        return new NodeSpliterator(children.getOrDefault(Relation.TARGET, new ArrayList<>()), bypassMode, bypassNextNodesAfterError);
+        private boolean hasSkipOption(SkipOptions skipOptions) {
+            return this.skipOptions.contains(skipOptions);
+        }
     }
-
-    Spliterator<Node> beforeSpliterator(boolean hasErrorOnPreviousStage) {
-        boolean bypassNextNodesAfterError = hasFlag(BYPASS_BEFORE_AFTER_ITERATION_ERROR);
-        boolean bypassMode = (isBypassed() && hasFlag(BYPASS_BEFORE_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlag(BYPASS_BEFORE_AFTER_STAGE_ERROR));
-        return new NodeSpliterator(children.getOrDefault(Relation.BEFORE, new ArrayList<>()), bypassMode, bypassNextNodesAfterError);
-    }
-
-    Spliterator<Node> afterSpliterator(boolean hasErrorOnPreviousStage) {
-        boolean bypassNextNodesAfterError = hasFlag(BYPASS_AFTER_AFTER_ITERATION_ERROR);
-        boolean bypassMode = (isBypassed() && hasFlag(BYPASS_AFTER_WHEN_BYPASS_MODE)) || (hasErrorOnPreviousStage && hasFlag(BYPASS_AFTER_AFTER_STAGE_ERROR));
-        return new NodeSpliterator(children.getOrDefault(Relation.AFTER, new ArrayList<>()), bypassMode, bypassNextNodesAfterError);
-    }
-
-    static final String BEFORE_SUB_NODE_NAME = "before";
-    static final String TARGET_SUB_NODE_NAME = "target";
-    static final String AFTER_SUB_NODE_NAME = "after";
-    static final String CHILD_SUB_NODE_NAME = "child";
 
     /**
-     * Returns {@code true} if this behaviours flags {@link #subNodeExecutionModes} contain all of the given flags
-     * The default implementation returns true if the corresponding bits
-     * of the given characteristics are set.
-     *
-     * @param flag the flag to check for
-     * @return {@code true} if all the specified flags are present,
-     * else {@code false}
+     * Enum that represent possible options when Node or sub stage can be excluded from execution
      */
-    private boolean hasFlag(Bypass flag) {
-        return this.subNodeExecutionModes.contains(flag);
-    }
-
-    /**
-     * Next bypass modes are available:
-     * * BYPASS_BEFORE_WHEN_BYPASS_MODE - Seed all before sub nodes in BYPASS mode when the current node in the BYPASS mode
-     * * BYPASS_AFTER_WHEN_BYPASS_MODE - Seed all after sub nodes in BYPASS mode when the current node in the BYPASS mode
-     * * BYPASS_TARGET_WHEN_BYPASS_MODE - Seed all target sub nodes in BYPASS mode when the current node in the BYPASS mode
-     * * BYPASS_CHILDREN_WHEN_BYPASS_MODE - Seed all children sub nodes in BYPASS mode when the current node in the BYPASS mode
-     * * BYPASS_BEFORE_AFTER_STAGE_ERROR - Seed all before sub nodes in BYPASS mode when the current node in the ERROR state
-     * * BYPASS_AFTER_AFTER_STAGE_ERROR - Seed all after sub nodes in BYPASS mode when the current node in the ERROR state
-     * * BYPASS_TARGET_AFTER_STAGE_ERROR - Seed all target sub nodes in BYPASS mode when the current stage(node) in the ERROR state
-     * * BYPASS_CHILDREN_AFTER_STAGE_ERROR - Seed all child sub nodes in BYPASS mode when the current node in the ERROR state
-     * * BYPASS_BEFORE_AFTER_ITERATION_ERROR - Switch iterator to seed nodes in BYPASS mode after error with previous node execution
-     * * BYPASS_AFTER_AFTER_ITERATION_ERROR - Switch iterator to seed nodes in BYPASS mode after error with previous node execution
-     * * BYPASS_TARGET_AFTER_ITERATION_ERROR - Switch iterator to seed nodes in BYPASS mode after error with previous node execution
-     * * BYPASS_CHILDREN_AFTER_ITERATION_ERROR - Switch iterator to seed nodes in BYPASS mode after error with previous node execution
-     * *
-     */
-    public enum Bypass {
-        BYPASS_BEFORE_WHEN_BYPASS_MODE,
-        BYPASS_AFTER_WHEN_BYPASS_MODE,
-        BYPASS_TARGET_WHEN_BYPASS_MODE,
-        BYPASS_CHILDREN_WHEN_BYPASS_MODE,
-        BYPASS_BEFORE_AFTER_STAGE_ERROR,
-        BYPASS_AFTER_AFTER_STAGE_ERROR,
-        BYPASS_TARGET_AFTER_STAGE_ERROR,
-        BYPASS_CHILDREN_AFTER_STAGE_ERROR,
-        BYPASS_BEFORE_AFTER_ITERATION_ERROR,
-        BYPASS_AFTER_AFTER_ITERATION_ERROR,
-        BYPASS_TARGET_AFTER_ITERATION_ERROR,
-        BYPASS_CHILDREN_AFTER_ITERATION_ERROR
+    public enum SkipOptions {
+        BYPASS_WHEN_STAGE_HAS_ERROR, BYPASS_WHEN_SUB_STAGE_HAS_ERROR
     }
 
     /**
@@ -382,82 +355,28 @@ public class Node {
 
     /**
      * Node may have one of the next relations to the children
-     * BEFORE - must be a INVOKABLE node, will be executed before the proceeding to the next
-     * AFTER - must be a INVOKABLE node, will be executed after all previous children executions
-     * TARGET - must be a INVOKABLE node, the final logical end of the tree branch
-     * CHILD - HOLDER node that contains information about the tree extension
+     * BEFORE - set of nodes that will be scheduled for execution before the TARGET
+     * AFTER - set of nodes that will be scheduled for execution after the TARGET
+     * TARGET - set of nodes that will be scheduled for execution after BEFORE
      */
     enum Relation {
-        BEFORE, CHILD, TARGET, AFTER
-    }
+        BEFORE("before"), TARGET("target"), AFTER("after");
 
-    /**
-     * The Node Spliterator with feedback.
-     * It aimed to walk through the underlain collection of sub nodes and emit one per iteration.
-     * The emitted node can be in ready(active) or bypass mode.
-     * Feedback allows to switch the spliterator to bypass mode depends on the node execution status.
-     * Spliterator can also be initialized in BYPASS mode - emitted nodes will be in BYPASS mode
-     */
-    static class NodeSpliterator implements Spliterator<Node> {
+        private String subStageName;
 
-        /**
-         * If true then spliterator will emit nodes in BYPASS mode.
-         * BYPASS means that executor will process nodes in regular order but will never execute them
-         * Can be changed in runtime depends on Node status after apply
-         */
-        private boolean bypassMode;
-        private final boolean bypassNextNodesAfterError;
-        private final List<Node> source;
-        private final Iterator<Node> iterator;
-
-        NodeSpliterator(List<Node> source, boolean bypassMode, boolean bypassNextNodesAfterError) {
-            this.source = source;
-            this.bypassMode = bypassMode;
-            this.iterator = source.iterator();
-            this.bypassNextNodesAfterError = bypassNextNodesAfterError;
+        Relation(String subStageName) {
+            this.subStageName = subStageName;
         }
 
-        @Override
-        public boolean tryAdvance(Consumer<? super Node> action) {
-            if (iterator.hasNext()) {
-                applyToNode(action);
-                return true;
-            }
-            return false;
+        String subStageName() {
+            return this.subStageName;
         }
 
-        @Override
-        public void forEachRemaining(Consumer<? super Node> action) {
-            while (iterator.hasNext()) {
-                applyToNode(action);
-            }
-        }
-
-        private void applyToNode(Consumer<? super Node> action) {
-            Node node = iterator.next();
-            node.scheduleExecution();
-            if (bypassMode) {
-                node.bypassExecution();
-            }
-            action.accept(node);
-            if (node.isCompletedExceptionally() && bypassNextNodesAfterError) {
-                bypassMode = true;
-            }
-        }
-
-        @Override
-        public Spliterator<Node> trySplit() {
-            throw new UnsupportedOperationException("Split not supported for Node spliterator");
-        }
-
-        @Override
-        public long estimateSize() {
-            return source.size();
-        }
-
-        @Override
-        public int characteristics() {
-            return Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED;
+        static Relation getByName(String name) {
+            return Stream.of(Relation.values())
+                    .filter(value -> name.equals(value.subStageName()))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("name not supported"));
         }
     }
 
@@ -487,14 +406,15 @@ public class Node {
 
     public static final class Builder {
 
-        private EnumSet<Bypass> subNodeExecutionModes;
         private String name;
         private String description;
         private String historyId;
         private String role;
         private String adapterName;
+        private boolean isOptional;
         private Condition condition;
         private Method method;
+        private final Map<Relation, EnumSet<SkipOptions>> bypassOptions = new EnumMap<>(Relation.class);
         private final Map<String, Object> attributes = new HashMap<>();
         private final Map<String, Object> parameters = new LinkedHashMap<>();
 
@@ -526,8 +446,8 @@ public class Node {
             return this;
         }
 
-        public Builder withSubNodeModes(EnumSet<Bypass> subNodeExecutionModes) {
-            this.subNodeExecutionModes = subNodeExecutionModes;
+        public Builder isOptional(boolean isOptional) {
+            this.isOptional = isOptional;
             return this;
         }
 
@@ -548,6 +468,21 @@ public class Node {
 
         public Builder withMethod(Method method) {
             this.method = method;
+            return this;
+        }
+
+        public Builder withBeforeBypassOptions(EnumSet<SkipOptions> skipOptions) {
+            this.bypassOptions.put(Relation.BEFORE, skipOptions);
+            return this;
+        }
+
+        public Builder withAfterBypassOptions(EnumSet<SkipOptions> skipOptions) {
+            this.bypassOptions.put(Relation.AFTER, skipOptions);
+            return this;
+        }
+
+        public Builder withTargetBypassOptions(EnumSet<SkipOptions> skipOptions) {
+            this.bypassOptions.put(Relation.TARGET, skipOptions);
             return this;
         }
     }

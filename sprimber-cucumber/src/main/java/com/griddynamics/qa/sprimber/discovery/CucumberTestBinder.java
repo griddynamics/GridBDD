@@ -17,7 +17,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-$Id: 
+$Id:
 @Project:     Sprimber
 @Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
 */
@@ -39,8 +39,8 @@ import java.util.stream.Collectors;
 
 import static com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Builder;
-import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Meta;
+import static com.griddynamics.qa.sprimber.engine.Node.SkipOptions.BYPASS_WHEN_SUB_STAGE_HAS_ERROR;
 
 /**
  * @author fparamonov
@@ -65,8 +65,9 @@ class CucumberTestBinder {
                 cucumberDocument.getDocument().getFeature().getLocation().getColumn() +
                 cucumberDocument.getDocument().getFeature().getName() + testLocation + testCandidate.getName();
         Builder builder = new Builder()
-                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
-                        BYPASS_CHILDREN_AFTER_ITERATION_ERROR))
+                .withBeforeBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withAfterBypassOptions(EnumSet.noneOf(Node.SkipOptions.class))
+                .withTargetBypassOptions(EnumSet.of(BYPASS_WHEN_SUB_STAGE_HAS_ERROR))
                 .withRole(CucumberAdapterConstants.CUCUMBER_SCENARIO_ROLE)
                 .withName(testCandidate.getName())
                 .withDescription(description)
@@ -76,13 +77,14 @@ class CucumberTestBinder {
                 .withAttribute(META_ATTRIBUTE_NAME, getMetaFromPickle(testCandidate))
                 .withAttribute(TEST_LOCATION_ATTRIBUTE_NAME, uniqueName);
 
-        Node testNode = parentNode.addChild(builder);
+        Node testNode = parentNode.addContainerTarget(builder);
         List<String> scenarioTags = getTagsFromPickle(testCandidate);
-        fillScenarioHooks(testNode, scenarioTags);
-
         testCandidate.getSteps().stream()
                 .map(pickleStep -> pickleStepFactory.addStepContainerNode(testNode, pickleStep))
                 .forEach(stepNode -> this.fillStepBeforeAndAfter(stepNode, scenarioTags));
+        if (!testNode.isEmptyHolder()) {
+            fillScenarioHooks(testNode, scenarioTags);
+        }
     }
 
     void fillPreConditionsWithoutFiltering(String style, Node containerNode) {
@@ -91,9 +93,8 @@ class CucumberTestBinder {
                         .withRole(style)
                         .withName(testMethod.getStyle())
                         .withMethod(testMethod.getMethod()))
-                .forEach(containerNode::addBefore);
+                .forEach(containerNode::addInvokableBefore);
     }
-
 
     void fillPostConditionsWithoutFiltering(String style, Node containerNode) {
         testMethodRegistry.streamByStyle(style)
@@ -101,7 +102,7 @@ class CucumberTestBinder {
                         .withRole(style)
                         .withName(testMethod.getStyle())
                         .withMethod(testMethod.getMethod()))
-                .forEach(containerNode::addAfter);
+                .forEach(containerNode::addInvokableAfter);
     }
 
     void fillPreConditions(String style, Node containerNode, List<String> tags) {
@@ -111,7 +112,7 @@ class CucumberTestBinder {
                         .withRole(style)
                         .withName(testMethod.getStyle())
                         .withMethod(testMethod.getMethod()))
-                .forEach(containerNode::addBefore);
+                .forEach(containerNode::addInvokableBefore);
     }
 
     void fillPostConditions(String style, Node containerNode, List<String> tags) {
@@ -121,7 +122,7 @@ class CucumberTestBinder {
                         .withRole(style)
                         .withName(testMethod.getStyle())
                         .withMethod(testMethod.getMethod()))
-                .forEach(containerNode::addAfter);
+                .forEach(containerNode::addInvokableAfter);
     }
 
     private void fillScenarioHooks(Node testNode, List<String> scenarioTags) {

@@ -37,7 +37,7 @@ import java.util.stream.IntStream;
 @Slf4j
 public class StubbedEventPublisher implements NodeExecutionEventsPublisher {
 
-    private ThreadLocal<Integer> depthLevelThreadLocal = new ThreadLocal<>();
+    private ThreadLocal<Integer> depthLevelThreadLocal = ThreadLocal.withInitial(() -> 0);
 
     @Override
     public void stageStarted(Node node) {
@@ -58,48 +58,23 @@ public class StubbedEventPublisher implements NodeExecutionEventsPublisher {
     }
 
     @Override
-    public void beforeNodeStarted(Node node) {
-        log.info("{}Before Sub Node started {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
+    public void stageError(Node parentNode) {
+        log.info("{} Stage Node completed exceptionally {}", getIndents(depthLevelThreadLocal.get()), parentNode.getCurrentState());
     }
 
     @Override
-    public void beforeNodeCompleted(Node node) {
-        log.info("{}Before Sub Node completed {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
+    public void nodeStarted(Node node) {
+        log.info("{} Sub Node started {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     @Override
-    public void beforeNodeError(Node node) {
-        log.info("{}Before Sub Node completed exceptionally {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
+    public void nodeFinished(Node node) {
+        log.info("{} Sub Node completed {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     @Override
-    public void targetNodeStarted(Node node) {
-        log.info("{}Target Sub Node started {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
-    }
-
-    @Override
-    public void targetNodeCompleted(Node node) {
-        log.info("{}Target Sub Node completed {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
-    }
-
-    @Override
-    public void targetNodeError(Node node) {
-        log.info("{}Target Sub Node completed exceptionally {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
-    }
-
-    @Override
-    public void afterNodeStarted(Node node) {
-        log.info("{}After Sub Node started {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
-    }
-
-    @Override
-    public void afterNodeCompleted(Node node) {
-        log.info("{}After Sub Node completed {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
-    }
-
-    @Override
-    public void afterNodeError(Node node) {
-        log.info("{}After Sub Node completed exceptionally {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
+    public void nodeError(Node node) {
+        log.info("{} Sub Node completed exceptionally {}", getIndents(depthLevelThreadLocal.get()), node.getCurrentState());
     }
 
     private String getIndents(int depthLevel) {

@@ -25,7 +25,9 @@ $Id:
 package com.griddynamics.qa.sprimber.reporting;
 
 import com.griddynamics.qa.sprimber.engine.Node;
+import com.griddynamics.qa.sprimber.engine.TreeExecutorContext;
 import com.griddynamics.qa.sprimber.runtime.ExecutionContext;
+import org.springframework.context.event.EventListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,8 +42,8 @@ public class CucumberScenarioSummaryPrinter extends TestSummaryPrinter {
 
     private final List<String> testRoles = new ArrayList<>();
 
-    public CucumberScenarioSummaryPrinter(ExecutionContext executionContext) {
-        super(executionContext);
+    public CucumberScenarioSummaryPrinter(ExecutionContext executionContext, TreeExecutorContext treeExecutorContext) {
+        super(executionContext, treeExecutorContext);
         testRoles.add(BEFORE_TEST_ACTION_STYLE);
         testRoles.add(BEFORE_STEP_ACTION_STYLE);
         testRoles.add(AFTER_STEP_ACTION_STYLE);
@@ -51,12 +53,54 @@ public class CucumberScenarioSummaryPrinter extends TestSummaryPrinter {
     }
 
     @Override
-    boolean isNodeOfRoleTest(Node node) {
-        return CUCUMBER_SCENARIO_ROLE.equals(node.getRole());
+    boolean isNodeLevelAboveTest(Node node) {
+        return !testRoles.contains(node.getRole());
     }
 
     @Override
-    boolean isNodeBelongsToTest(Node node) {
-        return testRoles.contains(node.getRole());
+    String getTestStageName() {
+        return CUCUMBER_SCENARIO_ROLE;
+    }
+
+    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
+    public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
+        increaseDepthLevel(startedEvent.getNode());
+        if (CUCUMBER_SCENARIO_ROLE.equals(startedEvent.getNode().getRole())) {
+            doWithTestStart(startedEvent.getNode());
+        }
+    }
+
+    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
+    public void containerNodeFinished(SprimberEventPublisher.ContainerNodeFinishedEvent finishedEvent) {
+        decreaseDepthLevel(finishedEvent.getNode());
+        if (CUCUMBER_SCENARIO_ROLE.equals(finishedEvent.getNode().getRole())) {
+            doWithTestFinish(finishedEvent.getNode());
+        }
+    }
+
+    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
+    public void invokableNodeStarted(SprimberEventPublisher.InvokableNodeStartedEvent startedEvent) {
+        increaseDepthLevel(startedEvent.getNode());
+        if (CUCUMBER_STEP_ROLE.equals(startedEvent.getNode().getRole())) {
+            increaseDepthLevel(startedEvent.getNode());
+        }
+    }
+
+    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
+    public void invokableNodeFinished(SprimberEventPublisher.InvokableNodeFinishedEvent finishedEvent) {
+        addSuccessNodeRow(finishedEvent.getNode());
+        decreaseDepthLevel(finishedEvent.getNode());
+        if (CUCUMBER_STEP_ROLE.equals(finishedEvent.getNode().getRole())) {
+            decreaseDepthLevel(finishedEvent.getNode());
+        }
+    }
+
+    @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
+    public void invokableNodeError(SprimberEventPublisher.InvokableNodeErrorEvent errorEvent) {
+        addErrorNodeRow(errorEvent.getNode());
+        decreaseDepthLevel(errorEvent.getNode());
+        if (CUCUMBER_STEP_ROLE.equals(errorEvent.getNode().getRole())) {
+            decreaseDepthLevel(errorEvent.getNode());
+        }
     }
 }

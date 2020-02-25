@@ -42,7 +42,7 @@ class SpringNodeInvoker implements TreeSuiteExecutor.NodeInvoker {
     private final Environment environment;
 
     @Override
-    public boolean shouldSkip(Node.Condition condition) {
+    public boolean isSkippedByCondition(Node.Condition condition) {
         String triggerValue = environment.getProperty(String.valueOf(condition.getTriggerType()));
         return condition.match(triggerValue);
     }

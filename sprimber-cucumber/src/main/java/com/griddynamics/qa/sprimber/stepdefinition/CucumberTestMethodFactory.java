@@ -52,14 +52,14 @@ class CucumberTestMethodFactory extends TestMethodAbstractFactory {
 
     private final Map<Class<? extends Annotation>, String> hooks =
             new HashMap<Class<? extends Annotation>, String>() {{
-                put(BeforeSuite.class, "Before Suite");
-                put(BeforeFeature.class, "Before Feature");
+                put(BeforeSuite.class, BEFORE_SUITE_ACTION_STYLE);
+                put(BeforeFeature.class, BEFORE_FEATURE_ACTION_STYLE);
                 put(Before.class, BEFORE_TEST_ACTION_STYLE);
                 put(io.cucumber.java.Before.class, BEFORE_TEST_ACTION_STYLE);
                 put(BeforeStep.class, BEFORE_STEP_ACTION_STYLE);
                 put(io.cucumber.java.BeforeStep.class, BEFORE_STEP_ACTION_STYLE);
-                put(AfterSuite.class, "After Suite");
-                put(AfterFeature.class, "After Feature");
+                put(AfterSuite.class, AFTER_SUITE_ACTION_STYLE);
+                put(AfterFeature.class, AFTER_FEATURE_ACTION_STYLE);
                 put(After.class, AFTER_TEST_ACTION_STYLE);
                 put(io.cucumber.java.After.class, AFTER_TEST_ACTION_STYLE);
                 put(AfterStep.class, AFTER_STEP_ACTION_STYLE);

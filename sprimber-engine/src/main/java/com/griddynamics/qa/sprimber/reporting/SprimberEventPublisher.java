@@ -39,69 +39,39 @@ public class SprimberEventPublisher implements NodeExecutionEventsPublisher {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    public void stageStarted(Node node) {
-        ContainerNodeStartedEvent containerNodeStartedEvent = new ContainerNodeStartedEvent(this,  node);
+    public void stageStarted(Node parentNode) {
+        ContainerNodeStartedEvent containerNodeStartedEvent = new ContainerNodeStartedEvent(this,  parentNode);
         eventPublisher.publishEvent(containerNodeStartedEvent);
     }
 
     @Override
-    public void stageFinished(Node node) {
-        ContainerNodeFinishedEvent containerNodeFinishedEvent = new ContainerNodeFinishedEvent(this,  node);
+    public void stageFinished(Node parentNode) {
+        ContainerNodeFinishedEvent containerNodeFinishedEvent = new ContainerNodeFinishedEvent(this,  parentNode);
         eventPublisher.publishEvent(containerNodeFinishedEvent);
     }
 
     @Override
-    public void beforeNodeStarted(Node node) {
-        BeforeNodeStartedEvent beforeNodeStartedEvent = new BeforeNodeStartedEvent(this,  node);
-        eventPublisher.publishEvent(beforeNodeStartedEvent);
+    public void stageError(Node parentNode) {
+        ContainerNodeErrorEvent containerNodeErrorEvent = new ContainerNodeErrorEvent(this,  parentNode);
+        eventPublisher.publishEvent(containerNodeErrorEvent);
     }
 
     @Override
-    public void beforeNodeCompleted(Node node) {
-        BeforeNodeCompletedEvent beforeNodeCompletedEvent = new BeforeNodeCompletedEvent(this,  node);
-        eventPublisher.publishEvent(beforeNodeCompletedEvent);
+    public void nodeStarted(Node node) {
+        InvokableNodeStartedEvent invokableNodeStartedEvent = new InvokableNodeStartedEvent(this, node);
+        eventPublisher.publishEvent(invokableNodeStartedEvent);
     }
 
     @Override
-    public void beforeNodeError(Node node) {
-        BeforeNodeErrorEvent beforeNodeErrorEvent = new BeforeNodeErrorEvent(this,  node);
-        eventPublisher.publishEvent(beforeNodeErrorEvent);
+    public void nodeFinished(Node node) {
+        InvokableNodeFinishedEvent invokableNodeFinishedEvent = new InvokableNodeFinishedEvent(this, node);
+        eventPublisher.publishEvent(invokableNodeFinishedEvent);
     }
 
     @Override
-    public void targetNodeStarted(Node node) {
-        TargetNodeStartedEvent targetNodeStartedEvent = new TargetNodeStartedEvent(this,  node);
-        eventPublisher.publishEvent(targetNodeStartedEvent);
-    }
-
-    @Override
-    public void targetNodeCompleted(Node node) {
-        TargetNodeCompletedEvent targetNodeFinishedEvent = new TargetNodeCompletedEvent(this,  node);
-        eventPublisher.publishEvent(targetNodeFinishedEvent);
-    }
-
-    @Override
-    public void targetNodeError(Node node) {
-        TargetNodeErrorEvent targetNodeFinishedEvent = new TargetNodeErrorEvent(this,  node);
-        eventPublisher.publishEvent(targetNodeFinishedEvent);
-    }
-
-    @Override
-    public void afterNodeStarted(Node node) {
-        AfterNodeStartedEvent afterNodeStartedEvent = new AfterNodeStartedEvent(this,  node);
-        eventPublisher.publishEvent(afterNodeStartedEvent);
-    }
-
-    @Override
-    public void afterNodeCompleted(Node node) {
-        AfterNodeCompletedEvent afterNodeCompletedEvent = new AfterNodeCompletedEvent(this,  node);
-        eventPublisher.publishEvent(afterNodeCompletedEvent);
-    }
-
-    @Override
-    public void afterNodeError(Node node) {
-        AfterNodeErrorEvent afterNodeErrorEvent = new AfterNodeErrorEvent(this,  node);
-        eventPublisher.publishEvent(afterNodeErrorEvent);
+    public void nodeError(Node node) {
+        InvokableNodeErrorEvent invokableNodeErrorEvent = new InvokableNodeErrorEvent(this, node);
+        eventPublisher.publishEvent(invokableNodeErrorEvent);
     }
 
     public class ContainerNodeStartedEvent extends Events.NodeEvent {
@@ -111,6 +81,17 @@ public class SprimberEventPublisher implements NodeExecutionEventsPublisher {
         }
 
         public ContainerNodeStartedEvent(Object source, Node containerNode) {
+            super(source, containerNode);
+        }
+    }
+
+    public class ContainerNodeErrorEvent extends Events.NodeEvent {
+
+        public ContainerNodeErrorEvent(Object source) {
+            super(source);
+        }
+
+        public ContainerNodeErrorEvent(Object source, Node containerNode) {
             super(source, containerNode);
         }
     }
@@ -126,108 +107,36 @@ public class SprimberEventPublisher implements NodeExecutionEventsPublisher {
         }
     }
 
-    // Target node events
+    public class InvokableNodeStartedEvent extends Events.NodeEvent {
 
-    public class TargetNodeStartedEvent extends Events.NodeEvent {
-
-        public TargetNodeStartedEvent(Object source) {
+        public InvokableNodeStartedEvent(Object source) {
             super(source);
         }
 
-        public TargetNodeStartedEvent(Object source, Node executableNode) {
-            super(source, executableNode);
+        public InvokableNodeStartedEvent(Object source, Node containerNode) {
+            super(source, containerNode);
         }
     }
 
-    public class TargetNodeCompletedEvent extends Events.NodeEvent {
+    public class InvokableNodeFinishedEvent extends Events.NodeEvent {
 
-        public TargetNodeCompletedEvent(Object source) {
+        public InvokableNodeFinishedEvent(Object source) {
             super(source);
         }
 
-        public TargetNodeCompletedEvent(Object source, Node executableNode) {
-            super(source, executableNode);
+        public InvokableNodeFinishedEvent(Object source, Node containerNode) {
+            super(source, containerNode);
         }
     }
 
-    public class TargetNodeErrorEvent extends Events.NodeEvent {
+    public class InvokableNodeErrorEvent extends Events.NodeEvent {
 
-        public TargetNodeErrorEvent(Object source) {
+        public InvokableNodeErrorEvent(Object source) {
             super(source);
         }
 
-        public TargetNodeErrorEvent(Object source, Node executableNode) {
-            super(source, executableNode);
-        }
-    }
-
-    //Before node events
-
-    public class BeforeNodeStartedEvent extends Events.NodeEvent {
-
-        public BeforeNodeStartedEvent(Object source) {
-            super(source);
-        }
-
-        public BeforeNodeStartedEvent(Object source, Node executableNode) {
-            super(source, executableNode);
-        }
-    }
-
-    public class BeforeNodeCompletedEvent extends Events.NodeEvent {
-
-        public BeforeNodeCompletedEvent(Object source) {
-            super(source);
-        }
-
-        public BeforeNodeCompletedEvent(Object source, Node executableNode) {
-            super(source, executableNode);
-        }
-    }
-
-    public class BeforeNodeErrorEvent extends Events.NodeEvent {
-
-        public BeforeNodeErrorEvent(Object source) {
-            super(source);
-        }
-
-        public BeforeNodeErrorEvent(Object source, Node executableNode) {
-            super(source, executableNode);
-        }
-    }
-
-    // After node events
-
-    public class AfterNodeStartedEvent extends Events.NodeEvent {
-
-        public AfterNodeStartedEvent(Object source) {
-            super(source);
-        }
-
-        public AfterNodeStartedEvent(Object source, Node executableNode) {
-            super(source, executableNode);
-        }
-    }
-
-    public class AfterNodeCompletedEvent extends Events.NodeEvent {
-
-        public AfterNodeCompletedEvent(Object source) {
-            super(source);
-        }
-
-        public AfterNodeCompletedEvent(Object source, Node executableNode) {
-            super(source, executableNode);
-        }
-    }
-
-    public class AfterNodeErrorEvent extends Events.NodeEvent {
-
-        public AfterNodeErrorEvent(Object source) {
-            super(source);
-        }
-
-        public AfterNodeErrorEvent(Object source, Node executableNode) {
-            super(source, executableNode);
+        public InvokableNodeErrorEvent(Object source, Node containerNode) {
+            super(source, containerNode);
         }
     }
 }
