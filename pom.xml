@@ -57,7 +57,7 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>github-pkg</id>
+            <id>github</id>
             <url>https://maven.pkg.github.com/griddynamics</url>
         </snapshotRepository>
         <repository>
