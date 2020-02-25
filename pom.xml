@@ -66,6 +66,14 @@
         </repository>
     </distributionManagement>
 
+    <repositories>
+        <repository>
+            <id>github</id>
+            <name>GitHub griddynamics Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/griddynamics/GridBDD</url>
+        </repository>
+    </repositories>
+
     <build>
         <pluginManagement>
             <plugins>
