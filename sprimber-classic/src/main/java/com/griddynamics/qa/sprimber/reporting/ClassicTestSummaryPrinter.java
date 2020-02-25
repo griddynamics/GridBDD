@@ -42,4 +42,9 @@ public class ClassicTestSummaryPrinter extends TestSummaryPrinter {
     boolean isNodeOfRoleTest(Node node) {
         return CLASSIC_TEST_ROLE.equals(node.getRole());
     }
+
+    @Override
+    boolean isNodeBelongsToTest(Node node) {
+        return CLASSIC_TEST_ROLE.equals(node.getRole()); //Since there are no hooks and steps for now
+    }
 }

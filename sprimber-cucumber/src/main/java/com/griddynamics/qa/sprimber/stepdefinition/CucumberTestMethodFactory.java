@@ -24,6 +24,10 @@ $Id:
 
 package com.griddynamics.qa.sprimber.stepdefinition;
 
+import com.griddynamics.qa.sprimber.discovery.cucumber.AfterFeature;
+import com.griddynamics.qa.sprimber.discovery.cucumber.AfterSuite;
+import com.griddynamics.qa.sprimber.discovery.cucumber.BeforeFeature;
+import com.griddynamics.qa.sprimber.discovery.cucumber.BeforeSuite;
 import cucumber.api.java.After;
 import cucumber.api.java.AfterStep;
 import cucumber.api.java.Before;
@@ -48,10 +52,14 @@ class CucumberTestMethodFactory extends TestMethodAbstractFactory {
 
     private final Map<Class<? extends Annotation>, String> hooks =
             new HashMap<Class<? extends Annotation>, String>() {{
+                put(BeforeSuite.class, "Before Suite");
+                put(BeforeFeature.class, "Before Feature");
                 put(Before.class, BEFORE_TEST_ACTION_STYLE);
                 put(io.cucumber.java.Before.class, BEFORE_TEST_ACTION_STYLE);
                 put(BeforeStep.class, BEFORE_STEP_ACTION_STYLE);
                 put(io.cucumber.java.BeforeStep.class, BEFORE_STEP_ACTION_STYLE);
+                put(AfterSuite.class, "After Suite");
+                put(AfterFeature.class, "After Feature");
                 put(After.class, AFTER_TEST_ACTION_STYLE);
                 put(io.cucumber.java.After.class, AFTER_TEST_ACTION_STYLE);
                 put(AfterStep.class, AFTER_STEP_ACTION_STYLE);
@@ -103,7 +111,11 @@ class CucumberTestMethodFactory extends TestMethodAbstractFactory {
         testMethod.addAttribute(ORDER_ATTRIBUTE, AnnotationUtils.getValue(annotation, ORDER_ATTRIBUTE.toLowerCase()));
         testMethod.addAttribute(TIMEOUT_ATTRIBUTE, AnnotationUtils.getValue(annotation, TIMEOUT_ATTRIBUTE.toLowerCase()));
         if (!Arrays.asList(AnnotationUtils.getValue(annotation)).isEmpty()) {
-            testMethod.addAttribute(TAGS_ATTRIBUTE, StringUtils.join((String[]) AnnotationUtils.getValue(annotation), ','));
+            if (AnnotationUtils.getValue(annotation) instanceof String) {
+                testMethod.addAttribute(TAGS_ATTRIBUTE, AnnotationUtils.getValue(annotation));
+            } else {
+                testMethod.addAttribute(TAGS_ATTRIBUTE, StringUtils.join((String[]) AnnotationUtils.getValue(annotation), ','));
+            }
         }
         return testMethod;
     }

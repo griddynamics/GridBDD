@@ -27,7 +27,10 @@ package com.griddynamics.qa.sprimber.reporting;
 import com.griddynamics.qa.sprimber.engine.Node;
 import com.griddynamics.qa.sprimber.runtime.ExecutionContext;
 
-import static com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants.CUCUMBER_SCENARIO_ROLE;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants.*;
 
 /**
  * @author fparamonov
@@ -35,12 +38,25 @@ import static com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants.CU
 
 public class CucumberScenarioSummaryPrinter extends TestSummaryPrinter {
 
+    private final List<String> testRoles = new ArrayList<>();
+
     public CucumberScenarioSummaryPrinter(ExecutionContext executionContext) {
         super(executionContext);
+        testRoles.add(BEFORE_TEST_ACTION_STYLE);
+        testRoles.add(BEFORE_STEP_ACTION_STYLE);
+        testRoles.add(AFTER_STEP_ACTION_STYLE);
+        testRoles.add(AFTER_TEST_ACTION_STYLE);
+        testRoles.add(CUCUMBER_STEP_ROLE);
+        testRoles.add(CUCUMBER_STEP_CONTAINER_ROLE);
     }
 
     @Override
     boolean isNodeOfRoleTest(Node node) {
         return CUCUMBER_SCENARIO_ROLE.equals(node.getRole());
+    }
+
+    @Override
+    boolean isNodeBelongsToTest(Node node) {
+        return testRoles.contains(node.getRole());
     }
 }

@@ -88,9 +88,9 @@ class TreeSuiteExecutor implements TreeExecutor {
         eventsPublisher.stageStarted(node);
         invokeSubStage(node.beforeSpliterator(context.hasStageException(node)), BEFORE_SUB_NODE_NAME);
         CompletableFuture subStageFuture = scheduleSubStage(node.childSpliterator(context.hasStageException(node)));
+        subStageFuture.join();
         invokeSubStage(node.targetSpliterator(context.hasStageException(node)), TARGET_SUB_NODE_NAME);
         invokeSubStage(node.afterSpliterator(context.hasStageException(node)), AFTER_SUB_NODE_NAME);
-        subStageFuture.join();
         if (context.hasStageException(node)) {
             node.completeExceptionally(context.getStageException(node));
             context.reportStageException(node);
