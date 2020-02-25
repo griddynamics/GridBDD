@@ -58,7 +58,7 @@
     <distributionManagement>
         <snapshotRepository>
             <id>github</id>
-            <url>https://maven.pkg.github.com/griddynamics</url>
+            <url>https://maven.pkg.github.com/griddynamics/sprimber</url>
         </snapshotRepository>
         <repository>
             <id>sonatype-nexus-staging</id>
@@ -69,7 +69,7 @@
     <repositories>
         <repository>
             <id>github</id>
-            <url>https://maven.pkg.github.com/griddynamics</url>
+            <url>https://maven.pkg.github.com/griddynamics/sprimber</url>
         </repository>
     </repositories>
 
