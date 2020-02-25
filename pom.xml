@@ -57,8 +57,8 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>http://oss.sonatype.org/content/repositories/snapshots</url>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/griddynamics/gridbdd</url>
         </snapshotRepository>
         <repository>
             <id>sonatype-nexus-staging</id>

@@ -20,4 +20,4 @@ jobs:
       - name: Build and Deploy to Packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: mvn clean deploy -Dregistry=https://maven.pkg.github.com/griddynamics -Dtoken=GH_TOKEN --file pom.xml
+        run: mvn -B clean deploy -Dregistry=https://maven.pkg.github.com/griddynamics -Dtoken=GH_TOKEN --file pom.xml
