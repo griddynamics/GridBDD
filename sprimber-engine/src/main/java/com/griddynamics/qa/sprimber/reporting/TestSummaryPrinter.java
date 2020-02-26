@@ -47,7 +47,7 @@ import java.util.stream.IntStream;
 
 @Slf4j
 @RequiredArgsConstructor
-public class TestCaseSummaryPrinter {
+public abstract class TestSummaryPrinter {
 
     private final ExecutionContext executionContext;
 
@@ -56,10 +56,12 @@ public class TestCaseSummaryPrinter {
     private final AtomicInteger executedCount = new AtomicInteger(0);
     private final AtomicInteger exceptionsCount = new AtomicInteger(0);
 
+    abstract boolean isNodeOfRoleTest(Node node);
+
     @EventListener
     public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
         increaseDepthLevel();
-        if ("test".equals(startedEvent.getNode().getRole())) {
+        if (isNodeOfRoleTest(startedEvent.getNode())) {
             doWithTestStart(startedEvent.getNode());
         }
     }
@@ -67,84 +69,79 @@ public class TestCaseSummaryPrinter {
     @EventListener
     public void containerNodeFinished(SprimberEventPublisher.ContainerNodeFinishedEvent finishedEvent) {
         decreaseDepthLevel();
-        if ("test".equals(finishedEvent.getNode().getRole())) {
+        if (isNodeOfRoleTest(finishedEvent.getNode())) {
             doWithTestFinish(finishedEvent.getNode());
         }
     }
 
     @EventListener
+    public void targetNodeStarted(SprimberEventPublisher.TargetNodeStartedEvent startedEvent) {
+        increaseDepthLevel();
+    }
+
+    @EventListener
     public void targetNodeCompleted(SprimberEventPublisher.TargetNodeCompletedEvent completedEvent) {
-        StringBuilder stringBuilder = reportBuilder.get();
-        stringBuilder.append("\n")
-                .append(getIndents())
-                .append("\t")
-                .append(String.format(" %s", completedEvent.getNode().getName()))
-                .append(String.format(" (%s) ", completedEvent.getNode().getCurrentState()));
-        printMethodParameters(completedEvent.getNode().getMethodParameters());
+        addSuccessNodeRow(completedEvent.getNode());
+        decreaseDepthLevel();
     }
 
     @EventListener
     public void targetNodeError(SprimberEventPublisher.TargetNodeErrorEvent errorEvent) {
-        exceptionsCount.incrementAndGet();
-        StringBuilder stringBuilder = reportBuilder.get();
-        stringBuilder.append("\n");
-        stringBuilder.append(getIndents() + "\t");
-        stringBuilder.append(String.format(" %s", errorEvent.getNode().getName()));
-        stringBuilder.append(String.format(" (%s) \n", errorEvent.getNode().getCurrentState()));
-        errorEvent.getNode().getThrowable().ifPresent(throwable -> stringBuilder.append(String.format("Description: %s ", throwable.getLocalizedMessage())));
+        addErrorNodeRow(errorEvent.getNode());
+        decreaseDepthLevel();
     }
 
     @EventListener
     public void beforeNodeCompleted(SprimberEventPublisher.BeforeNodeCompletedEvent completedEvent) {
-        StringBuilder stringBuilder = reportBuilder.get();
-        stringBuilder.append("\n");
-        stringBuilder.append(getIndents());
-        stringBuilder.append(String.format(" %s", completedEvent.getNode().getName()));
-        stringBuilder.append(String.format(" (%s) ", completedEvent.getNode().getCurrentState()));
-        printMethodParameters(completedEvent.getNode().getMethodParameters());
+        addSuccessNodeRow(completedEvent.getNode());
     }
 
     @EventListener
     public void beforeNodeError(SprimberEventPublisher.BeforeNodeErrorEvent errorEvent) {
-        exceptionsCount.incrementAndGet();
-        StringBuilder stringBuilder = reportBuilder.get();
-        stringBuilder.append("\n");
-        stringBuilder.append(getIndents());
-        stringBuilder.append(String.format(" %s", errorEvent.getNode().getName()));
-        stringBuilder.append(String.format(" (%s) ", errorEvent.getNode().getCurrentState()));
+        addErrorNodeRow(errorEvent.getNode());
+
     }
 
     @EventListener
     public void afterNodeCompleted(SprimberEventPublisher.AfterNodeCompletedEvent completedEvent) {
-        StringBuilder stringBuilder = reportBuilder.get();
-        stringBuilder.append("\n");
-        stringBuilder.append(getIndents());
-        stringBuilder.append(String.format(" %s", completedEvent.getNode().getName()));
-        stringBuilder.append(String.format(" (%s) ", completedEvent.getNode().getCurrentState()));
-        printMethodParameters(completedEvent.getNode().getMethodParameters());
+        addSuccessNodeRow(completedEvent.getNode());
     }
 
     @EventListener
     public void afterNodeError(SprimberEventPublisher.AfterNodeErrorEvent errorEvent) {
+        addErrorNodeRow(errorEvent.getNode());
+    }
+
+    private void addSuccessNodeRow(Node node) {
+        StringBuilder stringBuilder = reportBuilder.get();
+        stringBuilder.append("\n")
+                .append(getIndents())
+                .append(String.format(" %s", node.getName()))
+                .append(String.format(" (%s) ", node.getCurrentState()));
+        printMethodParameters(node.getMethodParameters());
+    }
+
+    private void addErrorNodeRow(Node node) {
         exceptionsCount.incrementAndGet();
         StringBuilder stringBuilder = reportBuilder.get();
-        stringBuilder.append("\n");
-        stringBuilder.append(getIndents());
-        stringBuilder.append(String.format(" %s", errorEvent.getNode().getName()));
-        stringBuilder.append(String.format(" (%s) ", errorEvent.getNode().getCurrentState()));
+        stringBuilder.append("\n")
+                .append(getIndents())
+                .append(String.format(" %s", node.getName()))
+                .append(String.format(" (%s) \n", node.getCurrentState()));
+        node.getThrowable().ifPresent(throwable -> stringBuilder.append(String.format("Description: %s ", throwable.getLocalizedMessage())));
     }
 
     private void printMethodParameters(Map<String, Object> parameters) {
-        parameters.forEach((k,v) -> reportBuilder.get()
+        parameters.forEach((k, v) -> reportBuilder.get()
                 .append("\nValue:\n")
                 .append(v));
     }
 
     private void doWithTestStart(Node containerNode) {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("\n\n");
-        stringBuilder.append(String.format("Test # Completed: '%s'", containerNode.getName()));
-        stringBuilder.append(" with status {STATUS}");
+        stringBuilder.append("\n\n")
+                .append(String.format("Completed: '%s'", containerNode.getName()))
+                .append(" with status {STATUS}");
         reportBuilder.set(stringBuilder);
     }
 

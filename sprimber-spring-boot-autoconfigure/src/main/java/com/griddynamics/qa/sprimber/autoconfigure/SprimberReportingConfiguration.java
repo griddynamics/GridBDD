@@ -49,9 +49,15 @@ public class SprimberReportingConfiguration {
     @Configuration
     static class ClassicReporting {
         @Bean
-        @ConditionalOnProperty(value = "reporting.summary.enable", prefix = "sprimber.configuration", havingValue = "true", matchIfMissing = true)
-        public TestCaseSummaryPrinter summaryPrinter(ExecutionContext context) {
-            return new TestCaseSummaryPrinter(context);
+        @ConditionalOnProperty(value = "reporting.summary.enable", prefix = "sprimber.configuration.cucumber", havingValue = "true", matchIfMissing = true)
+        public CucumberScenarioSummaryPrinter summaryPrinter(ExecutionContext context) {
+            return new CucumberScenarioSummaryPrinter(context);
+        }
+
+        @Bean
+        @ConditionalOnProperty(value = "reporting.summary.enable", prefix = "sprimber.configuration.classic", havingValue = "true", matchIfMissing = true)
+        public ClassicTestSummaryPrinter classicSummaryPrinter(ExecutionContext context) {
+            return new ClassicTestSummaryPrinter(context);
         }
 
         @Bean

@@ -35,6 +35,7 @@ import org.springframework.util.DigestUtils;
 import java.lang.reflect.Method;
 import java.util.EnumSet;
 
+import static com.griddynamics.qa.sprimber.discovery.ClassicAdapterConstants.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Builder;
 import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 
@@ -53,9 +54,9 @@ class ClassicTestBinder {
         Builder builder = new Builder()
                 .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
                         BYPASS_CHILDREN_AFTER_ITERATION_ERROR))
-                .withRole("test")
+                .withRole(CLASSIC_TEST_ROLE)
                 .withName(testName)
-                .withDescription(String.valueOf(AnnotationUtils.getValue(testMapping, "description")))
+                .withDescription(String.valueOf(AnnotationUtils.getValue(testMapping, DESCRIPTION_ATTRIBUTE)))
                 .withHistoryId(buildTestHistoryId(testCandidate));
         Node test = parentNode.addChild(builder);
         provideStepNode(test, testCandidate);
@@ -68,14 +69,14 @@ class ClassicTestBinder {
         Builder builder = new Builder()
                 .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
                         BYPASS_CHILDREN_AFTER_ITERATION_ERROR))
-                .withRole("step")
+                .withRole(CLASSIC_STEP_ROLE)
                 .withName(method.getName())
                 .withMethod(testMethod.getMethod());
         parentNode.addTarget(builder);
     }
 
     private String buildTestName(Method method, TestMapping testMapping) {
-        String testName = String.valueOf(AnnotationUtils.getValue(testMapping, "name"));
+        String testName = String.valueOf(AnnotationUtils.getValue(testMapping, NAME_ATTRIBUTE));
         return testName.isEmpty() ? method.getName() : testName;
     }
 
