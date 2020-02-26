@@ -25,7 +25,6 @@
 Feature: This is a test feature for echo application
 
   @echo
-  @Story=positive
   Scenario: Simple scenario to check just steps
 
     This is possible to add additional long tasting description for each scenario
@@ -35,38 +34,32 @@ Feature: This is a test feature for echo application
     Then test then action
 
   @echo
-  @Story=positive
   Scenario: Simple scenario to check steps with converted DataTable arguments
     Given the next author exist:
       | name     | surname     | book     |
       | testName | testSurname | testBook |
 
   @echo
-  @Story=positive
   Scenario: Simple scenario to check steps with DataTable arguments
     Given the next raw data table present
       | name     | surname     | book     |
       | testName | testSurname | testBook |
 
   @echo
-  @Story=positive
   Scenario: Simple scenario to check steps arguments
     Given the next author long consumed '123'
 
   @echo
-  @Story=positive
   Scenario: Simple scenario to check multiple steps arguments
     Given the next author long consumed '123' and '321'
 
   @echo
-  @Story=negative
   Scenario: Scenario to check failed steps
     When some when action with param 'hi'
     Then every time failed action
     And test then action
 
   @echo
-  @Story=negative
   Scenario: Scenario to check broken steps
     When some when action with param 'hi'
     Then every time action with exception

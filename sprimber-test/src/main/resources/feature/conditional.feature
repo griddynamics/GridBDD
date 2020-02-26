@@ -25,7 +25,7 @@
 Feature: This is a feature for echo application to see the ability of conditional test skipping
 
   @conditional
-  @Story=conditional
+  @story:conditional
   Scenario: Simple scenario to check conditional steps
 
     Given test given action
