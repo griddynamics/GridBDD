@@ -173,39 +173,69 @@ public class CucumberAllureTransformer {
     }
 
     private List<Label> processTestLabels(Node node) {
-        return node.getAttribute("meta").map(o -> {
+        List<Label> labelList = new ArrayList<>();
+        List<Label> metaLabels = node.getAttribute("meta").map(o -> {
             Node.Meta meta = (Node.Meta) o;
             List<Label> labels = new ArrayList<>();
-            Label epicLabel = ResultsUtils.createEpicLabel(meta.getSingleValueOrDefault("epic", EPIC_DEFAULT_NAME));
-            Label featureLabel = ResultsUtils.createFeatureLabel(
-                    meta.getSingleValueOrDefault("feature", testParentsById.get(node.getParentId().toString()).getParentName()));
-            Label storyLabel = ResultsUtils.createStoryLabel(meta.getSingleValueOrDefault("story", node.getName()));
 
             Label packageLabel = ResultsUtils.createPackageLabel(
                     meta.getSingleValueOrDefault("package", testParentsById.get(node.getParentId().toString()).getParentName()));
-
-            Label parentSuiteLabel = ResultsUtils.createParentSuiteLabel(meta.getSingleValueOrDefault("parentSuite", CUCUMBER_SUITES));
-            Label suiteLabel = ResultsUtils.createSuiteLabel(
-                    meta.getSingleValueOrDefault("suite", testParentsById.get(node.getParentId().toString()).getParentName()));
-            Label subSuiteLabel = ResultsUtils.createSubSuiteLabel(meta.getSingleValueOrDefault("subSuite", node.getName()));
+            labels.add(packageLabel);
 
             Label severityLabel = ResultsUtils.createSeverityLabel(meta.getSingleValueOrDefault("severity", SeverityLevel.NORMAL.value()));
+            labels.add(severityLabel);
 
             Label threadLabel = ResultsUtils.createThreadLabel();
-            Label hostLabel = ResultsUtils.createHostLabel();
-
-            labels.add(epicLabel);
-            labels.add(featureLabel);
-            labels.add(storyLabel);
-            labels.add(packageLabel);
-            labels.add(parentSuiteLabel);
-            labels.add(suiteLabel);
-            labels.add(subSuiteLabel);
-            labels.add(severityLabel);
             labels.add(threadLabel);
+            Label hostLabel = ResultsUtils.createHostLabel();
             labels.add(hostLabel);
+
+            labels.addAll(behaviourPluginLabelList(node, meta));
+            labels.addAll(suitePluginLabelList(node, meta));
+
             return labels;
         }).orElse(Collections.emptyList());
+        List<Label> tagLabels = node.getAttribute("bddTags").map(o -> {
+            List<String> tags = (List<String>) o;
+            return tags.stream()
+                    .map(ResultsUtils::createTagLabel)
+                    .collect(Collectors.toList());
+        }).orElse(Collections.emptyList());
+        labelList.addAll(metaLabels);
+        labelList.addAll(tagLabels);
+        return labelList;
+    }
+
+    private List<Label> behaviourPluginLabelList(Node node, Node.Meta meta) {
+        List<Label> labels = new ArrayList<>();
+        if (!meta.getSingleValueOrEmpty("epic").isEmpty()) {
+            Label epicLabel = ResultsUtils.createEpicLabel(meta.getSingleValueOrEmpty("epic"));
+            labels.add(epicLabel);
+        }
+        Label featureLabel = ResultsUtils.createFeatureLabel(
+                meta.getSingleValueOrDefault("feature", testParentsById.get(node.getParentId().toString()).getParentName()));
+        labels.add(featureLabel);
+        if (!meta.getSingleValueOrEmpty("story").isEmpty()) {
+            Label storyLabel = ResultsUtils.createStoryLabel(meta.getSingleValueOrEmpty("story"));
+            labels.add(storyLabel);
+        }
+        return labels;
+    }
+
+    private List<Label> suitePluginLabelList(Node node, Node.Meta meta) {
+        List<Label> labels = new ArrayList<>();
+        if (!meta.getSingleValueOrEmpty("parentSuite").isEmpty()) {
+            Label parentSuiteLabel = ResultsUtils.createParentSuiteLabel(meta.getSingleValueOrEmpty("parentSuite"));
+            labels.add(parentSuiteLabel);
+        }
+        Label suiteLabel = ResultsUtils.createSuiteLabel(
+                meta.getSingleValueOrDefault("suite", testParentsById.get(node.getParentId().toString()).getParentName()));
+        labels.add(suiteLabel);
+        if (!meta.getSingleValueOrEmpty("subSuite").isEmpty()) {
+            Label subSuiteLabel = ResultsUtils.createSubSuiteLabel(meta.getSingleValueOrDefault("subSuite", node.getName()));
+            labels.add(subSuiteLabel);
+        }
+        return labels;
     }
 
     @EventListener(condition = "#root.event.node.adapterName == T(com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants).ADAPTER_NAME")
