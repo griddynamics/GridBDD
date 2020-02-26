@@ -48,6 +48,7 @@ import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 class ClassicSuiteDiscovery implements TestSuiteDiscovery {
 
+    public static final String CLASSIC_ADAPTER_NAME = "classic";
     private static final String NAME_ATTRIBUTE_NAME = "testCaseName";
     private static final String DESCRIPTION_ATTRIBUTE_NAME = "description";
     private final ClassicTestBinder classicTestBinder;
@@ -67,7 +68,7 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
 
     @Override
     public Node discover() {
-        Node testSuite = Node.createRootNode("testSuite", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+        Node testSuite = Node.createRootNode("testSuite", CLASSIC_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
                 BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
         applicationContext.getBeansWithAnnotation(TestController.class).values()
                 .forEach(testController -> testCaseNodeDiscover(testSuite, testController));

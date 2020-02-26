@@ -49,6 +49,7 @@ public class Node {
     private Status status;
     private Phase phase;
     private Type type;
+    private final String adapterName;
     private boolean isBypassed;
     /**
      * The node can be in one the 3 state - SKIP, ERROR and normal execution.
@@ -72,9 +73,10 @@ public class Node {
     private Throwable throwable;
     private final Map<String, Object> parameters = new LinkedHashMap<>();
 
-    private Node(UUID parentId, Type type, String role, Method method, EnumSet<Bypass> subNodeExecutionModes) {
+    private Node(UUID parentId, Type type, String role, String adapterName, Method method, EnumSet<Bypass> subNodeExecutionModes) {
         this.type = type;
         this.role = role;
+        this.adapterName = adapterName;
         this.parentId = parentId;
         this.subNodeExecutionModes = subNodeExecutionModes;
         this.method = method;
@@ -86,6 +88,7 @@ public class Node {
         this.type = type;
         this.parentId = parentId;
         this.role = builder.role;
+        this.adapterName = builder.adapterName;
         this.name = builder.name;
         this.description = builder.description;
         this.historyId = builder.historyId;
@@ -96,8 +99,8 @@ public class Node {
         this.attributes.putAll(builder.attributes);
     }
 
-    public static Node createRootNode(String role, EnumSet<Bypass> subNodesSkippingFlags) {
-        return new Node(UUID.randomUUID(), Type.HOLDER, role, null, subNodesSkippingFlags);
+    public static Node createRootNode(String role, String adapterName, EnumSet<Bypass> subNodesSkippingFlags) {
+        return new Node(UUID.randomUUID(), Type.HOLDER, role, adapterName, null, subNodesSkippingFlags);
     }
 
     public UUID getRuntimeId() {
@@ -126,6 +129,15 @@ public class Node {
 
     public String getRole() {
         return this.role;
+    }
+
+    /**
+     * Return unique name for adapter that was responsible for Node creation and lifecycle maintenance
+     * in scope of custom functionality like reporting
+     * @return adapter name that help to identify the node at runtime
+     */
+    public String getAdapterName() {
+        return adapterName;
     }
 
     public String getCurrentState() {
@@ -210,49 +222,53 @@ public class Node {
     }
 
     public Node addChild(Builder builder) {
+        builder.withAdapterName(this.adapterName);
         Node node = new Node(builder, this.runtimeId, Type.HOLDER);
         this.children.computeIfAbsent(Relation.CHILD, k -> new ArrayList<>()).add(node);
         return node;
     }
 
     public Node addChild(String role, EnumSet<Bypass> subNodesSkippingFlags) {
-        Node node = new Node(this.runtimeId, Type.HOLDER, role, null, subNodesSkippingFlags);
+        Node node = new Node(this.runtimeId, Type.HOLDER, role, this.adapterName, null, subNodesSkippingFlags);
         this.children.computeIfAbsent(Relation.CHILD, k -> new ArrayList<>()).add(node);
         return node;
     }
 
     public Node addTarget(Builder builder) {
+        builder.withAdapterName(this.adapterName);
         Node node = new Node(builder, this.runtimeId, Type.INVOKABLE);
         this.children.computeIfAbsent(Relation.TARGET, k -> new ArrayList<>()).add(node);
         return node;
     }
 
     public Node addTarget(String role, Method method) {
-        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, method, EnumSet.noneOf(Bypass.class));
+        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, this.adapterName, method, EnumSet.noneOf(Bypass.class));
         this.children.computeIfAbsent(Relation.TARGET, k -> new ArrayList<>()).add(node);
         return node;
     }
 
     public Node addBefore(Builder builder) {
+        builder.withAdapterName(this.adapterName);
         Node node = new Node(builder, this.runtimeId, Type.INVOKABLE);
         this.children.computeIfAbsent(Relation.BEFORE, k -> new ArrayList<>()).add(node);
         return node;
     }
 
     public Node addBefore(String role, Method method) {
-        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, method, EnumSet.noneOf(Bypass.class));
+        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, this.adapterName, method, EnumSet.noneOf(Bypass.class));
         this.children.computeIfAbsent(Relation.BEFORE, k -> new ArrayList<>()).add(node);
         return node;
     }
 
     public Node addAfter(Builder builder) {
+        builder.withAdapterName(this.adapterName);
         Node node = new Node(builder, this.runtimeId, Type.INVOKABLE);
         this.children.computeIfAbsent(Relation.AFTER, k -> new ArrayList<>()).add(node);
         return node;
     }
 
     public Node addAfter(String role, Method method) {
-        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, method, EnumSet.noneOf(Bypass.class));
+        Node node = new Node(this.runtimeId, Type.INVOKABLE, role, this.adapterName, method, EnumSet.noneOf(Bypass.class));
         this.children.computeIfAbsent(Relation.AFTER, k -> new ArrayList<>()).add(node);
         return node;
     }
@@ -476,6 +492,7 @@ public class Node {
         private String description;
         private String historyId;
         private String role;
+        private String adapterName;
         private Condition condition;
         private Method method;
         private final Map<String, Object> attributes = new HashMap<>();
@@ -501,6 +518,11 @@ public class Node {
 
         public Builder withRole(String role) {
             this.role = role;
+            return this;
+        }
+
+        public Builder withAdapterName(String adapterName) {
+            this.adapterName = adapterName;
             return this;
         }
 

@@ -37,6 +37,7 @@ import org.springframework.util.DigestUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Builder;
 import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Meta;
@@ -48,14 +49,9 @@ import static com.griddynamics.qa.sprimber.engine.Node.Meta;
 @RequiredArgsConstructor
 class CucumberTestBinder {
 
-    public static final String BDD_TAGS_ATTRIBUTE_NAME = "bddTags";
-    public static final String LOCATION_ATTRIBUTE_NAME = "location";
-    public static final String META_ATTRIBUTE_NAME = "meta";
-
     private static final String TAG_SYMBOL = "@";
     private static final String TAG_VALUE_SEPARATOR = ":";
     private static final String VALUE_SEPARATOR = ",";
-    public static final String TEST_LOCATION_ATTRIBUTE_NAME = "testLocation";
 
     private final PickleStepFactory pickleStepFactory;
     private final TestMethodRegistry testMethodRegistry;
@@ -71,7 +67,7 @@ class CucumberTestBinder {
         Builder builder = new Builder()
                 .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
                         BYPASS_CHILDREN_AFTER_ITERATION_ERROR))
-                .withRole("test")
+                .withRole(CucumberAdapterConstants.CUCUMBER_SCENARIO_ROLE)
                 .withName(testCandidate.getName())
                 .withDescription(description)
                 .withHistoryId(DigestUtils.md5DigestAsHex(uniqueName.getBytes()))
@@ -81,8 +77,8 @@ class CucumberTestBinder {
                 .withAttribute(TEST_LOCATION_ATTRIBUTE_NAME, uniqueName);
         Node testNode = parentNode.addChild(builder);
 
-        fillPreConditions("Before Test", testNode);
-        fillPostConditions("After Test", testNode);
+        fillPreConditions(BEFORE_TEST_ACTION_STYLE, testNode);
+        fillPostConditions(AFTER_TEST_ACTION_STYLE, testNode);
 
         testCandidate.getSteps().stream()
                 .map(pickleStep -> pickleStepFactory.addStepContainerNode(testNode, pickleStep))
@@ -90,8 +86,8 @@ class CucumberTestBinder {
     }
 
     private void fillStepBeforeAndAfter(Node stepContainerNode) {
-        fillPreConditions("Before Step", stepContainerNode);
-        fillPostConditions("After Step", stepContainerNode);
+        fillPreConditions(BEFORE_STEP_ACTION_STYLE, stepContainerNode);
+        fillPostConditions(AFTER_STEP_ACTION_STYLE, stepContainerNode);
     }
 
     private void fillPreConditions(String style, Node containerNode) {

@@ -76,8 +76,8 @@ public class SprimberReportingConfiguration {
     @Configuration
     static class AllureReporting {
         @Bean
-        public AllureSprimber allureSprimber(AllureLifecycle allureLifecycle, Set<String> nonPrintableExceptions) {
-            return new AllureSprimber(allureLifecycle, nonPrintableExceptions);
+        public CucumberAllureTransformer allureSprimber(AllureLifecycle allureLifecycle, Set<String> nonPrintableExceptions) {
+            return new CucumberAllureTransformer(allureLifecycle, nonPrintableExceptions);
         }
 
         @Bean

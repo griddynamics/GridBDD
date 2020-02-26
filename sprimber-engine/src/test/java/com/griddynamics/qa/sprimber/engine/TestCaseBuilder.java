@@ -39,84 +39,111 @@ import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 @Slf4j
 public class TestCaseBuilder {
 
+    private static final String TEST_ADAPTER_NAME = "testAdapter";
     private final Method beforeMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "before");
     private final Method stepMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "step");
     private final Method afterMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "after");
     private final Method exceptionalStepMethod = ReflectionUtils.findMethod(StubbedNodeInvoker.class, "exceptionalStep");
 
     Node buildSingleStep() {
-        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
                 BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
-        stepNode.addTarget("step", stepMethod);
+        stepNode.addTarget(getStepBuilder());
         return stepNode;
     }
 
     Node buildSingleWrappedStep() {
-        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
                 BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
-        stepNode.addBefore("before", beforeMethod);
-        stepNode.addTarget("step", stepMethod);
-        stepNode.addAfter("after", afterMethod);
+        stepNode.addBefore(getBeforeStepBuilder());
+        stepNode.addTarget(getStepBuilder());
+        stepNode.addAfter(getAfterStepBuilder());
         return stepNode;
     }
 
     Node buildTestWithRegularAndExceptionalWrappedStep() {
-        Node testNode = Node.createRootNode("testRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+        Node testNode = Node.createRootNode("testRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
                 BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
-        Node exceptionalStepNode = testNode.addChild("stepHolder", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
-                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
-        exceptionalStepNode.addBefore("before", beforeMethod);
-        exceptionalStepNode.addTarget("step", exceptionalStepMethod);
-        exceptionalStepNode.addAfter("after", afterMethod);
-        Node regularStepNode = testNode.addChild("stepHolder", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
-                BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
-        regularStepNode.addBefore("before", beforeMethod);
-        regularStepNode.addTarget("step", stepMethod);
-        regularStepNode.addAfter("after", afterMethod);
+        Node.Builder stepHolderBuilder = new Node.Builder()
+                .withRole("stepHolder")
+                .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+                        BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
+        Node exceptionalStepNode = testNode.addChild(stepHolderBuilder);
+        exceptionalStepNode.addBefore(getBeforeStepBuilder());
+        exceptionalStepNode.addTarget(getExceptionalStepBuilder("step"));
+        exceptionalStepNode.addAfter(getAfterStepBuilder());
+        Node regularStepNode = testNode.addChild(stepHolderBuilder);
+        regularStepNode.addBefore(getBeforeStepBuilder());
+        regularStepNode.addTarget(getStepBuilder());
+        regularStepNode.addAfter(getAfterStepBuilder());
         return testNode;
     }
 
     Node buildSingleWrappedStepWithExceptionalBefore() {
-        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
                 BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_BEFORE_AFTER_ITERATION_ERROR));
-        stepNode.addBefore("before", beforeMethod);
-        stepNode.addBefore("before", exceptionalStepMethod);
-        stepNode.addBefore("before", beforeMethod);
-        stepNode.addTarget("step", stepMethod);
-        stepNode.addAfter("after", afterMethod);
+        stepNode.addBefore(getBeforeStepBuilder());
+        stepNode.addBefore(getExceptionalStepBuilder("before"));
+        stepNode.addBefore(getBeforeStepBuilder());
+        stepNode.addTarget(getStepBuilder());
+        stepNode.addAfter(getAfterStepBuilder());
         return stepNode;
     }
 
     Node buildSingleWrappedStepWithExceptionalAfter() {
-        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
                 BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_AFTER_AFTER_ITERATION_ERROR));
-        stepNode.addBefore("before", beforeMethod);
-        stepNode.addTarget("step", stepMethod);
-        stepNode.addAfter("after", afterMethod);
-        stepNode.addAfter("after", exceptionalStepMethod);
-        stepNode.addAfter("after", afterMethod);
+        stepNode.addBefore(getBeforeStepBuilder());
+        stepNode.addTarget(getStepBuilder());
+        stepNode.addAfter(getAfterStepBuilder());
+        stepNode.addAfter(getExceptionalStepBuilder("after"));
+        stepNode.addAfter(getAfterStepBuilder());
         return stepNode;
     }
 
     Node buildSingleWrappedStepWithExceptionalBeforeSkipTarget() {
-        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
+        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
                 BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_BEFORE_AFTER_ITERATION_ERROR, BYPASS_TARGET_AFTER_STAGE_ERROR));
-        stepNode.addBefore("before", beforeMethod);
-        stepNode.addBefore("before", exceptionalStepMethod);
-        stepNode.addBefore("before", beforeMethod);
-        stepNode.addTarget("step", stepMethod);
-        stepNode.addAfter("after", afterMethod);
+        stepNode.addBefore(getBeforeStepBuilder());
+        stepNode.addBefore(getExceptionalStepBuilder("before"));
+        stepNode.addBefore(getBeforeStepBuilder());
+        stepNode.addTarget(getStepBuilder());
+        stepNode.addAfter(getAfterStepBuilder());
         return stepNode;
     }
 
     Node buildSingleWrappedStepWithExceptionalBeforeSkipTargetAndAfter() {
-        Node stepNode = Node.createRootNode("stepRoot", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
+        Node stepNode = Node.createRootNode("stepRoot", TEST_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
                 BYPASS_TARGET_WHEN_BYPASS_MODE, BYPASS_BEFORE_AFTER_ITERATION_ERROR, BYPASS_TARGET_AFTER_STAGE_ERROR, BYPASS_AFTER_AFTER_STAGE_ERROR));
-        stepNode.addBefore("before", beforeMethod);
-        stepNode.addBefore("before", exceptionalStepMethod);
-        stepNode.addBefore("before", beforeMethod);
-        stepNode.addTarget("step", stepMethod);
-        stepNode.addAfter("after", afterMethod);
+        stepNode.addBefore(getBeforeStepBuilder());
+        stepNode.addBefore(getExceptionalStepBuilder("before"));
+        stepNode.addBefore(getBeforeStepBuilder());
+        stepNode.addTarget(getStepBuilder());
+        stepNode.addAfter(getAfterStepBuilder());
         return stepNode;
+    }
+
+    private Node.Builder getBeforeStepBuilder() {
+        return new Node.Builder()
+                .withRole("before")
+                .withMethod(beforeMethod);
+    }
+
+    private Node.Builder getStepBuilder() {
+        return new Node.Builder()
+                .withRole("step")
+                .withMethod(stepMethod);
+    }
+
+    private Node.Builder getAfterStepBuilder() {
+        return new Node.Builder()
+                .withRole("after")
+                .withMethod(afterMethod);
+    }
+
+    private Node.Builder getExceptionalStepBuilder(String role) {
+        return new Node.Builder()
+                .withRole(role)
+                .withMethod(exceptionalStepMethod);
     }
 }
