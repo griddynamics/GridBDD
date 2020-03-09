@@ -47,7 +47,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.griddynamics.qa.sprimber.engine.Node.Builder;
+import static com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Condition;
 
@@ -58,15 +58,13 @@ import static com.griddynamics.qa.sprimber.engine.Node.Condition;
 @RequiredArgsConstructor
 class PickleStepFactory {
 
-    private static final String TAGS_ATTRIBUTE = "Tags";
-
     private final CucumberTagFilter tagFilter;
     private final StepMatcher stepMatcher;
     private final TestMethodRegistry testMethodRegistry;
 
     Node addStepContainerNode(Node parentNode, PickleStep stepCandidate) {
         Node.Builder builder = new Node.Builder()
-                .withRole("stepContainer")
+                .withRole(CUCUMBER_STEP_CONTAINER_ROLE)
                 .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_TARGET_WHEN_BYPASS_MODE));
         Node stepContainerNode = parentNode.addChild(builder);
 
@@ -91,12 +89,12 @@ class PickleStepFactory {
 
     private Node addStepContainerNode(Node parentNode, PickleStep stepCandidate, TestMethod testMethod, List<Argument> arguments) {
         Node.Builder builder = new Node.Builder()
-                .withRole("step")
+                .withRole(CUCUMBER_STEP_ROLE)
                 .withName(testMethod.getStyle() + " " + stepCandidate.getText())
                 .withMethod(testMethod.getMethod())
                 .withParameters(convertStepArguments(arguments, Arrays.asList(testMethod.getMethod().getGenericParameterTypes())));
         handleAdditionalStepData(stepCandidate)
-                .ifPresent(stepData -> builder.withAttribute("stepData", stepData));
+                .ifPresent(stepData -> builder.withAttribute(STEP_DATA_ATTRIBUTE, stepData));
         buildCondition(testMethod.getMethod())
                 .ifPresent(builder::withCondition);
         return parentNode.addTarget(builder);

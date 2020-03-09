@@ -38,40 +38,38 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants.*;
+
 /**
  * @author fparamonov
  */
 
 class CucumberTestMethodFactory extends TestMethodAbstractFactory {
 
-    private static final String TAGS_ATTRIBUTE = "Tags";
-    private static final String TIMEOUT_ATTRIBUTE = "Timeout";
-    private static final String ORDER_ATTRIBUTE = "Order";
-
     private final Map<Class<? extends Annotation>, String> hooks =
             new HashMap<Class<? extends Annotation>, String>() {{
-                put(Before.class, "Before Test");
-                put(io.cucumber.java.Before.class, "Before Test");
-                put(BeforeStep.class, "Before Step");
-                put(io.cucumber.java.BeforeStep.class, "Before Step");
-                put(After.class, "After Test");
-                put(io.cucumber.java.After.class, "After Test");
-                put(AfterStep.class, "After Step");
-                put(io.cucumber.java.AfterStep.class, "After Step");
+                put(Before.class, BEFORE_TEST_ACTION_STYLE);
+                put(io.cucumber.java.Before.class, BEFORE_TEST_ACTION_STYLE);
+                put(BeforeStep.class, BEFORE_STEP_ACTION_STYLE);
+                put(io.cucumber.java.BeforeStep.class, BEFORE_STEP_ACTION_STYLE);
+                put(After.class, AFTER_TEST_ACTION_STYLE);
+                put(io.cucumber.java.After.class, AFTER_TEST_ACTION_STYLE);
+                put(AfterStep.class, AFTER_STEP_ACTION_STYLE);
+                put(io.cucumber.java.AfterStep.class, AFTER_STEP_ACTION_STYLE);
             }};
 
     private final Map<Class<? extends Annotation>, String> steps =
             new HashMap<Class<? extends Annotation>, String>() {{
-                put(Given.class, "Given");
-                put(io.cucumber.java.en.Given.class, "Given");
-                put(When.class, "When");
-                put(io.cucumber.java.en.When.class, "When");
-                put(Then.class, "Then");
-                put(io.cucumber.java.en.Then.class, "Then");
-                put(And.class, "And");
-                put(io.cucumber.java.en.And.class, "And");
-                put(But.class, "But");
-                put(io.cucumber.java.en.But.class, "But");
+                put(Given.class, GIVEN_STEP_ACTION_STYLE);
+                put(io.cucumber.java.en.Given.class, GIVEN_STEP_ACTION_STYLE);
+                put(When.class, WHEN_STEP_ACTION_STYLE);
+                put(io.cucumber.java.en.When.class, WHEN_STEP_ACTION_STYLE);
+                put(Then.class, THEN_STEP_ACTION_STYLE);
+                put(io.cucumber.java.en.Then.class, THEN_STEP_ACTION_STYLE);
+                put(And.class, AND_STEP_ACTION_STYLE);
+                put(io.cucumber.java.en.And.class, AND_STEP_ACTION_STYLE);
+                put(But.class, BUT_STEP_ACTION_STYLE);
+                put(io.cucumber.java.en.But.class, BUT_STEP_ACTION_STYLE);
             }};
 
     public CucumberTestMethodFactory() {

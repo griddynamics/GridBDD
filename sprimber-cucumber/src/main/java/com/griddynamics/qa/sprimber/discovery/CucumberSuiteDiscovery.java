@@ -46,6 +46,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.griddynamics.qa.sprimber.discovery.CucumberAdapterConstants.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Builder;
 import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 
@@ -72,12 +73,12 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
 
     @Override
     public String name() {
-        return "Cucumber Test Discovery";
+        return ADAPTER_NAME;
     }
 
     @Override
     public Node discover() {
-        Node testSuite = Node.createRootNode("testSuite", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+        Node testSuite = Node.createRootNode(CUCUMBER_SUITE_ROLE, ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
                 BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
         featureResourcesStream()
                 .map(this::buildCucumberDocument)
@@ -89,7 +90,7 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
         Builder builder = new Builder()
                 .withDescription(cucumberDocument.getDocument().getFeature().getDescription())
                 .withName(cucumberDocument.getDocument().getFeature().getName())
-                .withRole("testCase")
+                .withRole(CUCUMBER_FEATURE_ROLE)
                 .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
                         BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
         Node testCase = parentNode.addChild(builder);
@@ -97,7 +98,7 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
                 .filter(pickleTagFilter())
                 .forEach(pickle -> {
                     cucumberTestBinder.buildAndAddTestNode(testCase, pickle, cucumberDocument);
-                    statistic.registerPreparedStage("test");
+                    statistic.registerPreparedStage(CUCUMBER_SCENARIO_ROLE);
                 });
     }
 
@@ -105,7 +106,7 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
         return pickle -> {
             boolean isMatched = tagFilter.filter(getTagsFromPickle(pickle));
             if (!isMatched) {
-                statistic.registerFilteredStage("test");
+                statistic.registerFilteredStage(CUCUMBER_SCENARIO_ROLE);
             }
             return isMatched;
         };

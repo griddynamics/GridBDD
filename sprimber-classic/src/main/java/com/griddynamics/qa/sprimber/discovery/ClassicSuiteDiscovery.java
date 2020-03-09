@@ -37,6 +37,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.griddynamics.qa.sprimber.discovery.ClassicAdapterConstants.*;
 import static com.griddynamics.qa.sprimber.engine.Node.Builder;
 import static com.griddynamics.qa.sprimber.engine.Node.Bypass.*;
 
@@ -67,7 +68,7 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
 
     @Override
     public Node discover() {
-        Node testSuite = Node.createRootNode("testSuite", EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+        Node testSuite = Node.createRootNode(CLASSIC_SUITE_ROLE, CLASSIC_ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
                 BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
         applicationContext.getBeansWithAnnotation(TestController.class).values()
                 .forEach(testController -> testCaseNodeDiscover(testSuite, testController));
@@ -79,7 +80,7 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
         Builder builder = new Builder()
                 .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
                         BYPASS_CHILDREN_AFTER_ITERATION_ERROR))
-                .withRole("testCase")
+                .withRole(CLASSIC_TEST_CASE_ROLE)
                 .withName(String.valueOf(AnnotationUtils.getValue(controller, NAME_ATTRIBUTE_NAME)))
                 .withDescription(String.valueOf(AnnotationUtils.getValue(controller, DESCRIPTION_ATTRIBUTE_NAME)));
         Node testCase = parentNode.addChild(builder);
@@ -89,18 +90,18 @@ class ClassicSuiteDiscovery implements TestSuiteDiscovery {
                 .filter(this::filterTests)
                 .forEach(method -> {
                     classicTestBinder.bind(testCase, method);
-                    statistic.registerPreparedStage("test");
+                    statistic.registerPreparedStage(CLASSIC_TEST_ROLE);
                 });
     }
 
     private boolean filterTests(Method method) {
         TestMapping testMapping = AnnotationUtils.getAnnotation(method, TestMapping.class);
-        List<String> tags = Arrays.stream((Object[]) AnnotationUtils.getValue(testMapping, "tags"))
+        List<String> tags = Arrays.stream((Object[]) AnnotationUtils.getValue(testMapping, TAGS_ATTRIBUTE))
                 .map(o -> (String) o)
                 .collect(Collectors.toList());
         boolean isMatched = tagFilter.filter(tags);
         if (!isMatched) {
-            statistic.registerFilteredStage("test");
+            statistic.registerFilteredStage(CLASSIC_TEST_ROLE);
         }
         return isMatched;
     }
