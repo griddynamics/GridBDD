@@ -94,24 +94,24 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
                 .withRole(CUCUMBER_FEATURE_ROLE)
                 .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
                         BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
-        Node testCase = suiteNode.addChild(builder);
-        fillFeatureHooks(testCase);
+        Node testCaseNode = suiteNode.addChild(builder);
+        fillFeatureHooks(testCaseNode);
         compiler.compile(cucumberDocument.getDocument()).stream()
                 .filter(pickleTagFilter())
                 .forEach(pickle -> {
-                    cucumberTestBinder.buildAndAddTestNode(testCase, pickle, cucumberDocument);
+                    cucumberTestBinder.buildAndAddTestNode(testCaseNode, pickle, cucumberDocument);
                     statistic.registerPreparedStage(CUCUMBER_SCENARIO_ROLE);
                 });
     }
 
     private void fillSuiteHooks(Node suiteNode) {
-        cucumberTestBinder.fillPreConditions("Before Suite", suiteNode);
-        cucumberTestBinder.fillPostConditions("After Suite", suiteNode);
+        cucumberTestBinder.fillPreConditions(BEFORE_SUITE_ACTION_STYLE, suiteNode);
+        cucumberTestBinder.fillPostConditions(AFTER_SUITE_ACTION_STYLE, suiteNode);
     }
 
     private void fillFeatureHooks(Node testCaseNode) {
-        cucumberTestBinder.fillPreConditions("Before Feature", testCaseNode);
-        cucumberTestBinder.fillPostConditions("After Feature", testCaseNode);
+        cucumberTestBinder.fillPreConditions(BEFORE_FEATURE_ACTION_STYLE, testCaseNode);
+        cucumberTestBinder.fillPostConditions(AFTER_FEATURE_ACTION_STYLE, testCaseNode);
     }
 
 

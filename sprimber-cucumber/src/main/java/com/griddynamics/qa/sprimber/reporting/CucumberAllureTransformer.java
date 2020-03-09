@@ -51,9 +51,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @RequiredArgsConstructor
 public class CucumberAllureTransformer {
 
-    private static final String CUCUMBER_SUITES = "Cucumber Suites";
     private static final String TEST_CONTAINER_PREFIX_NAME = "test-";
-    private static final String EPIC_DEFAULT_NAME = "Cucumber Features";
     private static final String TEST_CASE_CONTAINER_PREFIX_NAME = "test-case-";
     private final Map<String, TestParentInfo> testParentsById = new ConcurrentHashMap<>();
     private final AllureLifecycle lifecycle;
@@ -174,7 +172,7 @@ public class CucumberAllureTransformer {
 
     private List<Label> processTestLabels(Node node) {
         List<Label> labelList = new ArrayList<>();
-        List<Label> metaLabels = node.getAttribute("meta").map(o -> {
+        List<Label> metaLabels = node.getAttribute(META_ATTRIBUTE_NAME).map(o -> {
             Node.Meta meta = (Node.Meta) o;
             List<Label> labels = new ArrayList<>();
 
@@ -195,7 +193,7 @@ public class CucumberAllureTransformer {
 
             return labels;
         }).orElse(Collections.emptyList());
-        List<Label> tagLabels = node.getAttribute("bddTags").map(o -> {
+        List<Label> tagLabels = node.getAttribute(BDD_TAGS_ATTRIBUTE_NAME).map(o -> {
             List<String> tags = (List<String>) o;
             return tags.stream()
                     .map(ResultsUtils::createTagLabel)
