@@ -75,8 +75,8 @@ class CucumberTestBinder {
                 .withAttribute(LOCATION_ATTRIBUTE_NAME, testLocation)
                 .withAttribute(META_ATTRIBUTE_NAME, getMetaFromPickle(testCandidate))
                 .withAttribute(TEST_LOCATION_ATTRIBUTE_NAME, uniqueName);
-        Node testNode = parentNode.addChild(builder);
 
+        Node testNode = parentNode.addChild(builder);
         fillPreConditions(BEFORE_TEST_ACTION_STYLE, testNode);
         fillPostConditions(AFTER_TEST_ACTION_STYLE, testNode);
 
@@ -85,12 +85,7 @@ class CucumberTestBinder {
                 .forEach(this::fillStepBeforeAndAfter);
     }
 
-    private void fillStepBeforeAndAfter(Node stepContainerNode) {
-        fillPreConditions(BEFORE_STEP_ACTION_STYLE, stepContainerNode);
-        fillPostConditions(AFTER_STEP_ACTION_STYLE, stepContainerNode);
-    }
-
-    private void fillPreConditions(String style, Node containerNode) {
+    void fillPreConditions(String style, Node containerNode) {
         testMethodRegistry.streamByStyle(style)
                 .filter(pickleStepFactory.filterTestMethodByTags())
                 .map(testMethod -> new Builder()
@@ -100,7 +95,7 @@ class CucumberTestBinder {
                 .forEach(containerNode::addBefore);
     }
 
-    private void fillPostConditions(String style, Node containerNode) {
+    void fillPostConditions(String style, Node containerNode) {
         testMethodRegistry.streamByStyle(style)
                 .filter(pickleStepFactory.filterTestMethodByTags())
                 .map(testMethod -> new Builder()
@@ -108,6 +103,11 @@ class CucumberTestBinder {
                         .withName(testMethod.getStyle())
                         .withMethod(testMethod.getMethod()))
                 .forEach(containerNode::addAfter);
+    }
+
+    private void fillStepBeforeAndAfter(Node stepContainerNode) {
+        fillPreConditions(BEFORE_STEP_ACTION_STYLE, stepContainerNode);
+        fillPostConditions(AFTER_STEP_ACTION_STYLE, stepContainerNode);
     }
 
     private String formatLocation(Pickle pickle) {

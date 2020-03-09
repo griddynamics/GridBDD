@@ -78,29 +78,42 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
 
     @Override
     public Node discover() {
-        Node testSuite = Node.createRootNode(CUCUMBER_SUITE_ROLE, ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
+        Node testSuiteNode = Node.createRootNode(CUCUMBER_SUITE_ROLE, ADAPTER_NAME, EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE,
                 BYPASS_AFTER_WHEN_BYPASS_MODE, BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
+        fillSuiteHooks(testSuiteNode);
         featureResourcesStream()
                 .map(this::buildCucumberDocument)
-                .forEach(cucumberDocument -> testCaseNodeDiscover(testSuite, cucumberDocument));
-        return testSuite;
+                .forEach(cucumberDocument -> testCaseNodeDiscover(testSuiteNode, cucumberDocument));
+        return testSuiteNode;
     }
 
-    private void testCaseNodeDiscover(Node parentNode, CucumberDocument cucumberDocument) {
+    private void testCaseNodeDiscover(Node suiteNode, CucumberDocument cucumberDocument) {
         Builder builder = new Builder()
                 .withDescription(cucumberDocument.getDocument().getFeature().getDescription())
                 .withName(cucumberDocument.getDocument().getFeature().getName())
                 .withRole(CUCUMBER_FEATURE_ROLE)
                 .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
                         BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
-        Node testCase = parentNode.addChild(builder);
+        Node testCaseNode = suiteNode.addChild(builder);
+        fillFeatureHooks(testCaseNode);
         compiler.compile(cucumberDocument.getDocument()).stream()
                 .filter(pickleTagFilter())
                 .forEach(pickle -> {
-                    cucumberTestBinder.buildAndAddTestNode(testCase, pickle, cucumberDocument);
+                    cucumberTestBinder.buildAndAddTestNode(testCaseNode, pickle, cucumberDocument);
                     statistic.registerPreparedStage(CUCUMBER_SCENARIO_ROLE);
                 });
     }
+
+    private void fillSuiteHooks(Node suiteNode) {
+        cucumberTestBinder.fillPreConditions(BEFORE_SUITE_ACTION_STYLE, suiteNode);
+        cucumberTestBinder.fillPostConditions(AFTER_SUITE_ACTION_STYLE, suiteNode);
+    }
+
+    private void fillFeatureHooks(Node testCaseNode) {
+        cucumberTestBinder.fillPreConditions(BEFORE_FEATURE_ACTION_STYLE, testCaseNode);
+        cucumberTestBinder.fillPostConditions(AFTER_FEATURE_ACTION_STYLE, testCaseNode);
+    }
+
 
     private Predicate<Pickle> pickleTagFilter() {
         return pickle -> {

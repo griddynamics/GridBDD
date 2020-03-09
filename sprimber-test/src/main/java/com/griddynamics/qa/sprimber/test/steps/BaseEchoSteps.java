@@ -25,6 +25,10 @@ $Id:
 package com.griddynamics.qa.sprimber.test.steps;
 
 import com.griddynamics.qa.sprimber.condition.SkipOnProperty;
+import com.griddynamics.qa.sprimber.discovery.cucumber.AfterFeature;
+import com.griddynamics.qa.sprimber.discovery.cucumber.AfterSuite;
+import com.griddynamics.qa.sprimber.discovery.cucumber.BeforeFeature;
+import com.griddynamics.qa.sprimber.discovery.cucumber.BeforeSuite;
 import com.griddynamics.qa.sprimber.engine.model.action.Actions;
 import com.griddynamics.qa.sprimber.test.model.Author;
 import cucumber.api.java.After;
@@ -52,6 +56,16 @@ public class BaseEchoSteps {
     public BaseEchoSteps() {
     }
 
+    @BeforeSuite
+    public void beforeCucumberSuite() {
+        LOGGER.info("Hey, I'm before Cucumber suite action");
+    }
+
+    @BeforeFeature("@echo")
+    public void beforeCucumberFeature() {
+        LOGGER.info("Hey, I'm before Cucumber feature action for tag echo");
+    }
+
     @Before
     public void before() {
         LOGGER.info("Hey, I'm before action");
@@ -76,7 +90,7 @@ public class BaseEchoSteps {
 
     @Given("the next raw data table present")
     public void givenRawDataTable(DataTable dataTable) {
-        LOGGER.info("Hey, I'm given action for author {}", dataTable.cell(0,0));
+        LOGGER.info("Hey, I'm given action for author {}", dataTable.cell(0, 0));
     }
 
     @Given("the next author long consumed '{long}'")
@@ -133,6 +147,16 @@ public class BaseEchoSteps {
     @After
     public void after() {
         LOGGER.info("Hey, I'm after action");
+    }
+
+    @AfterFeature("@echo")
+    public void afterCucumberFeature() {
+        LOGGER.info("Hey, I'm after Cucumber feature action for tag echo");
+    }
+
+    @AfterSuite
+    public void afterCucumberSuite() {
+        LOGGER.info("Hey, I'm after Cucumber suite action");
     }
 
     public void dummy() {

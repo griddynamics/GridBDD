@@ -36,6 +36,10 @@ public abstract class CucumberAdapterConstants {
     public static final String CUCUMBER_STEP_CONTAINER_ROLE = "stepContainer";
     public static final String CUCUMBER_STEP_ROLE = "step";
 
+    public static final String BEFORE_SUITE_ACTION_STYLE = "Before Suite";
+    public static final String AFTER_SUITE_ACTION_STYLE = "After Suite";
+    public static final String BEFORE_FEATURE_ACTION_STYLE = "Before Feature";
+    public static final String AFTER_FEATURE_ACTION_STYLE = "After Feature";
     public static final String BEFORE_TEST_ACTION_STYLE = "Before Test";
     public static final String AFTER_TEST_ACTION_STYLE = "After Test";
     public static final String BEFORE_STEP_ACTION_STYLE = "Before Step";

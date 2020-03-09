@@ -58,6 +58,13 @@ public abstract class TestSummaryPrinter {
 
     abstract boolean isNodeOfRoleTest(Node node);
 
+    /**
+     * Should return true in case when the node relates to the test phase like step, test hook, etc
+     * @param node
+     * @return
+     */
+    abstract boolean isNodeBelongsToTest(Node node);
+
     @EventListener
     public void containerNodeStarted(SprimberEventPublisher.ContainerNodeStartedEvent startedEvent) {
         increaseDepthLevel();
@@ -99,7 +106,6 @@ public abstract class TestSummaryPrinter {
     @EventListener
     public void beforeNodeError(SprimberEventPublisher.BeforeNodeErrorEvent errorEvent) {
         addErrorNodeRow(errorEvent.getNode());
-
     }
 
     @EventListener
@@ -113,6 +119,7 @@ public abstract class TestSummaryPrinter {
     }
 
     private void addSuccessNodeRow(Node node) {
+        if (!isNodeBelongsToTest(node)) return;
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n")
                 .append(getIndents())
@@ -122,6 +129,7 @@ public abstract class TestSummaryPrinter {
     }
 
     private void addErrorNodeRow(Node node) {
+        if (!isNodeBelongsToTest(node)) return;
         exceptionsCount.incrementAndGet();
         StringBuilder stringBuilder = reportBuilder.get();
         stringBuilder.append("\n")
