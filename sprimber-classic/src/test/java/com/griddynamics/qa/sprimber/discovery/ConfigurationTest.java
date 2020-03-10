@@ -64,7 +64,17 @@ public class ConfigurationTest {
 
         @Bean
         public TagFilter tagFilter() {
-            return tags -> true;
+            return new TagFilter() {
+                @Override
+                public boolean filter(List<String> tags) {
+                    return true;
+                }
+
+                @Override
+                public boolean filterByCustomExpression(List<String> tagsToEvaluate, String expressionAsString) {
+                    return true;
+                }
+            };
         }
     }
 }
