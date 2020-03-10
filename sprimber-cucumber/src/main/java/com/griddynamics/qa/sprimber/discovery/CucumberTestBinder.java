@@ -77,17 +77,16 @@ class CucumberTestBinder {
                 .withAttribute(TEST_LOCATION_ATTRIBUTE_NAME, uniqueName);
 
         Node testNode = parentNode.addChild(builder);
-        fillPreConditions(BEFORE_TEST_ACTION_STYLE, testNode);
-        fillPostConditions(AFTER_TEST_ACTION_STYLE, testNode);
+        List<String> scenarioTags = getTagsFromPickle(testCandidate);
+        fillScenarioHooks(testNode, scenarioTags);
 
         testCandidate.getSteps().stream()
                 .map(pickleStep -> pickleStepFactory.addStepContainerNode(testNode, pickleStep))
-                .forEach(this::fillStepBeforeAndAfter);
+                .forEach(stepNode -> this.fillStepBeforeAndAfter(stepNode, scenarioTags));
     }
 
-    void fillPreConditions(String style, Node containerNode) {
+    void fillPreConditionsWithoutFiltering(String style, Node containerNode) {
         testMethodRegistry.streamByStyle(style)
-                .filter(pickleStepFactory.filterTestMethodByTags())
                 .map(testMethod -> new Builder()
                         .withRole(style)
                         .withName(testMethod.getStyle())
@@ -95,9 +94,9 @@ class CucumberTestBinder {
                 .forEach(containerNode::addBefore);
     }
 
-    void fillPostConditions(String style, Node containerNode) {
+
+    void fillPostConditionsWithoutFiltering(String style, Node containerNode) {
         testMethodRegistry.streamByStyle(style)
-                .filter(pickleStepFactory.filterTestMethodByTags())
                 .map(testMethod -> new Builder()
                         .withRole(style)
                         .withName(testMethod.getStyle())
@@ -105,9 +104,34 @@ class CucumberTestBinder {
                 .forEach(containerNode::addAfter);
     }
 
-    private void fillStepBeforeAndAfter(Node stepContainerNode) {
-        fillPreConditions(BEFORE_STEP_ACTION_STYLE, stepContainerNode);
-        fillPostConditions(AFTER_STEP_ACTION_STYLE, stepContainerNode);
+    void fillPreConditions(String style, Node containerNode, List<String> tags) {
+        testMethodRegistry.streamByStyle(style)
+                .filter(pickleStepFactory.filterTestMethodByTagsAndCustomExpression(tags))
+                .map(testMethod -> new Builder()
+                        .withRole(style)
+                        .withName(testMethod.getStyle())
+                        .withMethod(testMethod.getMethod()))
+                .forEach(containerNode::addBefore);
+    }
+
+    void fillPostConditions(String style, Node containerNode, List<String> tags) {
+        testMethodRegistry.streamByStyle(style)
+                .filter(pickleStepFactory.filterTestMethodByTagsAndCustomExpression(tags))
+                .map(testMethod -> new Builder()
+                        .withRole(style)
+                        .withName(testMethod.getStyle())
+                        .withMethod(testMethod.getMethod()))
+                .forEach(containerNode::addAfter);
+    }
+
+    private void fillScenarioHooks(Node testNode, List<String> scenarioTags) {
+        fillPreConditions(BEFORE_TEST_ACTION_STYLE, testNode, scenarioTags);
+        fillPostConditions(AFTER_TEST_ACTION_STYLE, testNode, scenarioTags);
+    }
+
+    private void fillStepBeforeAndAfter(Node stepContainerNode, List<String> stepTags) {
+        fillPreConditions(BEFORE_STEP_ACTION_STYLE, stepContainerNode, stepTags);
+        fillPostConditions(AFTER_STEP_ACTION_STYLE, stepContainerNode, stepTags);
     }
 
     private String formatLocation(Pickle pickle) {

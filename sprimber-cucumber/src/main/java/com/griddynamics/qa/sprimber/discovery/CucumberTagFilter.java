@@ -32,9 +32,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -45,6 +43,7 @@ import java.util.stream.Collectors;
 class CucumberTagFilter implements TagFilter {
 
     private final SprimberProperties sprimberProperties;
+    private final Map<String, Expression> expressionCache = new HashMap<>();
     private List<Expression> expressions = new ArrayList<>();
 
     @PostConstruct
@@ -58,8 +57,19 @@ class CucumberTagFilter implements TagFilter {
         return expressions.stream().allMatch(expression -> expression.evaluate(tags));
     }
 
+    @Override
+    public boolean filterByCustomExpression(List<String> tagsToEvaluate, String expressionAsString) {
+        expressionCache.computeIfAbsent(expressionAsString, this::buildExpression);
+        return expressionCache.get(expressionAsString).evaluate(tagsToEvaluate);
+    }
+
     boolean filter(String tagsAsCsv) {
         List<String> tags = Arrays.asList(StringUtils.tokenizeToStringArray(tagsAsCsv, ","));
         return tags.isEmpty() || filter(tags);
+    }
+
+    private Expression buildExpression(String expressionAsString) {
+        TagExpressionParser tagExpressionParser = new TagExpressionParser();
+        return tagExpressionParser.parse(expressionAsString);
     }
 }

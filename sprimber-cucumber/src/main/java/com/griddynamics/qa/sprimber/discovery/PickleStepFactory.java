@@ -105,6 +105,11 @@ class PickleStepFactory {
                 tagFilter.filter((String) testMethod.getAttribute(TAGS_ATTRIBUTE));
     }
 
+    Predicate<TestMethod> filterTestMethodByTagsAndCustomExpression(List<String> tagsToEvaluate) {
+        return testMethod ->
+                tagFilter.filterByCustomExpression(tagsToEvaluate, (String) testMethod.getAttribute(TAGS_ATTRIBUTE));
+    }
+
     private Optional<Condition> buildCondition(Method method) {
         PropertyCondition propertyCondition = null;
         if (method.isAnnotationPresent(SkipOnProperty.class)) {
