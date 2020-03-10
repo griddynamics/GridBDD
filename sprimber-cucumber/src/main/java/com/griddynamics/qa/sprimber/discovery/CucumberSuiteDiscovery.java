@@ -29,6 +29,7 @@ import com.griddynamics.qa.sprimber.engine.Node;
 import gherkin.Parser;
 import gherkin.TokenMatcher;
 import gherkin.ast.GherkinDocument;
+import gherkin.ast.Tag;
 import gherkin.pickles.Compiler;
 import gherkin.pickles.Pickle;
 import gherkin.pickles.PickleTag;
@@ -95,7 +96,11 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
                 .withSubNodeModes(EnumSet.of(BYPASS_BEFORE_WHEN_BYPASS_MODE, BYPASS_AFTER_WHEN_BYPASS_MODE,
                         BYPASS_CHILDREN_AFTER_ITERATION_ERROR));
         Node testCaseNode = suiteNode.addChild(builder);
-        fillFeatureHooks(testCaseNode);
+        List<String> tagsToEvaluate = cucumberDocument.getDocument().getFeature().getTags()
+                .stream()
+                .map(Tag::getName)
+                .collect(Collectors.toList());
+        fillFeatureHooks(testCaseNode, tagsToEvaluate);
         compiler.compile(cucumberDocument.getDocument()).stream()
                 .filter(pickleTagFilter())
                 .forEach(pickle -> {
@@ -105,15 +110,14 @@ class CucumberSuiteDiscovery implements TestSuiteDiscovery {
     }
 
     private void fillSuiteHooks(Node suiteNode) {
-        cucumberTestBinder.fillPreConditions(BEFORE_SUITE_ACTION_STYLE, suiteNode);
-        cucumberTestBinder.fillPostConditions(AFTER_SUITE_ACTION_STYLE, suiteNode);
+        cucumberTestBinder.fillPreConditionsWithoutFiltering(BEFORE_SUITE_ACTION_STYLE, suiteNode);
+        cucumberTestBinder.fillPostConditionsWithoutFiltering(AFTER_SUITE_ACTION_STYLE, suiteNode);
     }
 
-    private void fillFeatureHooks(Node testCaseNode) {
-        cucumberTestBinder.fillPreConditions(BEFORE_FEATURE_ACTION_STYLE, testCaseNode);
-        cucumberTestBinder.fillPostConditions(AFTER_FEATURE_ACTION_STYLE, testCaseNode);
+    private void fillFeatureHooks(Node testCaseNode, List<String> featureTags) {
+        cucumberTestBinder.fillPreConditions(BEFORE_FEATURE_ACTION_STYLE, testCaseNode, featureTags);
+        cucumberTestBinder.fillPostConditions(AFTER_FEATURE_ACTION_STYLE, testCaseNode, featureTags);
     }
-
 
     private Predicate<Pickle> pickleTagFilter() {
         return pickle -> {

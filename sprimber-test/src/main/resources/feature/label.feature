@@ -23,13 +23,13 @@
 # */
 
 @labels
+@echo
 @epic:CustomEpic
 @parentSuite:FirstSuite
 @feature:SomeCopyPasteFeature
 @suite:SuiteLikeAFeature
 Feature: This is a test feature for echo application
 
-  @echo
   @story:StoryThatLooksLikeAsAScenario
   Scenario: Simple scenario to check just steps
 
@@ -39,20 +39,17 @@ Feature: This is a test feature for echo application
     When test when action
     Then test then action
 
-  @echo
   @story:MultipleLabelValues,somethingElse
   Scenario: Simple scenario to check steps with DataTable arguments
     Given the next author exist:
       | name     | surname     | book     |
       | testName | testSurname | testBook |
 
-  @echo
   @story:StoryThatLooksLikeAsAScenario
   @subSuite:customSubSuite
   Scenario: Simple scenario to check steps arguments
     Given the next author long consumed '123'
 
-  @echo
   @subSuite:customSubSuite
   @package:smoke
   Scenario: Scenario to check failed steps
@@ -60,7 +57,6 @@ Feature: This is a test feature for echo application
     Then every time failed action
     And test then action
 
-  @echo
   @subSuite:criticalPart
   @story:criticalTests
   @severity:critical

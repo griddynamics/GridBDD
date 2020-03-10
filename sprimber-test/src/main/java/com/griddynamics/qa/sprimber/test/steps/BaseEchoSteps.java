@@ -66,6 +66,16 @@ public class BaseEchoSteps {
         LOGGER.info("Hey, I'm before Cucumber feature action for tag echo");
     }
 
+    @BeforeFeature("@echo and @labels")
+    public void beforeCucumberFeatureOnEchoAndStable() {
+        LOGGER.info("Hey, I'm before Cucumber feature action for tag echo and labels");
+    }
+
+    @Before("@stable")
+    public void beforeStableScenario() {
+        LOGGER.info("Hey, I'm before Cucumber scenario action for tag stable");
+    }
+
     @Before
     public void before() {
         LOGGER.info("Hey, I'm before action");
@@ -149,9 +159,14 @@ public class BaseEchoSteps {
         LOGGER.info("Hey, I'm after action");
     }
 
-    @AfterFeature("@echo")
+    @After("@non_stable")
+    public void afterNonStableScenario() {
+        LOGGER.info("Hey, I'm after Cucumber scenario action for tag non_stable");
+    }
+
+    @AfterFeature("@echo or not @labels")
     public void afterCucumberFeature() {
-        LOGGER.info("Hey, I'm after Cucumber feature action for tag echo");
+        LOGGER.info("Hey, I'm after Cucumber feature action for tag echo and not labels");
     }
 
     @AfterSuite

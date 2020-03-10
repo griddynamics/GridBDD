@@ -33,4 +33,6 @@ import java.util.List;
 public interface TagFilter {
 
     boolean filter(List<String> tags);
+
+    boolean filterByCustomExpression(List<String> tagsToEvaluate, String expressionAsString);
 }
