@@ -20,8 +20,6 @@ jobs:
           server-id: sonatype-nexus-staging
           server-username: NEXUS_USERNAME
           server-password: NEXUS_PASSWORD
-      - name: To Remove It
-        run: cat ${HOME}/.m2/settings.xml
       - name: Prepare GPG
         env:
           SEC_KEY: ${{ secrets.nexus_central_gpg_sec_key }}
