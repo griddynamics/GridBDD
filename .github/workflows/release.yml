@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - release-*
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up JDK 1.8 for Apache Maven Central
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+          server-id: sonatype-nexus-staging
+          server-username: NEXUS_USERNAME
+          server-password: NEXUS_PASSWORD
+      - name: To Remove It
+        run: cat ${HOME}/.m2/settings.xml
+      - name: Prepare GPG
+        env:
+          SEC_KEY: ${{ secrets.nexus_central_gpg_sec_key }}
+        run: |
+          echo "$SEC_KEY" > sec.key
+          gpg --import --batch sec.key
+      - name: Update the release version
+        run: mvn versions:set -DnewVersion=${GITHUB_REF:19:5}
+      - name: Build and Deploy to Central
+        env:
+          NEXUS_USERNAME: ${{ secrets.nexus_central_username }}
+          NEXUS_PASSWORD: ${{ secrets.nexus_central_password }}
+          GPG_PASS: ${{ secrets.nexus_central_gpg_passphrase }}
+        run: |
+          export GPG_TTY=$(tty)
+          mvn -B clean deploy -Dgpg.passphrase=$GPG_PASS -P central-deploy --file pom.xml
+      - name: Update the next development version
+        run: mvn versions:set -DnewVersion=${GITHUB_REF:25:5}-SNAPSHOT
+      - name: Commit&Push new development version
+        run: |
+          echo ${GITHUB_REF:25:5}
+          git config --global user.name "Sprimber Bot"
+          git config --global user.email "sprimber-bot@griddynamics.com"
+          git commit -am "Updated development version to ${GITHUB_REF:25:5}"
+          git remote -v
+          git push origin HEAD:master
