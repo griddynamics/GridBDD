@@ -44,7 +44,7 @@
         <module>sprimber-engine</module>
         <module>sprimber-spring-boot-autoconfigure</module>
         <module>sprimber-spring-boot-starter</module>
-        <module>sprimber-test</module>
+        <module>sprimber-examples</module>
         <module>sprimber-cucumber</module>
         <module>sprimber-classic</module>
         <module>sprimber-classic-bdd</module>
