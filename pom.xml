@@ -48,6 +48,7 @@
         <module>sprimber-cucumber</module>
         <module>sprimber-classic</module>
         <module>sprimber-classic-bdd</module>
+        <module>sprimber-docs</module>
     </modules>
 
     <properties>
@@ -108,6 +109,37 @@
                             <goals>
                                 <goal>jar</goal>
                             </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.asciidoctor</groupId>
+                    <artifactId>asciidoctor-maven-plugin</artifactId>
+                    <version>1.5.6</version>
+                    <executions>
+                        <execution>
+                            <id>build-html-doc</id>
+                            <phase>generate-resources</phase>
+                            <goals>
+                                <goal>process-asciidoc</goal>
+                            </goals>
+                            <configuration>
+                                <sourceDirectory>${basedir}/src/main/docs</sourceDirectory>
+                                <backend>html5</backend>
+                                <sourceHighlighter>coderay</sourceHighlighter>
+                                <outputDirectory>${project.parent.basedir}/docs</outputDirectory>
+                                <attributes>
+                                    <imagesdir>./images</imagesdir>
+                                    <toc>left</toc>
+                                    <icons>font</icons>
+                                    <sectanchors>true</sectanchors>
+                                    <!-- set the idprefix to blank -->
+                                    <idprefix/>
+                                    <idseparator>-</idseparator>
+                                    <docinfo1>true</docinfo1>
+                                </attributes>
+                            </configuration>
                         </execution>
                     </executions>
                 </plugin>
