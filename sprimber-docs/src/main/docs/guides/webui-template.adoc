@@ -41,6 +41,8 @@ In pom file, following dependencies needs to be included (please use latest vers
 
 [source,xml]
 ----
+    <dependencies>
+        ...
         <dependency>
             <groupId>com.griddynamics.qa</groupId>
             <artifactId>sprimber-spring-boot-starter</artifactId>
@@ -58,27 +60,33 @@ In pom file, following dependencies needs to be included (please use latest vers
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
+        ...
+    </dependencies>
 ----
 
 Following plugins should be included in *build/plugins* sections:
 
 [source,xml]
 ----
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>io.qameta.allure</groupId>
-                <artifactId>allure-maven</artifactId>
-            </plugin>
+    <plugins>
+        ...
+        <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>repackage</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-maven</artifactId>
+        </plugin>
+        ...
+    </plugins>
 ----
 
 === Spring application

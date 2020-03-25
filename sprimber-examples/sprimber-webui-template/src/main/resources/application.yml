@@ -12,5 +12,5 @@ sprimber:
     tagFilters:
       - "@smoke or @navigation or @getInTouch"
 web-driver:
-  pathToDriver: <UPDATE_ME>
+  pathToDriver: /Users/fparamonov/Documents/Projects/SeleniumWebDrivers/geckodriver
   loadWaitInSeconds: 10
