@@ -5,7 +5,6 @@ import com.griddynamics.qa.sprimber.reporting.SprimberEventPublisher;
 import io.cucumber.java.AfterStep;
 import io.qameta.allure.AllureLifecycle;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -13,7 +12,6 @@ import org.springframework.context.event.EventListener;
 
 @Actions
 @RequiredArgsConstructor
-@Slf4j
 public class Hooks {
 
     private final AllureLifecycle allureLifecycle;

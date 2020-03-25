@@ -5,11 +5,9 @@ import com.griddynamics.qa.sprimber.test.model.MainPageModel;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.When;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Actions
 @RequiredArgsConstructor
-@Slf4j
 public class MainPageSteps {
 
     private final MainPageModel mainPageModel;
