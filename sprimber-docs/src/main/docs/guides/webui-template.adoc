@@ -1,0 +1,404 @@
+= Building Web UI test automation with Sprimber and Selenium
+
+This guide will walk you through process of writing UI Selenium based tests with Sprimber.
+
+== What you will build
+
+You will write tests that checks http://www.griddynamics.com[GridDynamics web page] and generate Allure report after execution.
+Tests will be written in Gherkin language and will be executed by Sprimber.
+Report will contain all test execution details: steps, page screenshots and stack traces after failures.
+
+== What you need
+
+* 30 minutes of time
+* IDE or text editor
+* JDK 1.8 or later
+* Maven 3+
+
+== How to start
+
+You can either check completed code in *sprimber-examples/sprimber-webui-template* or follow step by step guide.
+
+== Step by step
+
+For all Sprimber applications we need to start with creation of basic package structure, then pom, Spring application with configuration and properties
+
+=== Package structure
+
+To have code organized, we will create 3 packages:
+
+* *configuration* - where all Sprimber configuration will be stored.
+Also _Configuration Properties_ classes will be stored here.
+* *model* - where all Page models will be stored.
+If needed additional packages for each sub page can be created inside.
+* *steps* - where all classes with steps implementations will be kept.
+
+Our tests will be kept in *resources/features* folder.
+
+=== Pom file
+
+In pom file, following dependencies needs to be included (please use latest versions):
+
+[source,xml]
+----
+    <dependencies>
+        ...
+        <dependency>
+            <groupId>com.griddynamics.qa</groupId>
+            <artifactId>sprimber-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        ...
+    </dependencies>
+----
+
+Following plugins should be included in *build/plugins* sections:
+
+[source,xml]
+----
+    <plugins>
+        ...
+        <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>repackage</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-maven</artifactId>
+        </plugin>
+        ...
+    </plugins>
+----
+
+=== Spring application
+
+Sprimber is executed as Spring application, so we need to create one:
+
+[source,java]
+----
+@SpringBootApplication
+public class WebUiTemplate {
+    public static void main(String[] args) throws Exception {
+        SpringApplication.exit(SpringApplication.run(WebUiTemplate.class));
+    }
+}
+----
+
+=== Configuration and properties
+
+Let's define following properties class that will hold webdriver variables:
+
+* path to actual driver binary
+* timeout in seconds
+
+[source,java]
+----
+@ConfigurationProperties("web-driver")
+@Data
+public class WebDriverProperties {
+    private String pathToDriver;
+    private Long loadWaitInSeconds;
+}
+----
+
+Then we can create Spring configuration for Sprimber and actual drivers.
+Because Sprimber provides test execution in 3 threads we will limit it to 1 by creating custom Executor bean.
+This will allow us to reuse one instance of webdriver between tests.
+We will also assume that different drivers can be used, and we will switch between them by profiles.
+Below you will find example for FireFox.
+Additional driver configuration can be found on https://www.selenium.dev/documentation/en/webdriver/driver_requirements/[Selenium: Driver requirements] page
+
+[source,java]
+----
+@Configuration
+@EnableConfigurationProperties({WebDriverProperties.class})
+@RequiredArgsConstructor
+public class WebUiTemplateConfiguration {
+
+    private final WebDriverProperties webDriverProperties;
+
+    @Bean
+    public Executor testExecutor() {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(1);
+        taskExecutor.setMaxPoolSize(1);
+        taskExecutor.setThreadNamePrefix("TCExecutor-");
+        taskExecutor.initialize();
+        return taskExecutor;
+    }
+
+    @Bean
+    @Profile("firefox")
+    public WebDriver firefoxDriver() {
+        System.setProperty("webdriver.gecko.driver", webDriverProperties.getPathToDriver());
+        WebDriver driver = new FirefoxDriver(new FirefoxOptions());
+        driver.manage().timeouts().implicitlyWait(webDriverProperties.getLoadWaitInSeconds(), TimeUnit.SECONDS);
+        return driver;
+    }
+}
+----
+
+=== Application.yml file
+
+Now it's time to create application.yml file that will store all our configuration options.
+By default Sprimber requires only path to feature files but it's a good practice to define logging levels and tag filters.
+
+[source,text]
+----
+logging:
+    level:
+        com.griddynamics.qa.sprimber.lifecycle.TestCaseIlluminator: DEBUG
+        com.griddynamics.qa.sprimber.engine.executor: DEBUG
+        com.griddynamics.qa.sprimber.test.steps: DEBUG
+sprimber:
+    configuration:
+        featurePath: feature/**/*.feature
+        summary:
+            printer:
+                enable: true
+        tagFilters:
+            - "@smoke or @navigation or @getInTouch"
+----
+
+We will also add section for properties we have created for webDriver:
+
+[source,text]
+----
+web-driver:
+    pathToDriver: <UPDATE ME PLEASE WITH REAL PATH TO BINARY>
+    loadWaitInSeconds: 10
+----
+
+Please note that because we are using profiles to switch between different drivers, it's easy to create *application-firefox.yml* file and overwrite needed properties (like path to driver).
+
+=== Feature files
+
+Now let's create out first test.
+We will write simple one that will navigate to sub page and validate if it was successful (by page title name)
+
+[source,text]
+----
+Feature: WebUI Template suite - Navigation
+
+    @smoke @navigation
+    Scenario: Open 'Get in Touch' page and wait for it to load
+        Given open main GridDynamics page
+        When navigate to 'Get in Touch'
+        Then 'Get in Touch' page is opened
+----
+
+=== Model implementation
+
+We may create Basic Page model so all actual pages can extend it.
+It will contain logic for interaction with webElements (clicking) and method that will check if correct page title is loaded.
+
+[source,java]
+----
+@RequiredArgsConstructor public abstract class PageModel {
+    private final WebDriver webDriver; private final WebDriverProperties webDriverProperties;
+
+    protected boolean isPageLoaded(String expectedPageTitle) {
+        return new WebDriverWait(webDriver, webDriverProperties.getLoadWaitInSeconds()).until(ExpectedConditions.titleIs(expectedPageTitle));
+    }
+
+    protected void clickBy(By by) {
+        WebElement webElement = new WebDriverWait(webDriver, webDriverProperties.getLoadWaitInSeconds())
+                .until(ExpectedConditions.elementToBeClickable(by));
+        webElement.click();
+    }
+}
+----
+
+Because in our example http://www.griddynamics.com[GridDynamics web page] have navigation panel visible on all sub pages, we may include navigation logic in basic page model:
+
+[source,java]
+----
+    private static final String XPATH_BUTTON_GET_IN_TOUCH = "//span[text()='Get in touch']";
+    public void navigateToGetInTouch() {
+        this.clickBy(By.xpath(XPATH_BUTTON_GET_IN_TOUCH));
+    }
+----
+
+We will also need our Main page model.
+It will have only one unique method - navigateTo that will load main GridDynamics page
+
+[source,java]
+----
+@Component
+public class MainPageModel extends PageModel {
+
+    private final WebDriver webDriver;
+    private static final String MAIN_PAGE_URL = "https://www.griddynamics.com/";
+
+    public MainPageModel(WebDriver webDriver, WebDriverProperties webDriverProperties) {
+        super(webDriver, webDriverProperties);
+        this.webDriver = webDriver;
+    }
+
+    public void navigateTo() {
+        webDriver.navigate().to(MAIN_PAGE_URL);
+    }
+}
+----
+
+Now let's create Get in Touch sub page model.
+It will extend Page Model and provide method that will check if page is successfully loaded:
+
+[source,java]
+----
+@Component public class GetInTouchModel extends PageModel {
+    private final static String EXPECTED_WINDOW_TITLE = "Contact Us | Grid Dynamics";
+
+    public GetInTouchModel(WebDriver webDriver, WebDriverProperties webDriverProperties) {
+        super(webDriver, webDriverProperties);
+    }
+
+    public boolean isPageLoaded() {
+        return super.isPageLoaded(EXPECTED_WINDOW_TITLE);
+    }
+}
+----
+
+=== Step implementation
+
+Steps for each page and sub page will be kept in separate classes.
+We will start from Main page steps.
+Please note that for Sprimber to discover steps implementation, _@Action_ annotation needs to be present.
+
+[source,java]
+----
+@Actions
+@RequiredArgsConstructor
+public class MainPageSteps {
+    private final MainPageModel mainPageModel;
+
+    @Given("open main GridDynamics page")
+    public void loadMainPage() {
+        mainPageModel.navigateTo();
+    }
+
+    @When("navigate to 'Get in Touch'")
+    public void navigateToGetInTouch() {
+        mainPageModel.navigateToGetInTouch();
+    }
+}
+----
+
+Similarly we will create steps for Get in Touch page.
+
+[source,java]
+----
+@Actions
+@RequiredArgsConstructor
+public class GetInTouchSteps {
+    private final GetInTouchModel getInTouchModel;
+
+    @Then("'Get in Touch' page is opened")
+    public void getInTouchIsOpened() {
+        assertThat(getInTouchModel.isPageLoaded()).isTrue();
+    }
+}
+----
+
+=== Test execution
+
+In order to execute tests, we need to start Sprimber spring application.
+Preferred way is to do it from command line:
+
+....
+mvn clean spring-boot:run -Dsprimber.configuration.tagFilters="@failed" -Dspring.profiles.active=firefox
+....
+
+=== Allure report generation
+
+Once tests are completed we can generate allure report:
+
+....
+mvn allure:serve
+....
+
+Report should be opened in new window in default browser.
+
+=== Hooks implementation
+
+If we would like to configure some recurring action that will be executed after each step, test or suite, we may use hook annotations provided by Sprimber.
+Let say we want to do screenshot of page after each step and attach it to allure report.
+It can be done easily with following code:
+
+[source,java]
+----
+@Actions
+@RequiredArgsConstructor
+public class Hooks {
+
+    private final AllureLifecycle allureLifecycle;
+    private final WebDriver webDriver;
+
+    @AfterStep
+    public void attachScreenShot() {
+        allureLifecycle.addAttachment("Screenshot after test step", "image/png", "png",
+                ((TakesScreenshot) webDriver).getScreenshotAs(OutputType.BYTES));
+    }
+}
+----
+
+If tests will be rerun now, in each step in report, additional attachment will be present.
+
+=== Adding failing test and additional hook
+
+Sprimber emits different evens on suite, test and step start, execution and end.
+It also emits events in case there are failures.
+We may use them to create custom hooks that will be executed if specific conditions are met.
+In our example we may want to attach page source to failing step (that later can be used for debugging.) First we may create broken test by removing *When* step from our example feature file:
+
+[source,text]
+----
+Feature: WebUI Template suite - 'Get in Touch' page
+
+  @getInTouch @failed
+  Scenario: Fail if link is not clicked
+    Given open main GridDynamics page
+    Then 'Get in Touch' page is opened
+----
+
+To catch event that is emitted after step failure we can add following method into our *Hooks* (or any other) class:
+
+[source,java]
+----
+    @EventListener
+    public void after(SprimberEventPublisher.TargetNodeErrorEvent errorEvent) {
+        allureLifecycle.addAttachment("Page source after failure", "text/plain", "html",
+                webDriver.getPageSource().getBytes());
+    }
+----
+
+Now if our test will be run, failed step will have additional attachment with page source coe.
+
+Different events can checked in *SprimberEventPublisher* class in *sprimber-engine* module.
+More information about spring events can be found in https://docs.spring.io/spring/docs/current/spring-framework-reference/core.html#context-functionality-events[Spring documentation]
+
+== Summary
+
+Congratulations!
+First UI Selenium tests is now completed in Sprimber.
+It will produce detailed report with screenshots and additional debug information for failed tests.
+In our source code we changed Scenario to Scenario outline in feature file to support additional sub page object to show how easily additional models can be added.

@@ -1,0 +1,16 @@
+logging:
+  level:
+    com.griddynamics.qa.sprimber.lifecycle.TestCaseIlluminator: DEBUG
+    com.griddynamics.qa.sprimber.engine.executor: DEBUG
+    com.griddynamics.qa.sprimber.test.steps: DEBUG
+sprimber:
+  configuration:
+    featurePath: feature/**/*.feature
+    summary:
+      printer:
+        enable: true
+    tagFilters:
+      - "@smoke or @navigation or @getInTouch"
+web-driver:
+  pathToDriver: /Users/fparamonov/Documents/Projects/SeleniumWebDrivers/geckodriver
+  loadWaitInSeconds: 10
