@@ -322,11 +322,23 @@ public class GetInTouchSteps {
 === Test execution
 
 In order to execute tests, we need to start Sprimber spring application.
-Preferred way is to do it from command line:
+For development and local execution it's possible to start tests with spring maven plugin with following command:
 
 ....
 mvn clean spring-boot:run -Dsprimber.configuration.tagFilters="@failed" -Dspring.profiles.active=firefox
 ....
+
+To have sealed artifact for test execution it's preferred to build and use the jar.
+It can be done with commands:
+
+....
+mvn clean install
+java -jar /PATH_TO_JAR/JAR_NAME.jar -Dsprimber.configuration.tagFilters="@failed" -Dspring.profiles.active=firefox
+....
+
+This way we may be sure that if we rerun tests, we will use the same version.
+If the artifacts are stored, it's also easy to to run older versions of tests.
+Artifacts are also easily sharable between teams.
 
 === Allure report generation
 
