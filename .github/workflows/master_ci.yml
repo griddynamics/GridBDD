@@ -21,3 +21,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: mvn -B clean package --file pom.xml
+      - name: Build Documentation
+        run: mvn -B clean package -pl sprimber-docs -P publish-doc
+      - name: Publish Docs to GitHub Pages
+        run: |
+          git config --global user.name "Sprimber Doc-Bot"
+          git config --global user.email "sprimber-doc-bot@griddynamics.com"
+          git fetch origin
+          git checkout -b gh-pages origin/gh-pages
+          mkdir -p current
+          cp -r docs/. current
+          git add current/*
+          git commit -am "Deploying to gh-pages - $(date +"%F@%T")"
+          git push origin gh-pages
