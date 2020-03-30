@@ -1,0 +1,33 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "url": "/currentWeather/Poland/Cracow"
+      },
+      "response": {
+        "status": 200,
+        "bodyFileName": "currentWeatherPolandCracow.json"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "url": "/currentWeather/Poland/Warsaw"
+      },
+      "response": {
+        "status": 200,
+        "bodyFileName": "currentWeatherPolandWarsaw.json"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "url": "/currentWeather/Poland/Paris"
+      },
+      "response": {
+        "status": 404
+      }
+    }
+  ]
+}

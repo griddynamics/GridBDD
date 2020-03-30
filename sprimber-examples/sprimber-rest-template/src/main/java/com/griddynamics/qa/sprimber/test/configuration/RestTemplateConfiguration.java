@@ -1,0 +1,63 @@
+/*
+Copyright (c) 2010-2018 Grid Dynamics International, Inc. All Rights Reserved
+http://www.griddynamics.com
+This library is free software; you can redistribute it and/or modify it under the terms of
+the GNU Lesser General Public License as published by the Free Software Foundation; either
+version 2.1 of the License, or any later version.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+$Id:
+@Project:     Sprimber
+@Description: Framework that provide bdd engine and bridges for most popular BDD frameworks
+ */
+
+package com.griddynamics.qa.sprimber.test.configuration;
+
+import com.griddynamics.qa.sprimber.scope.ScenarioScope;
+import com.griddynamics.qa.sprimber.test.repository.WeatherClient;
+import com.griddynamics.qa.sprimber.test.storage.WeatherStorage;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
+
+/**
+ * @author pmichalski
+ */
+
+@Configuration
+@EnableConfigurationProperties({RestProperties.class})
+@RequiredArgsConstructor
+public class RestTemplateConfiguration {
+
+    private final RestProperties restProperties;
+
+    @Bean
+    public Retrofit weatherServiceRetrofit() {
+        return new Retrofit.Builder()
+                .baseUrl(restProperties.getBaseUrl())
+                .addConverterFactory(JacksonConverterFactory.create())
+                .build();
+    }
+
+    @Bean
+    public WeatherClient weatherClient(Retrofit weatherServiceRetrofit) {
+        return weatherServiceRetrofit.create(WeatherClient.class);
+    }
+
+    @Bean
+    @ScenarioScope
+    public WeatherStorage weatherStorage() {
+        return new WeatherStorage();
+    }
+}
