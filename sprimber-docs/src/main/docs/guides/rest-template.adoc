@@ -214,8 +214,8 @@ We will create class to hold it:
 
 [source,java]
 ----
-@ConfigurationProperties("rest")
 @Data
+@ConfigurationProperties("rest")
 public class RestProperties {
     private String baseUrl;
 }
@@ -347,7 +347,7 @@ public class WeatherStorage {
 ----
 
 Now we need to create Bean in configuration.
-Please add followin code to *RestTemplateConfiguration* class:
+Please add following code to *RestTemplateConfiguration* class:
 
 [source,java]
 ----
@@ -500,7 +500,7 @@ It can be done with commands:
 
 ....
 mvn clean install
-java -jar /PATH_TO_JAR/JAR_NAME.jar -Dsprimber.configuration.tagFilters="@failed" -Dspring.profiles.active=firefox
+java -jar /PATH_TO_JAR/JAR_NAME.jar -Dsprimber.configuration.tagFilters="@failed"
 ....
 
 This way we may be sure that if we rerun tests, we will use the same version.
@@ -637,4 +637,4 @@ Tests will be checking service deployed in docker and produce detailed test repo
 
 For more information on Sprimber, please check additional templates:
 
-* Building Web UI test automation with Sprimber and Selenium
+* https://griddynamics.github.io/GridBDD/current/webui-template.html[Building Web UI test automation with Sprimber and Selenium]

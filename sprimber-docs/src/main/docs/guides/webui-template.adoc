@@ -417,4 +417,4 @@ In our source code we changed Scenario to Scenario outline in feature file to su
 
 For more information on Sprimber, please check additional templates:
 
-* Building REST test automation with Sprimber
+* https://griddynamics.github.io/GridBDD/current/rest-template.html[Building REST test automation with Sprimber]
