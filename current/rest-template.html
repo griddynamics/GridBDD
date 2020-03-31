@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>Building Web UI test automation with Sprimber and Selenium</title>
+<title>Building REST test automation with Sprimber</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -519,7 +519,7 @@ table.CodeRay td.code>pre{padding:0}
 </head>
 <body class="article toc2 toc-left">
 <div id="header">
-<h1>Building Web UI test automation with Sprimber and Selenium</h1>
+<h1>Building REST test automation with Sprimber</h1>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
@@ -528,6 +528,7 @@ table.CodeRay td.code>pre{padding:0}
 <li><a href="#how-to-start">How to start</a></li>
 <li><a href="#step-by-step">Step by step</a>
 <ul class="sectlevel2">
+<li><a href="#rest-service-mock">Rest service mock</a></li>
 <li><a href="#package-structure">Package structure</a></li>
 <li><a href="#pom-file">Pom file</a></li>
 <li><a href="#spring-application">Spring application</a></li>
@@ -535,11 +536,12 @@ table.CodeRay td.code>pre{padding:0}
 <li><a href="#application-yml-file">Application.yml file</a></li>
 <li><a href="#feature-files">Feature files</a></li>
 <li><a href="#model-implementation">Model implementation</a></li>
+<li><a href="#service-and-storage-implementation">Service and storage implementation</a></li>
 <li><a href="#step-implementation">Step implementation</a></li>
 <li><a href="#test-execution">Test execution</a></li>
 <li><a href="#allure-report-generation">Allure report generation</a></li>
-<li><a href="#hooks-implementation">Hooks implementation</a></li>
-<li><a href="#adding-failing-test-and-additional-hook">Adding failing test and additional hook</a></li>
+<li><a href="#negative-scenario">Negative scenario</a></li>
+<li><a href="#more-on-scenarioscope">More on @ScenarioScope</a></li>
 </ul>
 </li>
 <li><a href="#summary">Summary</a></li>
@@ -550,7 +552,7 @@ table.CodeRay td.code>pre{padding:0}
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>This guide will walk you through process of writing UI Selenium based tests with Sprimber.</p>
+<p>This guide will show you how to use Sprimber to automate tests for rest services.</p>
 </div>
 </div>
 </div>
@@ -558,9 +560,10 @@ table.CodeRay td.code>pre{padding:0}
 <h2 id="what-you-will-build"><a class="anchor" href="#what-you-will-build"></a>What you will build</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>You will write tests that checks <a href="http://www.griddynamics.com">GridDynamics web page</a> and generate Allure report after execution.
-Tests will be written in Gherkin language and will be executed by Sprimber.
-Report will contain all test execution details: steps, page screenshots and stack traces after failures.</p>
+<p>You will create tests that will check behaviour of Weather service that provides temperature and humidity for requested combination of country and city values.
+Instead of real service, we will use wiremock-standalone that will be run in docker container.
+Test cases will be written in Gherkin language and will be executed by Sprimber.
+Test step code will be written in Java.</p>
 </div>
 </div>
 </div>
@@ -570,7 +573,7 @@ Report will contain all test execution details: steps, page screenshots and stac
 <div class="ulist">
 <ul>
 <li>
-<p>30 minutes of time</p>
+<p>45 minutes of time</p>
 </li>
 <li>
 <p>IDE or text editor</p>
@@ -581,6 +584,9 @@ Report will contain all test execution details: steps, page screenshots and stac
 <li>
 <p>Maven 3+</p>
 </li>
+<li>
+<p>Docker</p>
+</li>
 </ul>
 </div>
 </div>
@@ -589,7 +595,7 @@ Report will contain all test execution details: steps, page screenshots and stac
 <h2 id="how-to-start"><a class="anchor" href="#how-to-start"></a>How to start</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>You can either check completed code in <strong>sprimber-examples/sprimber-webui-template</strong> or follow step by step guide.</p>
+<p>You can either check completed code in <strong>sprimber-examples/sprimber-rest-template</strong> or follow step by step guide.</p>
 </div>
 </div>
 </div>
@@ -597,30 +603,165 @@ Report will contain all test execution details: steps, page screenshots and stac
 <h2 id="step-by-step"><a class="anchor" href="#step-by-step"></a>Step by step</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>For all Sprimber applications we need to start with creation of basic package structure, then pom, Spring application with configuration and properties</p>
+<p>For all Sprimber applications we need to start with creation of basic package structure, pom and then Spring application with configuration and properties.
+But before will start any of this, we need to create mock of our Weather service that will be used as test subject.</p>
 </div>
 <div class="sect2">
-<h3 id="package-structure"><a class="anchor" href="#package-structure"></a>Package structure</h3>
+<h3 id="rest-service-mock"><a class="anchor" href="#rest-service-mock"></a>Rest service mock</h3>
 <div class="paragraph">
-<p>To have code organized, we will create 3 packages:</p>
+<p>We will assume that our rest service will be working under following endpoint:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>GET /currentWeather/{country}/{city}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and will produce following response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="json">{
+  <span class="key"><span class="delimiter">&quot;</span><span class="content">temperature</span><span class="delimiter">&quot;</span></span>: <span class="float">22.5</span>,
+  <span class="key"><span class="delimiter">&quot;</span><span class="content">humidity</span><span class="delimiter">&quot;</span></span>: <span class="integer">20</span>
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In case the location will not be found, it will return 404 status code.</p>
+</div>
+<div class="paragraph">
+<p>We will achieve this by mocking rest service with <a href="http://wiremock.org/docs/running-standalone/">Wiremock-standalone</a> run in <a href="https://www.docker.com/">Docker container</a></p>
+</div>
+<div class="paragraph">
+<p>First we will create <a href="http://wiremock.org/docs/stubbing/">mappings</a> for our rest service:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="json">{
+  <span class="key"><span class="delimiter">&quot;</span><span class="content">mappings</span><span class="delimiter">&quot;</span></span>: [
+    {
+      <span class="key"><span class="delimiter">&quot;</span><span class="content">request</span><span class="delimiter">&quot;</span></span>: {
+        <span class="key"><span class="delimiter">&quot;</span><span class="content">method</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">GET</span><span class="delimiter">&quot;</span></span>,
+        <span class="key"><span class="delimiter">&quot;</span><span class="content">url</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">/currentWeather/Poland/Cracow</span><span class="delimiter">&quot;</span></span>
+      },
+      <span class="key"><span class="delimiter">&quot;</span><span class="content">response</span><span class="delimiter">&quot;</span></span>: {
+        <span class="key"><span class="delimiter">&quot;</span><span class="content">status</span><span class="delimiter">&quot;</span></span>: <span class="integer">200</span>,
+        <span class="key"><span class="delimiter">&quot;</span><span class="content">bodyFileName</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">currentWeatherPolandCracow.json</span><span class="delimiter">&quot;</span></span>
+      }
+    },
+    <span class="error">.</span><span class="error">.</span><span class="error">.</span>
+    {
+      <span class="key"><span class="delimiter">&quot;</span><span class="content">request</span><span class="delimiter">&quot;</span></span>: {
+        <span class="key"><span class="delimiter">&quot;</span><span class="content">method</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">GET</span><span class="delimiter">&quot;</span></span>,
+        <span class="key"><span class="delimiter">&quot;</span><span class="content">url</span><span class="delimiter">&quot;</span></span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">/currentWeather/Poland/Paris</span><span class="delimiter">&quot;</span></span>
+      },
+      <span class="key"><span class="delimiter">&quot;</span><span class="content">response</span><span class="delimiter">&quot;</span></span>: {
+        <span class="key"><span class="delimiter">&quot;</span><span class="content">status</span><span class="delimiter">&quot;</span></span>: <span class="integer">404</span>
+      }
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>We also need to have response files prepared.
+In our example, content of <strong>currentWeatherPolandCracow.json</strong> will be equal to example.
+Please create similar mapping for Poland, Warsaw combination (and any other you would like to cover in tests).</p>
+</div>
+<div class="paragraph">
+<p>Now we can create Dockerfile.
+It will need to :</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>configuration</strong> - where all Sprimber configuration will be stored.
-Also <em>Configuration Properties</em> classes will be stored here.</p>
+<p>use java8</p>
 </li>
 <li>
-<p><strong>model</strong> - where all Page models will be stored.
-If needed additional packages for each sub page can be created inside.</p>
+<p>do apk update and then install ca-certs for wget (otherwise https download will fail)</p>
 </li>
 <li>
-<p><strong>steps</strong> - where all classes with steps implementations will be kept.</p>
+<p>copy mapping and response files</p>
+</li>
+<li>
+<p>use wget to download <a href="https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.26.3/wiremock-standalone-2.26.3.jar">wiremock-standalone</a></p>
+</li>
+<li>
+<p>set working directory</p>
+</li>
+<li>
+<p>expose default wiremock port (8080)</p>
+</li>
+<li>
+<p>and start wiremock</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>Our tests will be kept in <strong>resources/features</strong> folder.</p>
+<p>All this can be achieved with following Dockerfile:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="text">FROM java:8-jdk-alpine
+RUN apk update
+RUN apk add ca-certificates wget
+COPY ./mappings.json /usr/app/mappings/
+COPY ./responseFiles/* /usr/app/__files/
+WORKDIR /usr/app
+RUN wget &quot;https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.26.3/wiremock-standalone-2.26.3.jar&quot;
+EXPOSE 8080
+ENTRYPOINT [&quot;java&quot;, &quot;-jar&quot;, &quot;wiremock-standalone-2.26.3.jar&quot;]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now we can build it:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>docker build -t weather-service .</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and start it:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>docker run -p 8089:8080 weather-service</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To check that it works, please use your preferred browser and navigate to <a href="http://localhost:8089/currentWeather/Poland/Cracow" class="bare">http://localhost:8089/currentWeather/Poland/Cracow</a></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="package-structure"><a class="anchor" href="#package-structure"></a>Package structure</h3>
+<div class="paragraph">
+<p>To have code organized, we will create following packages:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>configuration</strong> - for all Sprimber configuration classes.
+Also <em>Configuration Properties</em> classes will be stored here.</p>
+</li>
+<li>
+<p><strong>model</strong> - for all Request and Response models.</p>
+</li>
+<li>
+<p><strong>repository</strong> - for retrofit contracts.</p>
+</li>
+<li>
+<p><strong>service</strong> - for services used for actual rest interaction and validation.</p>
+</li>
+<li>
+<p><strong>steps</strong> - for all classes with steps implementations.</p>
+</li>
+<li>
+<p><strong>storage</strong> - for all data exchanged between steps.
+Our tests will be kept in <strong>resources/features</strong> folder.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
@@ -637,8 +778,12 @@ If needed additional packages for each sub page can be created inside.</p>
             <span class="tag">&lt;artifactId&gt;</span>sprimber-spring-boot-starter<span class="tag">&lt;/artifactId&gt;</span>
         <span class="tag">&lt;/dependency&gt;</span>
         <span class="tag">&lt;dependency&gt;</span>
-            <span class="tag">&lt;groupId&gt;</span>org.seleniumhq.selenium<span class="tag">&lt;/groupId&gt;</span>
-            <span class="tag">&lt;artifactId&gt;</span>selenium-java<span class="tag">&lt;/artifactId&gt;</span>
+            <span class="tag">&lt;groupId&gt;</span>com.squareup.retrofit2<span class="tag">&lt;/groupId&gt;</span>
+            <span class="tag">&lt;artifactId&gt;</span>retrofit<span class="tag">&lt;/artifactId&gt;</span>
+        <span class="tag">&lt;/dependency&gt;</span>
+        <span class="tag">&lt;dependency&gt;</span>
+            <span class="tag">&lt;groupId&gt;</span>com.squareup.retrofit2<span class="tag">&lt;/groupId&gt;</span>
+            <span class="tag">&lt;artifactId&gt;</span>converter-jackson<span class="tag">&lt;/artifactId&gt;</span>
         <span class="tag">&lt;/dependency&gt;</span>
         <span class="tag">&lt;dependency&gt;</span>
             <span class="tag">&lt;groupId&gt;</span>org.assertj<span class="tag">&lt;/groupId&gt;</span>
@@ -688,9 +833,9 @@ If needed additional packages for each sub page can be created inside.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@SpringBootApplication</span>
-<span class="directive">public</span> <span class="type">class</span> <span class="class">WebUiTemplate</span> {
+<span class="directive">public</span> <span class="type">class</span> <span class="class">RestTemplate</span> {
     <span class="directive">public</span> <span class="directive">static</span> <span class="type">void</span> main(<span class="predefined-type">String</span><span class="type">[]</span> args) <span class="directive">throws</span> <span class="exception">Exception</span> {
-        SpringApplication.exit(SpringApplication.run(WebUiTemplate.class));
+        SpringApplication.exit(SpringApplication.run(RestTemplate.class));
     }
 }</code></pre>
 </div>
@@ -699,62 +844,55 @@ If needed additional packages for each sub page can be created inside.</p>
 <div class="sect2">
 <h3 id="configuration-and-properties"><a class="anchor" href="#configuration-and-properties"></a>Configuration and properties</h3>
 <div class="paragraph">
-<p>Let&#8217;s define following properties class that will hold webdriver variables:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>path to actual driver binary</p>
-</li>
-<li>
-<p>timeout in seconds</p>
-</li>
-</ul>
+<p>We need to store url to our rest service.
+We will create class to hold it:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@ConfigurationProperties</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">web-driver</span><span class="delimiter">&quot;</span></span>)
-<span class="annotation">@Data</span>
-<span class="directive">public</span> <span class="type">class</span> <span class="class">WebDriverProperties</span> {
-    <span class="directive">private</span> <span class="predefined-type">String</span> pathToDriver;
-    <span class="directive">private</span> <span class="predefined-type">Long</span> loadWaitInSeconds;
+<pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@Data</span>
+<span class="annotation">@ConfigurationProperties</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">rest</span><span class="delimiter">&quot;</span></span>)
+<span class="directive">public</span> <span class="type">class</span> <span class="class">RestProperties</span> {
+    <span class="directive">private</span> <span class="predefined-type">String</span> baseUrl;
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Then we can create Spring configuration for Sprimber and actual drivers.
-Because Sprimber provides test execution in 3 threads we will limit it to 1 by creating custom Executor bean.
-This will allow us to reuse one instance of webdriver between tests.
-We will also assume that different drivers can be used, and we will switch between them by profiles.
-Below you will find example for FireFox.
-Additional driver configuration can be found on <a href="https://www.selenium.dev/documentation/en/webdriver/driver_requirements/">Selenium: Driver requirements</a> page</p>
+<p>Now we can create Spring configuration.
+For communication with Rest services we will use <a href="https://square.github.io/retrofit/">retrofit</a>.
+We first need to create contract for service that will be later used for bean creation.
+Contract should be kept in <strong>repository</strong> package</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="java"><span class="directive">public</span> <span class="type">interface</span> <span class="class">WeatherClient</span> {
+    <span class="annotation">@GET</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">/currentWeather/{country}/{city}</span><span class="delimiter">&quot;</span></span>)
+    Call&lt;WeatherResponse&gt; getCurrentWeather(<span class="annotation">@Path</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">country</span><span class="delimiter">&quot;</span></span>) <span class="predefined-type">String</span> country, <span class="annotation">@Path</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">city</span><span class="delimiter">&quot;</span></span>) <span class="predefined-type">String</span> city);
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now we can create our configuration (that will be kept in <strong>configuration</strong> package).</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@Configuration</span>
-<span class="annotation">@EnableConfigurationProperties</span>({WebDriverProperties.class})
+<span class="annotation">@EnableConfigurationProperties</span>({RestProperties.class})
 <span class="annotation">@RequiredArgsConstructor</span>
-<span class="directive">public</span> <span class="type">class</span> <span class="class">WebUiTemplateConfiguration</span> {
+<span class="directive">public</span> <span class="type">class</span> <span class="class">RestTemplateConfiguration</span> {
 
-    <span class="directive">private</span> <span class="directive">final</span> WebDriverProperties webDriverProperties;
+    <span class="directive">private</span> <span class="directive">final</span> RestProperties restProperties;
 
     <span class="annotation">@Bean</span>
-    <span class="directive">public</span> <span class="predefined-type">Executor</span> testExecutor() {
-        ThreadPoolTaskExecutor taskExecutor = <span class="keyword">new</span> ThreadPoolTaskExecutor();
-        taskExecutor.setCorePoolSize(<span class="integer">1</span>);
-        taskExecutor.setMaxPoolSize(<span class="integer">1</span>);
-        taskExecutor.setThreadNamePrefix(<span class="string"><span class="delimiter">&quot;</span><span class="content">TCExecutor-</span><span class="delimiter">&quot;</span></span>);
-        taskExecutor.initialize();
-        <span class="keyword">return</span> taskExecutor;
+    <span class="directive">public</span> Retrofit weatherServiceRetrofit() {
+        <span class="keyword">return</span> <span class="keyword">new</span> Retrofit.Builder()
+                .baseUrl(restProperties.getBaseUrl())
+                .addConverterFactory(JacksonConverterFactory.create())
+                .build();
     }
 
     <span class="annotation">@Bean</span>
-    <span class="annotation">@Profile</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">firefox</span><span class="delimiter">&quot;</span></span>)
-    <span class="directive">public</span> WebDriver firefoxDriver() {
-        <span class="predefined-type">System</span>.setProperty(<span class="string"><span class="delimiter">&quot;</span><span class="content">webdriver.gecko.driver</span><span class="delimiter">&quot;</span></span>, webDriverProperties.getPathToDriver());
-        WebDriver driver = <span class="keyword">new</span> FirefoxDriver(<span class="keyword">new</span> FirefoxOptions());
-        driver.manage().timeouts().implicitlyWait(webDriverProperties.getLoadWaitInSeconds(), <span class="predefined-type">TimeUnit</span>.SECONDS);
-        <span class="keyword">return</span> driver;
+    <span class="directive">public</span> WeatherClient weatherClient(Retrofit weatherServiceRetrofit) {
+        <span class="keyword">return</span> weatherServiceRetrofit.create(WeatherClient.class);
     }
 }</code></pre>
 </div>
@@ -763,8 +901,8 @@ Additional driver configuration can be found on <a href="https://www.selenium.de
 <div class="sect2">
 <h3 id="application-yml-file"><a class="anchor" href="#application-yml-file"></a>Application.yml file</h3>
 <div class="paragraph">
-<p>Now it&#8217;s time to create application.yml file that will store all our configuration options.
-By default Sprimber requires only path to feature files but it&#8217;s a good practice to define logging levels and tag filters.</p>
+<p>Now let&#8217;s create application.yml file that will store our application properties.
+Default Sprimber properties are listed below:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -772,7 +910,6 @@ By default Sprimber requires only path to feature files but it&#8217;s a good pr
     level:
         com.griddynamics.qa.sprimber.lifecycle.TestCaseIlluminator: DEBUG
         com.griddynamics.qa.sprimber.engine.executor: DEBUG
-        com.griddynamics.qa.sprimber.test.steps: DEBUG
 sprimber:
     configuration:
         featurePath: feature/**/*.feature
@@ -784,109 +921,165 @@ sprimber:
 </div>
 </div>
 <div class="paragraph">
-<p>We will also add section for properties we have created for webDriver:</p>
+<p>We will also add section for properties we have created for rest service:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="text">web-driver:
-    pathToDriver: &lt;UPDATE ME PLEASE WITH REAL PATH TO BINARY&gt;
-    loadWaitInSeconds: 10</code></pre>
+<pre class="CodeRay highlight"><code data-lang="text">rest:
+  baseUrl: http://localhost:8089</code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p>Please note that because we are using profiles to switch between different drivers, it&#8217;s easy to create <strong>application-firefox.yml</strong> file and overwrite needed properties (like path to driver).</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="feature-files"><a class="anchor" href="#feature-files"></a>Feature files</h3>
 <div class="paragraph">
-<p>Now let&#8217;s create out first test.
-We will write simple one that will navigate to sub page and validate if it was successful (by page title name)</p>
+<p>Now it&#8217;s time to create tests.
+First one will call rest service and checks if weather details (temperature and humidity) are present in the response.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="text">Feature: WebUI Template suite - Navigation
+<pre class="CodeRay highlight"><code data-lang="text">Feature: Rest Template suite
 
-    @smoke @navigation
-    Scenario: Open 'Get in Touch' page and wait for it to load
-        Given open main GridDynamics page
-        When navigate to 'Get in Touch'
-        Then 'Get in Touch' page is opened</code></pre>
+  @smoke @current-weather
+  Scenario: Check current weather for Poland and Cracow
+    When Weather rest service is called with following values:
+      | requestId | country   | city   |
+      | 1         | Poland    | Cracow |
+    Then following calls are successful:
+      | requestId |
+      | 1         |
+    And temperature and humidity values are present for calls:
+      | requestId |
+      | 1         |</code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>You probably noticed that we have parameter <em>requestId</em> that will help us to distinct subsequent calls to service.
+It&#8217;s usage will be explained in following sections.
+For now please take for granted that it&#8217;s needed.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="model-implementation"><a class="anchor" href="#model-implementation"></a>Model implementation</h3>
 <div class="paragraph">
-<p>We may create Basic Page model so all actual pages can extend it.
-It will contain logic for interaction with webElements (clicking) and method that will check if correct page title is loaded.</p>
+<p>In our example, we just need class that will represent service response.
+It should be placed in <strong>model</strong> package:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@RequiredArgsConstructor</span> <span class="directive">public</span> <span class="directive">abstract</span> <span class="type">class</span> <span class="class">PageModel</span> {
-    <span class="directive">private</span> <span class="directive">final</span> WebDriver webDriver; <span class="directive">private</span> <span class="directive">final</span> WebDriverProperties webDriverProperties;
-
-    <span class="directive">protected</span> <span class="type">boolean</span> isPageLoaded(<span class="predefined-type">String</span> expectedPageTitle) {
-        <span class="keyword">return</span> <span class="keyword">new</span> WebDriverWait(webDriver, webDriverProperties.getLoadWaitInSeconds()).until(ExpectedConditions.titleIs(expectedPageTitle));
-    }
-
-    <span class="directive">protected</span> <span class="type">void</span> clickBy(By by) {
-        WebElement webElement = <span class="keyword">new</span> WebDriverWait(webDriver, webDriverProperties.getLoadWaitInSeconds())
-                .until(ExpectedConditions.elementToBeClickable(by));
-        webElement.click();
-    }
+<pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@Data</span>
+<span class="directive">public</span> <span class="type">class</span> <span class="class">WeatherResponse</span> {
+    <span class="directive">private</span> <span class="predefined-type">Double</span> temperature;
+    <span class="directive">private</span> <span class="predefined-type">Long</span> humidity;
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="service-and-storage-implementation"><a class="anchor" href="#service-and-storage-implementation"></a>Service and storage implementation</h3>
+<div class="paragraph">
+<p>We will need 2 services: one that will be responsible for interaction with rest, and the other that will be doing validations.
+But now we hit our first obstacle: services needs to share responses.
+We&#8217;ll solve it by introducing storage.
+It will be a simple class that will hold Map: it&#8217;s key will be id of request (in feature file it&#8217;s <em>requestId</em> parameter) and value would be response.
+Our service will use the storage to save the response, and then validation service will take that response from service using id of request.
+Here is our storage (that should be kept in <strong>storage</strong> package):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@Data</span>
+<span class="directive">public</span> <span class="type">class</span> <span class="class">WeatherStorage</span> {
+    <span class="directive">private</span> <span class="directive">final</span> <span class="predefined-type">Map</span>&lt;<span class="predefined-type">String</span>, Response&lt;WeatherResponse&gt;&gt; weatherResponseMap = <span class="keyword">new</span> <span class="predefined-type">HashMap</span>&lt;&gt;();
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Because in our example <a href="http://www.griddynamics.com">GridDynamics web page</a> have navigation panel visible on all sub pages, we may include navigation logic in basic page model:</p>
+<p>Now we need to create Bean in configuration.
+Please add following code to <strong>RestTemplateConfiguration</strong> class:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="java">    <span class="directive">private</span> <span class="directive">static</span> <span class="directive">final</span> <span class="predefined-type">String</span> XPATH_BUTTON_GET_IN_TOUCH = <span class="string"><span class="delimiter">&quot;</span><span class="content">//span[text()='Get in touch']</span><span class="delimiter">&quot;</span></span>;
-    <span class="directive">public</span> <span class="type">void</span> navigateToGetInTouch() {
-        <span class="local-variable">this</span>.clickBy(By.xpath(XPATH_BUTTON_GET_IN_TOUCH));
+<pre class="CodeRay highlight"><code data-lang="java">    <span class="annotation">@Bean</span>
+    <span class="annotation">@ScenarioScope</span>
+    <span class="directive">public</span> WeatherStorage weatherStorage(){
+        <span class="keyword">return</span> <span class="keyword">new</span> WeatherStorage();
     }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>We will also need our Main page model.
-It will have only one unique method - navigateTo that will load main GridDynamics page</p>
+<p>We use <em>@ScenarioScope</em> annotation to tell Sprimber to create new storage for each test.
+This way we can easily avoid <em>requestId</em> collision between tests (if we would use only one storage for all our tests, we would need to make sure that every test uses unique <em>requestId</em>).</p>
+</div>
+<div class="paragraph">
+<p>Now we can implement our service for rest interactions.
+It will use retrofit to call the service and store the response in storage.
+We will also add Allure attachment to our report that will be generated after tests (with response from service).</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@Component</span>
-<span class="directive">public</span> <span class="type">class</span> <span class="class">MainPageModel</span> <span class="directive">extends</span> PageModel {
+<span class="annotation">@RequiredArgsConstructor</span>
+<span class="directive">public</span> <span class="type">class</span> <span class="class">WeatherService</span> {
 
-    <span class="directive">private</span> <span class="directive">final</span> WebDriver webDriver;
-    <span class="directive">private</span> <span class="directive">static</span> <span class="directive">final</span> <span class="predefined-type">String</span> MAIN_PAGE_URL = <span class="string"><span class="delimiter">&quot;</span><span class="content">https://www.griddynamics.com/</span><span class="delimiter">&quot;</span></span>;
+    <span class="directive">private</span> <span class="directive">static</span> <span class="directive">final</span> <span class="predefined-type">String</span> EMPTY_RESPONSE_BODY = <span class="string"><span class="delimiter">&quot;</span><span class="content">Empty response body</span><span class="delimiter">&quot;</span></span>;
 
-    <span class="directive">public</span> MainPageModel(WebDriver webDriver, WebDriverProperties webDriverProperties) {
-        <span class="local-variable">super</span>(webDriver, webDriverProperties);
-        <span class="local-variable">this</span>.webDriver = webDriver;
-    }
+    <span class="directive">private</span> <span class="directive">final</span> WeatherClient weatherClient;
+    <span class="directive">private</span> <span class="directive">final</span> WeatherStorage weatherStorage;
+    <span class="directive">private</span> <span class="directive">final</span> AllureLifecycle allureLifecycle;
+    <span class="directive">private</span> <span class="directive">final</span> ObjectMapper objectMapper;
 
-    <span class="directive">public</span> <span class="type">void</span> navigateTo() {
-        webDriver.navigate().to(MAIN_PAGE_URL);
+    <span class="directive">public</span> <span class="type">void</span> getCurrentWeather(<span class="predefined-type">String</span> requestId, <span class="predefined-type">String</span> country, <span class="predefined-type">String</span> city) {
+        Call&lt;WeatherResponse&gt; weatherResponseCall = weatherClient.getCurrentWeather(country, city);
+        <span class="keyword">try</span> {
+            Response&lt;WeatherResponse&gt; weatherResponse = weatherResponseCall.execute();
+            weatherStorage.getWeatherResponseMap().put(requestId, weatherResponse);
+            allureLifecycle.addAttachment(
+                    <span class="predefined-type">String</span>.format(<span class="string"><span class="delimiter">&quot;</span><span class="content">Weather service response for  RequestId: %s, Country: %s, City: %s</span><span class="delimiter">&quot;</span></span>, requestId, country, city),
+                    <span class="string"><span class="delimiter">&quot;</span><span class="content">application/json</span><span class="delimiter">&quot;</span></span>,
+                    <span class="string"><span class="delimiter">&quot;</span><span class="content">json</span><span class="delimiter">&quot;</span></span>,
+                    Objects.nonNull(weatherResponse.body()) ? objectMapper.writeValueAsBytes(weatherResponse.body()) : EMPTY_RESPONSE_BODY.getBytes());
+        } <span class="keyword">catch</span> (<span class="exception">IOException</span> e) {
+            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="exception">IllegalArgumentException</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">Exception during call to current weather endpoint</span><span class="delimiter">&quot;</span></span>, e);
+        }
     }
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Now let&#8217;s create Get in Touch sub page model.
-It will extend Page Model and provide method that will check if page is successfully loaded:</p>
+<p>And then we will create service for response validation.
+We need 2 methods.
+First to check if the response was successful, then to check if it contains some values for temperature and humidity.
+We will use <a href="https://joel-costigliola.github.io/assertj/">assertJ</a> fluent assertions.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@Component</span> <span class="directive">public</span> <span class="type">class</span> <span class="class">GetInTouchModel</span> <span class="directive">extends</span> PageModel {
-    <span class="directive">private</span> <span class="directive">final</span> <span class="directive">static</span> <span class="predefined-type">String</span> EXPECTED_WINDOW_TITLE = <span class="string"><span class="delimiter">&quot;</span><span class="content">Contact Us | Grid Dynamics</span><span class="delimiter">&quot;</span></span>;
+<pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@Component</span>
+<span class="annotation">@RequiredArgsConstructor</span>
+<span class="directive">public</span> <span class="type">class</span> <span class="class">WeatherValidationService</span> {
 
-    <span class="directive">public</span> GetInTouchModel(WebDriver webDriver, WebDriverProperties webDriverProperties) {
-        <span class="local-variable">super</span>(webDriver, webDriverProperties);
+    <span class="directive">private</span> <span class="directive">final</span> WeatherStorage weatherStorage;
+
+    <span class="directive">public</span> <span class="type">void</span> isCallSuccessful(<span class="predefined-type">String</span> requestId){
+        Response&lt;WeatherResponse&gt; weatherResponse = weatherStorage.getWeatherResponseMap().get(requestId);
+        assertThat(weatherResponse)
+                .as(<span class="predefined-type">String</span>.format(<span class="string"><span class="delimiter">&quot;</span><span class="content">Weather response for requestId %s is null</span><span class="delimiter">&quot;</span></span>, requestId))
+                .isNotNull();
+        assertThat(weatherResponse.code())
+                .as(<span class="string"><span class="delimiter">&quot;</span><span class="content">Weather response status code should be 200</span><span class="delimiter">&quot;</span></span>)
+                .isEqualTo(<span class="integer">200</span>);
+        assertThat(weatherResponse.body())
+                .as(<span class="predefined-type">String</span>.format(<span class="string"><span class="delimiter">&quot;</span><span class="content">Weather response body for requestId %s is null</span><span class="delimiter">&quot;</span></span>, requestId))
+                .isNotNull();
     }
 
-    <span class="directive">public</span> <span class="type">boolean</span> isPageLoaded() {
-        <span class="keyword">return</span> <span class="local-variable">super</span>.isPageLoaded(EXPECTED_WINDOW_TITLE);
+    <span class="directive">public</span> <span class="type">void</span> areValuesPresentInCurrentWeatherResponse(<span class="predefined-type">String</span> requestId){
+        Response&lt;WeatherResponse&gt; weatherResponse = weatherStorage.getWeatherResponseMap().get(requestId);
+        assertThat(weatherResponse.body().getHumidity())
+                .as(<span class="predefined-type">String</span>.format(<span class="string"><span class="delimiter">&quot;</span><span class="content">Weather response for requestId %s humidity is not present</span><span class="delimiter">&quot;</span></span>, requestId))
+                .isNotNull();
+        assertThat(weatherResponse.body().getTemperature())
+                .as(<span class="predefined-type">String</span>.format(<span class="string"><span class="delimiter">&quot;</span><span class="content">Weather response for requestId %s temperature is not present</span><span class="delimiter">&quot;</span></span>, requestId))
+                .isNotNull();
     }
 }</code></pre>
 </div>
@@ -895,42 +1088,54 @@ It will extend Page Model and provide method that will check if page is successf
 <div class="sect2">
 <h3 id="step-implementation"><a class="anchor" href="#step-implementation"></a>Step implementation</h3>
 <div class="paragraph">
-<p>Steps for each page and sub page will be kept in separate classes.
-We will start from Main page steps.
-Please note that for Sprimber to discover steps implementation, <em>@Action</em> annotation needs to be present.</p>
+<p>With services in place, we can finally create our steps.
+Let&#8217;s first create mapping between feature file parameters and our code.
+We prefer to store it in <strong>configuration</strong> package</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@Actions</span>
-<span class="annotation">@RequiredArgsConstructor</span>
-<span class="directive">public</span> <span class="type">class</span> <span class="class">MainPageSteps</span> {
-    <span class="directive">private</span> <span class="directive">final</span> MainPageModel mainPageModel;
+<pre class="CodeRay highlight"><code data-lang="java"><span class="directive">public</span> <span class="directive">abstract</span> <span class="type">class</span> <span class="class">DataTableFields</span> {
+    <span class="directive">private</span> DataTableFields(){}
 
-    <span class="annotation">@Given</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">open main GridDynamics page</span><span class="delimiter">&quot;</span></span>)
-    <span class="directive">public</span> <span class="type">void</span> loadMainPage() {
-        mainPageModel.navigateTo();
-    }
-
-    <span class="annotation">@When</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">navigate to 'Get in Touch'</span><span class="delimiter">&quot;</span></span>)
-    <span class="directive">public</span> <span class="type">void</span> navigateToGetInTouch() {
-        mainPageModel.navigateToGetInTouch();
-    }
+    <span class="directive">public</span> <span class="directive">static</span> <span class="directive">final</span> <span class="predefined-type">String</span> REQUEST_ID = <span class="string"><span class="delimiter">&quot;</span><span class="content">requestId</span><span class="delimiter">&quot;</span></span>;
+    <span class="directive">public</span> <span class="directive">static</span> <span class="directive">final</span> <span class="predefined-type">String</span> COUNTRY = <span class="string"><span class="delimiter">&quot;</span><span class="content">country</span><span class="delimiter">&quot;</span></span>;
+    <span class="directive">public</span> <span class="directive">static</span> <span class="directive">final</span> <span class="predefined-type">String</span> CITY = <span class="string"><span class="delimiter">&quot;</span><span class="content">city</span><span class="delimiter">&quot;</span></span>;
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Similarly we will create steps for Get in Touch page.</p>
+<p>And now we can use this mapping in test step definitions.
+Please note that each class that holds steps implementation needs to be annotated with <strong>@Actions</strong>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@Actions</span>
 <span class="annotation">@RequiredArgsConstructor</span>
-<span class="directive">public</span> <span class="type">class</span> <span class="class">GetInTouchSteps</span> {
-    <span class="directive">private</span> <span class="directive">final</span> GetInTouchModel getInTouchModel;
+<span class="directive">public</span> <span class="type">class</span> <span class="class">WeatherSteps</span> {
 
-    <span class="annotation">@Then</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">'Get in Touch' page is opened</span><span class="delimiter">&quot;</span></span>)
-    <span class="directive">public</span> <span class="type">void</span> getInTouchIsOpened() {
-        assertThat(getInTouchModel.isPageLoaded()).isTrue();
+    <span class="directive">private</span> <span class="directive">final</span> WeatherService weatherService;
+    <span class="directive">private</span> <span class="directive">final</span> WeatherValidationService weatherValidationService;
+
+    <span class="annotation">@Given</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">^Weather rest service is called with following values:$</span><span class="delimiter">&quot;</span></span>)
+    <span class="directive">public</span> <span class="type">void</span> getCurrentWeather(DataTable dataTable) {
+        dataTable.asMaps()
+                .forEach(rowAsMap -&gt; weatherService.getCurrentWeather(
+                        rowAsMap.get(REQUEST_ID),
+                        rowAsMap.get(COUNTRY),
+                        rowAsMap.get(CITY)
+                ));
+    }
+
+    <span class="annotation">@When</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">^following calls are successful:$</span><span class="delimiter">&quot;</span></span>)
+    <span class="directive">public</span> <span class="type">void</span> getCurrentWeatherCallIsSuccessful(DataTable dataTable) {
+        dataTable.asMaps()
+                .forEach(rowAsMap -&gt; weatherValidationService.isCallSuccessful(rowAsMap.get(REQUEST_ID)));
+    }
+
+    <span class="annotation">@Then</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">^temperature and humidity values are present for calls:$</span><span class="delimiter">&quot;</span></span>)
+    <span class="directive">public</span> <span class="type">void</span> validateGetCurrentWeatherResponse(DataTable dataTable) {
+        dataTable.asMaps()
+                .forEach(rowAsMap -&gt; weatherValidationService.areValuesPresentInCurrentWeatherResponse(rowAsMap.get(REQUEST_ID)));
     }
 }</code></pre>
 </div>
@@ -940,26 +1145,26 @@ Please note that for Sprimber to discover steps implementation, <em>@Action</em>
 <h3 id="test-execution"><a class="anchor" href="#test-execution"></a>Test execution</h3>
 <div class="paragraph">
 <p>In order to execute tests, we need to start Sprimber spring application.
-For development and local execution it&#8217;s possible to start tests with spring maven plugin with following command:</p>
+For development and local execution it’s possible to start tests with spring maven plugin with following command:</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>mvn clean spring-boot:run -Dsprimber.configuration.tagFilters="@failed" -Dspring.profiles.active=firefox</pre>
+<pre>mvn clean spring-boot:run -Dsprimber.configuration.tagFilters="@smoke"</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>To have sealed artifact for test execution it&#8217;s preferred to build and use the jar.
+<p>To have sealed artifact for test execution it’s preferred to build and use the jar.
 It can be done with commands:</p>
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>mvn clean install
-java -jar /PATH_TO_JAR/JAR_NAME.jar -Dsprimber.configuration.tagFilters="@failed" -Dspring.profiles.active=firefox</pre>
+java -jar /PATH_TO_JAR/JAR_NAME.jar -Dsprimber.configuration.tagFilters="@failed"</pre>
 </div>
 </div>
 <div class="paragraph">
 <p>This way we may be sure that if we rerun tests, we will use the same version.
-If the artifacts are stored, it&#8217;s also easy to to run older versions of tests.
+If the artifacts are stored, it’s also easy to to run older versions of tests.
 Artifacts are also easily sharable between teams.</p>
 </div>
 </div>
@@ -978,69 +1183,135 @@ Artifacts are also easily sharable between teams.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="hooks-implementation"><a class="anchor" href="#hooks-implementation"></a>Hooks implementation</h3>
+<h3 id="negative-scenario"><a class="anchor" href="#negative-scenario"></a>Negative scenario</h3>
 <div class="paragraph">
-<p>If we would like to configure some recurring action that will be executed after each step, test or suite, we may use hook annotations provided by Sprimber.
-Let say we want to do screenshot of page after each step and attach it to allure report.
-It can be done easily with following code:</p>
+<p>Now let&#8217;s extend our suite by adding negative scenario that will check if service returns HTTP 404 in case combination of country and city is not correct.
+To our feature file we will add new scenario:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="java"><span class="annotation">@Actions</span>
-<span class="annotation">@RequiredArgsConstructor</span>
-<span class="directive">public</span> <span class="type">class</span> <span class="class">Hooks</span> {
-
-    <span class="directive">private</span> <span class="directive">final</span> AllureLifecycle allureLifecycle;
-    <span class="directive">private</span> <span class="directive">final</span> WebDriver webDriver;
-
-    <span class="annotation">@AfterStep</span>
-    <span class="directive">public</span> <span class="type">void</span> attachScreenShot() {
-        allureLifecycle.addAttachment(<span class="string"><span class="delimiter">&quot;</span><span class="content">Screenshot after test step</span><span class="delimiter">&quot;</span></span>, <span class="string"><span class="delimiter">&quot;</span><span class="content">image/png</span><span class="delimiter">&quot;</span></span>, <span class="string"><span class="delimiter">&quot;</span><span class="content">png</span><span class="delimiter">&quot;</span></span>,
-                ((TakesScreenshot) webDriver).getScreenshotAs(OutputType.BYTES));
-    }
-}</code></pre>
+<pre class="CodeRay highlight"><code data-lang="text">  @smoke @current-weather @failed
+  Scenario: Check current weather for unknown place
+    When Weather rest service is called with following values:
+      | requestId | country | city  |
+      | 1         | Poland  | Paris |
+    Then following calls are failed with status code:
+      | requestId | statusCode |
+      | 1         | 404        |</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>If tests will be rerun now, in each step in report, additional attachment will be present.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="adding-failing-test-and-additional-hook"><a class="anchor" href="#adding-failing-test-and-additional-hook"></a>Adding failing test and additional hook</h3>
-<div class="paragraph">
-<p>Sprimber emits different evens on suite, test and step start, execution and end.
-It also emits events in case there are failures.
-We may use them to create custom hooks that will be executed if specific conditions are met.
-In our example we may want to attach page source to failing step (that later can be used for debugging.) First we may create broken test by removing <strong>When</strong> step from our example feature file:</p>
+<p>We need to implement new check in validating service:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="text">Feature: WebUI Template suite - 'Get in Touch' page
-
-  @getInTouch @failed
-  Scenario: Fail if link is not clicked
-    Given open main GridDynamics page
-    Then 'Get in Touch' page is opened</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>To catch event that is emitted after step failure we can add following method into our <strong>Hooks</strong> (or any other) class:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="java">    <span class="annotation">@EventListener</span>
-    <span class="directive">public</span> <span class="type">void</span> after(SprimberEventPublisher.TargetNodeErrorEvent errorEvent) {
-        allureLifecycle.addAttachment(<span class="string"><span class="delimiter">&quot;</span><span class="content">Page source after failure</span><span class="delimiter">&quot;</span></span>, <span class="string"><span class="delimiter">&quot;</span><span class="content">text/plain</span><span class="delimiter">&quot;</span></span>, <span class="string"><span class="delimiter">&quot;</span><span class="content">html</span><span class="delimiter">&quot;</span></span>,
-                webDriver.getPageSource().getBytes());
+<pre class="CodeRay highlight"><code data-lang="java">    <span class="directive">public</span> <span class="type">void</span> isCallFailedWithStatusCode(<span class="predefined-type">String</span> requestId, <span class="predefined-type">Integer</span> statusCode){
+        Response&lt;WeatherResponse&gt; weatherResponse = weatherStorage.getWeatherResponseMap().get(requestId);
+        assertThat(weatherResponse)
+                .as(<span class="predefined-type">String</span>.format(<span class="string"><span class="delimiter">&quot;</span><span class="content">Weather response for requestId %s is null</span><span class="delimiter">&quot;</span></span>, requestId))
+                .isNotNull();
+        assertThat(weatherResponse.code())
+                .as(<span class="predefined-type">String</span>.format(<span class="string"><span class="delimiter">&quot;</span><span class="content">Weather response status code should be %d</span><span class="delimiter">&quot;</span></span>, statusCode))
+                .isEqualTo(statusCode);
     }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Now if our test will be run, failed step will have additional attachment with page source coe.</p>
+<p>We will need to map one new parameter in <strong>DataTableFields</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="java">    <span class="directive">public</span> <span class="directive">static</span> <span class="directive">final</span> <span class="predefined-type">String</span> STATUS_CODE = <span class="string"><span class="delimiter">&quot;</span><span class="content">statusCode</span><span class="delimiter">&quot;</span></span>;</code></pre>
+</div>
 </div>
 <div class="paragraph">
-<p>Different events can checked in <strong>SprimberEventPublisher</strong> class in <strong>sprimber-engine</strong> module.
-More information about spring events can be found in <a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/core.html#context-functionality-events">Spring documentation</a></p>
+<p>And we can add missing step:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="java">    <span class="annotation">@When</span>(<span class="string"><span class="delimiter">&quot;</span><span class="content">^following calls are failed with status code:$</span><span class="delimiter">&quot;</span></span>)
+    <span class="directive">public</span> <span class="type">void</span> getCurrentWeatherCallIsFailedWithStatusCode(DataTable dataTable) {
+        dataTable.asMaps()
+                .forEach(rowAsMap -&gt;
+                        weatherValidationService.isCallFailedWithStatusCode(
+                                rowAsMap.get(REQUEST_ID),
+                                <span class="predefined-type">Integer</span>.valueOf(rowAsMap.get(STATUS_CODE)))
+                );
+    }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Because we store retrofit response it&#8217;s very easy to add such validations for non positive scenarios.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="more-on-scenarioscope"><a class="anchor" href="#more-on-scenarioscope"></a>More on @ScenarioScope</h3>
+<div class="paragraph">
+<p>Let&#8217;s look in details at <strong>@ScenarioScope</strong> annotations behavior.
+We used this annotation on top of our storage to avoid collisions between test.
+So let&#8217;s change our scenario to call service 2 times.
+This can be achieved in 2 ways:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>By doing 2 calls in one step</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="text">    @smoke @current-weather
+  Scenario: Check current weather for multiple places
+    When Weather rest service is called with following values:
+      | requestId | country | city   |
+      | 1         | Poland  | Cracow |
+      | 2         | Poland  | Warsaw |
+    Then following calls are successful:
+      | requestId |
+      | 1         |
+      | 2         |
+    Then temperature and humidity values are present for calls:
+      | requestId |
+      | 1         |
+      | 2         |</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this solution, we need to increment <strong>requestId</strong> to avoid collision.
+If we would not use it at all or use '1' value.
+Then after first step we would only have response from second call in our storage, and following steps would not validate correct data.
+In our example <strong>requestId</strong> is incremented so collision won&#8217;t happen.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>By changing to scenario outline</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="text">@smoke @current-weather
+  Scenario Outline: Check current weather for &lt;country&gt; and &lt;city&gt;
+    When Weather rest service is called with following values:
+      | requestId | country   | city   |
+      | 1         | &lt;country&gt; | &lt;city&gt; |
+    Then following calls are successful:
+      | requestId |
+      | 1         |
+    And temperature and humidity values are present for calls:
+      | requestId |
+      | 1         |
+    Examples:
+      | country | city   |
+      | Poland  | Cracow |
+      | Poland  | Warsaw |</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case we don&#8217;t need to increment <strong>requestId</strong>, in fact for this simple test we could not use it at all.
+Each scenario is run in isolation and for each <strong>example</strong> new storage is created.</p>
 </div>
 </div>
 </div>
@@ -1050,9 +1321,8 @@ More information about spring events can be found in <a href="https://docs.sprin
 <div class="sectionbody">
 <div class="paragraph">
 <p>Congratulations!
-First UI Selenium tests is now completed in Sprimber.
-It will produce detailed report with screenshots and additional debug information for failed tests.
-In our source code we changed Scenario to Scenario outline in feature file to support additional sub page object to show how easily additional models can be added.</p>
+Basic rest test automation is now completed in Sprimber.
+Tests will be checking service deployed in docker and produce detailed test report.</p>
 </div>
 <div class="paragraph">
 <p>For more information on Sprimber, please check additional templates:</p>
@@ -1060,7 +1330,7 @@ In our source code we changed Scenario to Scenario outline in feature file to su
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://griddynamics.github.io/GridBDD/current/rest-template.html">Building REST test automation with Sprimber</a></p>
+<p><a href="https://griddynamics.github.io/GridBDD/current/webui-template.html">Building Web UI test automation with Sprimber and Selenium</a></p>
 </li>
 </ul>
 </div>
