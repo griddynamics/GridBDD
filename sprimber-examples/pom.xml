@@ -14,6 +14,7 @@
 
     <modules>
         <module>sprimber-echo-template</module>
+        <module>sprimber-rest-template</module>
         <module>sprimber-webui-template</module>
     </modules>
 

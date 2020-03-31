@@ -22,4 +22,5 @@ Sprimber designed for integrated and end-2-end test automation, so that test aut
 Follow guides at [wiki page](https://github.com/griddynamics/GridBDD/wiki/Building-a-Test-Automation-with-Spring-Boot-BDD)
 
 Follow detailed How-To guides:
-* Gherkin and Selenium helping to automate WebUI operations [SeleniumTemplate](https://griddynamics.github.io/GridBDD/current/webui-template.html)
+* Gherkin and Selenium helping to automate WebUI operations [SeleniumTemplate](https://griddynamics.github.io/GridBDD/docs/webui-template.html)
+* Building REST test automation with Sprimber [RestTemplate](https://griddynamics.github.io/GridBDD/current/rest-template.html)

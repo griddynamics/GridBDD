@@ -1,0 +1,640 @@
+= Building REST test automation with Sprimber
+
+This guide will show you how to use Sprimber to automate tests for rest services.
+
+== What you will build
+
+You will create tests that will check behaviour of Weather service that provides temperature and humidity for requested combination of country and city values.
+Instead of real service, we will use wiremock-standalone that will be run in docker container.
+Test cases will be written in Gherkin language and will be executed by Sprimber.
+Test step code will be written in Java.
+
+== What you need
+
+* 45 minutes of time
+* IDE or text editor
+* JDK 1.8 or later
+* Maven 3+
+* Docker
+
+== How to start
+
+You can either check completed code in *sprimber-examples/sprimber-rest-template* or follow step by step guide.
+
+== Step by step
+
+For all Sprimber applications we need to start with creation of basic package structure, pom and then Spring application with configuration and properties.
+But before will start any of this, we need to create mock of our Weather service that will be used as test subject.
+
+===  Rest service mock
+
+We will assume that our rest service will be working under following endpoint:
+
+....
+GET /currentWeather/{country}/{city}
+....
+
+and will produce following response:
+
+[source,json]
+----
+{
+  "temperature": 22.5,
+  "humidity": 20
+}
+----
+
+In case the location will not be found, it will return 404 status code.
+
+We will achieve this by mocking rest service with http://wiremock.org/docs/running-standalone/[Wiremock-standalone] run in https://www.docker.com/[Docker container]
+
+First we will create http://wiremock.org/docs/stubbing/[mappings] for our rest service:
+
+[source,json]
+----
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "url": "/currentWeather/Poland/Cracow"
+      },
+      "response": {
+        "status": 200,
+        "bodyFileName": "currentWeatherPolandCracow.json"
+      }
+    },
+    ...
+    {
+      "request": {
+        "method": "GET",
+        "url": "/currentWeather/Poland/Paris"
+      },
+      "response": {
+        "status": 404
+      }
+    }
+  ]
+}
+----
+
+We also need to have response files prepared.
+In our example, content of *currentWeatherPolandCracow.json* will be equal to example.
+Please create similar mapping for Poland, Warsaw combination (and any other you would like to cover in tests).
+
+Now we can create Dockerfile.
+It will need to :
+
+* use java8
+* do apk update and then install ca-certs for wget (otherwise https download will fail)
+* copy mapping and response files
+* use wget to download https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.26.3/wiremock-standalone-2.26.3.jar[wiremock-standalone]
+* set working directory
+* expose default wiremock port (8080)
+* and start wiremock
+
+All this can be achieved with following Dockerfile:
+
+[source,text]
+----
+FROM java:8-jdk-alpine
+RUN apk update
+RUN apk add ca-certificates wget
+COPY ./mappings.json /usr/app/mappings/
+COPY ./responseFiles/* /usr/app/__files/
+WORKDIR /usr/app
+RUN wget "https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-standalone/2.26.3/wiremock-standalone-2.26.3.jar"
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "wiremock-standalone-2.26.3.jar"]
+----
+
+Now we can build it:
+
+....
+docker build -t weather-service .
+....
+
+and start it:
+
+....
+docker run -p 8089:8080 weather-service
+....
+
+To check that it works, please use your preferred browser and navigate to http://localhost:8089/currentWeather/Poland/Cracow
+
+=== Package structure
+
+To have code organized, we will create following packages:
+
+* *configuration* - for all Sprimber configuration classes.
+Also _Configuration Properties_ classes will be stored here.
+* *model* - for all Request and Response models.
+* *repository* - for retrofit contracts.
+* *service* - for services used for actual rest interaction and validation.
+* *steps* - for all classes with steps implementations.
+* *storage* - for all data exchanged between steps.
+Our tests will be kept in *resources/features* folder.
+
+=== Pom file
+
+In pom file, following dependencies needs to be included (please use latest versions):
+
+[source,xml]
+----
+    <dependencies>
+        ...
+        <dependency>
+            <groupId>com.griddynamics.qa</groupId>
+            <artifactId>sprimber-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.retrofit2</groupId>
+            <artifactId>retrofit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.retrofit2</groupId>
+            <artifactId>converter-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        ...
+    </dependencies>
+----
+
+Following plugins should be included in *build/plugins* sections:
+
+[source,xml]
+----
+    <plugins>
+        ...
+        <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>repackage</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-maven</artifactId>
+        </plugin>
+        ...
+    </plugins>
+----
+
+=== Spring application
+
+Sprimber is executed as Spring application, so we need to create one:
+
+[source,java]
+----
+@SpringBootApplication
+public class RestTemplate {
+    public static void main(String[] args) throws Exception {
+        SpringApplication.exit(SpringApplication.run(RestTemplate.class));
+    }
+}
+----
+
+=== Configuration and properties
+
+We need to store url to our rest service.
+We will create class to hold it:
+
+[source,java]
+----
+@Data
+@ConfigurationProperties("rest")
+public class RestProperties {
+    private String baseUrl;
+}
+----
+
+Now we can create Spring configuration.
+For communication with Rest services we will use https://square.github.io/retrofit/[retrofit].
+We first need to create contract for service that will be later used for bean creation.
+Contract should be kept in *repository* package
+
+[source,java]
+----
+public interface WeatherClient {
+    @GET("/currentWeather/{country}/{city}")
+    Call<WeatherResponse> getCurrentWeather(@Path("country") String country, @Path("city") String city);
+}
+----
+
+Now we can create our configuration (that will be kept in *configuration* package).
+
+[source,java]
+----
+@Configuration
+@EnableConfigurationProperties({RestProperties.class})
+@RequiredArgsConstructor
+public class RestTemplateConfiguration {
+
+    private final RestProperties restProperties;
+
+    @Bean
+    public Retrofit weatherServiceRetrofit() {
+        return new Retrofit.Builder()
+                .baseUrl(restProperties.getBaseUrl())
+                .addConverterFactory(JacksonConverterFactory.create())
+                .build();
+    }
+
+    @Bean
+    public WeatherClient weatherClient(Retrofit weatherServiceRetrofit) {
+        return weatherServiceRetrofit.create(WeatherClient.class);
+    }
+}
+----
+
+=== Application.yml file
+
+Now let's create application.yml file that will store our application properties.
+Default Sprimber properties are listed below:
+
+[source,text]
+----
+logging:
+    level:
+        com.griddynamics.qa.sprimber.lifecycle.TestCaseIlluminator: DEBUG
+        com.griddynamics.qa.sprimber.engine.executor: DEBUG
+sprimber:
+    configuration:
+        featurePath: feature/**/*.feature
+        summary:
+            printer:
+                enable: true
+        tagFilters:
+            - "@smoke or @navigation or @getInTouch"
+----
+
+We will also add section for properties we have created for rest service:
+
+[source,text]
+----
+rest:
+  baseUrl: http://localhost:8089
+----
+
+=== Feature files
+
+Now it's time to create tests.
+First one will call rest service and checks if weather details (temperature and humidity) are present in the response.
+
+[source,text]
+----
+Feature: Rest Template suite
+
+  @smoke @current-weather
+  Scenario: Check current weather for Poland and Cracow
+    When Weather rest service is called with following values:
+      | requestId | country   | city   |
+      | 1         | Poland    | Cracow |
+    Then following calls are successful:
+      | requestId |
+      | 1         |
+    And temperature and humidity values are present for calls:
+      | requestId |
+      | 1         |
+----
+
+You probably noticed that we have parameter _requestId_ that will help us to distinct subsequent calls to service.
+It's usage will be explained in following sections.
+For now please take for granted that it's needed.
+
+=== Model implementation
+
+In our example, we just need class that will represent service response.
+It should be placed in *model* package:
+
+[source,java]
+----
+@Data
+public class WeatherResponse {
+    private Double temperature;
+    private Long humidity;
+}
+----
+
+=== Service and storage implementation
+
+We will need 2 services: one that will be responsible for interaction with rest, and the other that will be doing validations.
+But now we hit our first obstacle: services needs to share responses.
+We'll solve it by introducing storage.
+It will be a simple class that will hold Map: it's key will be id of request (in feature file it's _requestId_ parameter) and value would be response.
+Our service will use the storage to save the response, and then validation service will take that response from service using id of request.
+Here is our storage (that should be kept in *storage* package):
+
+[source,java]
+----
+@Data
+public class WeatherStorage {
+    private final Map<String, Response<WeatherResponse>> weatherResponseMap = new HashMap<>();
+}
+----
+
+Now we need to create Bean in configuration.
+Please add following code to *RestTemplateConfiguration* class:
+
+[source,java]
+----
+    @Bean
+    @ScenarioScope
+    public WeatherStorage weatherStorage(){
+        return new WeatherStorage();
+    }
+----
+
+We use _@ScenarioScope_ annotation to tell Sprimber to create new storage for each test.
+This way we can easily avoid _requestId_ collision between tests (if we would use only one storage for all our tests, we would need to make sure that every test uses unique _requestId_).
+
+Now we can implement our service for rest interactions.
+It will use retrofit to call the service and store the response in storage.
+We will also add Allure attachment to our report that will be generated after tests (with response from service).
+
+[source,java]
+----
+@Component
+@RequiredArgsConstructor
+public class WeatherService {
+
+    private static final String EMPTY_RESPONSE_BODY = "Empty response body";
+
+    private final WeatherClient weatherClient;
+    private final WeatherStorage weatherStorage;
+    private final AllureLifecycle allureLifecycle;
+    private final ObjectMapper objectMapper;
+
+    public void getCurrentWeather(String requestId, String country, String city) {
+        Call<WeatherResponse> weatherResponseCall = weatherClient.getCurrentWeather(country, city);
+        try {
+            Response<WeatherResponse> weatherResponse = weatherResponseCall.execute();
+            weatherStorage.getWeatherResponseMap().put(requestId, weatherResponse);
+            allureLifecycle.addAttachment(
+                    String.format("Weather service response for  RequestId: %s, Country: %s, City: %s", requestId, country, city),
+                    "application/json",
+                    "json",
+                    Objects.nonNull(weatherResponse.body()) ? objectMapper.writeValueAsBytes(weatherResponse.body()) : EMPTY_RESPONSE_BODY.getBytes());
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Exception during call to current weather endpoint", e);
+        }
+    }
+}
+----
+
+And then we will create service for response validation.
+We need 2 methods.
+First to check if the response was successful, then to check if it contains some values for temperature and humidity.
+We will use https://joel-costigliola.github.io/assertj/[assertJ] fluent assertions.
+
+[source,java]
+----
+@Component
+@RequiredArgsConstructor
+public class WeatherValidationService {
+
+    private final WeatherStorage weatherStorage;
+
+    public void isCallSuccessful(String requestId){
+        Response<WeatherResponse> weatherResponse = weatherStorage.getWeatherResponseMap().get(requestId);
+        assertThat(weatherResponse)
+                .as(String.format("Weather response for requestId %s is null", requestId))
+                .isNotNull();
+        assertThat(weatherResponse.code())
+                .as("Weather response status code should be 200")
+                .isEqualTo(200);
+        assertThat(weatherResponse.body())
+                .as(String.format("Weather response body for requestId %s is null", requestId))
+                .isNotNull();
+    }
+
+    public void areValuesPresentInCurrentWeatherResponse(String requestId){
+        Response<WeatherResponse> weatherResponse = weatherStorage.getWeatherResponseMap().get(requestId);
+        assertThat(weatherResponse.body().getHumidity())
+                .as(String.format("Weather response for requestId %s humidity is not present", requestId))
+                .isNotNull();
+        assertThat(weatherResponse.body().getTemperature())
+                .as(String.format("Weather response for requestId %s temperature is not present", requestId))
+                .isNotNull();
+    }
+}
+----
+
+=== Step implementation
+
+With services in place, we can finally create our steps.
+Let's first create mapping between feature file parameters and our code.
+We prefer to store it in *configuration* package
+
+[source,java]
+----
+public abstract class DataTableFields {
+    private DataTableFields(){}
+
+    public static final String REQUEST_ID = "requestId";
+    public static final String COUNTRY = "country";
+    public static final String CITY = "city";
+}
+----
+
+And now we can use this mapping in test step definitions.
+Please note that each class that holds steps implementation needs to be annotated with *@Actions*.
+
+[source,java]
+----
+@Actions
+@RequiredArgsConstructor
+public class WeatherSteps {
+
+    private final WeatherService weatherService;
+    private final WeatherValidationService weatherValidationService;
+
+    @Given("^Weather rest service is called with following values:$")
+    public void getCurrentWeather(DataTable dataTable) {
+        dataTable.asMaps()
+                .forEach(rowAsMap -> weatherService.getCurrentWeather(
+                        rowAsMap.get(REQUEST_ID),
+                        rowAsMap.get(COUNTRY),
+                        rowAsMap.get(CITY)
+                ));
+    }
+
+    @When("^following calls are successful:$")
+    public void getCurrentWeatherCallIsSuccessful(DataTable dataTable) {
+        dataTable.asMaps()
+                .forEach(rowAsMap -> weatherValidationService.isCallSuccessful(rowAsMap.get(REQUEST_ID)));
+    }
+
+    @Then("^temperature and humidity values are present for calls:$")
+    public void validateGetCurrentWeatherResponse(DataTable dataTable) {
+        dataTable.asMaps()
+                .forEach(rowAsMap -> weatherValidationService.areValuesPresentInCurrentWeatherResponse(rowAsMap.get(REQUEST_ID)));
+    }
+}
+----
+
+=== Test execution
+
+In order to execute tests, we need to start Sprimber spring application.
+For development and local execution it’s possible to start tests with spring maven plugin with following command:
+
+....
+mvn clean spring-boot:run -Dsprimber.configuration.tagFilters="@smoke"
+....
+
+To have sealed artifact for test execution it’s preferred to build and use the jar.
+It can be done with commands:
+
+....
+mvn clean install
+java -jar /PATH_TO_JAR/JAR_NAME.jar -Dsprimber.configuration.tagFilters="@failed"
+....
+
+This way we may be sure that if we rerun tests, we will use the same version.
+If the artifacts are stored, it’s also easy to to run older versions of tests.
+Artifacts are also easily sharable between teams.
+
+=== Allure report generation
+
+Once tests are completed we can generate allure report:
+
+....
+mvn allure:serve
+....
+
+Report should be opened in new window in default browser.
+
+=== Negative scenario
+
+Now let's extend our suite by adding negative scenario that will check if service returns HTTP 404 in case combination of country and city is not correct.
+To our feature file we will add new scenario:
+
+[source,text]
+----
+  @smoke @current-weather @failed
+  Scenario: Check current weather for unknown place
+    When Weather rest service is called with following values:
+      | requestId | country | city  |
+      | 1         | Poland  | Paris |
+    Then following calls are failed with status code:
+      | requestId | statusCode |
+      | 1         | 404        |
+----
+
+We need to implement new check in validating service:
+
+[source,java]
+----
+    public void isCallFailedWithStatusCode(String requestId, Integer statusCode){
+        Response<WeatherResponse> weatherResponse = weatherStorage.getWeatherResponseMap().get(requestId);
+        assertThat(weatherResponse)
+                .as(String.format("Weather response for requestId %s is null", requestId))
+                .isNotNull();
+        assertThat(weatherResponse.code())
+                .as(String.format("Weather response status code should be %d", statusCode))
+                .isEqualTo(statusCode);
+    }
+----
+
+We will need to map one new parameter in *DataTableFields*
+
+[source,java]
+----
+    public static final String STATUS_CODE = "statusCode";
+----
+
+And we can add missing step:
+
+[source,java]
+----
+    @When("^following calls are failed with status code:$")
+    public void getCurrentWeatherCallIsFailedWithStatusCode(DataTable dataTable) {
+        dataTable.asMaps()
+                .forEach(rowAsMap ->
+                        weatherValidationService.isCallFailedWithStatusCode(
+                                rowAsMap.get(REQUEST_ID),
+                                Integer.valueOf(rowAsMap.get(STATUS_CODE)))
+                );
+    }
+----
+
+Because we store retrofit response it's very easy to add such validations for non positive scenarios.
+
+=== More on @ScenarioScope
+
+Let's look in details at *@ScenarioScope* annotations behavior.
+We used this annotation on top of our storage to avoid collisions between test.
+So let's change our scenario to call service 2 times.
+This can be achieved in 2 ways:
+
+* By doing 2 calls in one step
+
+[source,text]
+----
+    @smoke @current-weather
+  Scenario: Check current weather for multiple places
+    When Weather rest service is called with following values:
+      | requestId | country | city   |
+      | 1         | Poland  | Cracow |
+      | 2         | Poland  | Warsaw |
+    Then following calls are successful:
+      | requestId |
+      | 1         |
+      | 2         |
+    Then temperature and humidity values are present for calls:
+      | requestId |
+      | 1         |
+      | 2         |
+----
+
+In this solution, we need to increment *requestId* to avoid collision.
+If we would not use it at all or use '1' value.
+Then after first step we would only have response from second call in our storage, and following steps would not validate correct data.
+In our example *requestId* is incremented so collision won't happen.
+
+* By changing to scenario outline
+
+[source,text]
+----
+@smoke @current-weather
+  Scenario Outline: Check current weather for <country> and <city>
+    When Weather rest service is called with following values:
+      | requestId | country   | city   |
+      | 1         | <country> | <city> |
+    Then following calls are successful:
+      | requestId |
+      | 1         |
+    And temperature and humidity values are present for calls:
+      | requestId |
+      | 1         |
+    Examples:
+      | country | city   |
+      | Poland  | Cracow |
+      | Poland  | Warsaw |
+----
+
+In this case we don't need to increment *requestId*, in fact for this simple test we could not use it at all.
+Each scenario is run in isolation and for each *example* new storage is created.
+
+== Summary
+
+Congratulations!
+Basic rest test automation is now completed in Sprimber.
+Tests will be checking service deployed in docker and produce detailed test report.
+
+For more information on Sprimber, please check additional templates:
+
+* https://griddynamics.github.io/GridBDD/current/webui-template.html[Building Web UI test automation with Sprimber and Selenium]

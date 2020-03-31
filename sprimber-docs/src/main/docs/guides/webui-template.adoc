@@ -414,3 +414,7 @@ Congratulations!
 First UI Selenium tests is now completed in Sprimber.
 It will produce detailed report with screenshots and additional debug information for failed tests.
 In our source code we changed Scenario to Scenario outline in feature file to support additional sub page object to show how easily additional models can be added.
+
+For more information on Sprimber, please check additional templates:
+
+* https://griddynamics.github.io/GridBDD/current/rest-template.html[Building REST test automation with Sprimber]
