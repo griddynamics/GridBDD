@@ -213,11 +213,13 @@ It will contain logic for interaction with webElements (clicking) and method tha
 
 [source,java]
 ----
-@RequiredArgsConstructor public abstract class PageModel {
+@RequiredArgsConstructor
+public abstract class PageModel {
     private final WebDriver webDriver; private final WebDriverProperties webDriverProperties;
 
     protected boolean isPageLoaded(String expectedPageTitle) {
-        return new WebDriverWait(webDriver, webDriverProperties.getLoadWaitInSeconds()).until(ExpectedConditions.titleIs(expectedPageTitle));
+        return new WebDriverWait(webDriver, webDriverProperties.getLoadWaitInSeconds())
+                .until(ExpectedConditions.titleIs(expectedPageTitle));
     }
 
     protected void clickBy(By by) {
@@ -265,7 +267,8 @@ It will extend Page Model and provide method that will check if page is successf
 
 [source,java]
 ----
-@Component public class GetInTouchModel extends PageModel {
+@Component
+public class GetInTouchModel extends PageModel {
     private final static String EXPECTED_WINDOW_TITLE = "Contact Us | Grid Dynamics";
 
     public GetInTouchModel(WebDriver webDriver, WebDriverProperties webDriverProperties) {
@@ -291,12 +294,12 @@ Please note that for Sprimber to discover steps implementation, _@Action_ annota
 public class MainPageSteps {
     private final MainPageModel mainPageModel;
 
-    @Given("open main GridDynamics page")
+    @Given("^open main GridDynamics page$")
     public void loadMainPage() {
         mainPageModel.navigateTo();
     }
 
-    @When("navigate to 'Get in Touch'")
+    @When("^navigate to 'Get in Touch'$")
     public void navigateToGetInTouch() {
         mainPageModel.navigateToGetInTouch();
     }
@@ -312,7 +315,7 @@ Similarly we will create steps for Get in Touch page.
 public class GetInTouchSteps {
     private final GetInTouchModel getInTouchModel;
 
-    @Then("'Get in Touch' page is opened")
+    @Then("^'Get in Touch' page is opened$")
     public void getInTouchIsOpened() {
         assertThat(getInTouchModel.isPageLoaded()).isTrue();
     }
